@@ -26,6 +26,9 @@ abstract class NaturalResultType
     const QUESTIONS_MOBILE        = 'questions_mobile';
     const JOBS                    = 'jobs';
     const JOBS_MOBILE             = 'jobs_mobile';
+    const JOBS_MINE                    = 'jobs_mine';
+    const JOBS_MINE_MOBILE             = 'jobs_mine_mobile';
+    
     const APP_PACK                = 'app_pack';
     const WIKI                = 'has_wiki';
         const SITE_LINKS_BIG          = 'site_links_big';
@@ -61,6 +64,10 @@ abstract class NaturalResultType
     const MAPS_LONGITUTDE       = 'long';
 
     const FLIGHTS                = 'flights';
+    const FLIGHTS_MOBILE                = 'flights_mobile';
+    const FLIGHTS_MINE                = 'flights_mine';
+    const FLIGHTS_MINE_MOBILE                = 'flights_mine_mobile';
+    
     const KNOWLEDGE_GRAPH        = 'knowledge_graph';
     const KNOWLEDGE_GRAPH_MOBILE = 'knowledge_graph_mobile';
 
@@ -73,15 +80,26 @@ abstract class NaturalResultType
 
     const DEFINITIONS        = 'definition';
     const DEFINITIONS_MOBILE = 'definition_mobile';
+    const DEFINITIONS_MINE        = 'definition_mine';
+    const DEFINITIONS_MINE_MOBILE = 'definition_mine_mobile';
 
     const MISSPELLING             = 'misspelling';
+    const MISSPELLING_MINE             = 'misspelling_mine';
     const MISSPELLING_OLD_VERSION = 'spell';
+    const MISSPELLING_OLD_VERSION_MINE = 'spell_mine';
     const MISSPELLING_OLD_VERSION_MOBILE = 'spell_mobile';
+    const MISSPELLING_OLD_VERSION_MINE_MOBILE = 'spell_mine_mobile';
     const MISSPELING_MOBILE       = 'misspelling_mobile';
+    const MISSPELING_MINE_MOBILE       = 'misspelling_mine_mobile';
 
     const RESULTS_NO = 'no_results';
     const DIRECTIONS = 'directions';
     const DIRECTIONS_MOBILE = 'directions_mobile';
+    const DIRECTIONS_MINE = 'directions_mine';
+    const DIRECTIONS__MINE_MOBILE = 'directions_mine_mobile';
+
+    const KNOWLEDGE_GRAPH_MINE        = 'knowledge_graph_mine';
+    const KNOWLEDGE_GRAPH_MINE_MOBILE = 'knowledge_graph_mine_mobile';
 
     const SERP_FEATURES_OLD_RESPONSE_TEMPLATE = [
         self::SITE_LINKS              => 0,
@@ -114,5 +132,44 @@ abstract class NaturalResultType
         self::WIKI              => 0,
     ];
 
+    const SERP_FEATURES_TYPE_TO_OLD_RESPONSE_FOR_POSITIONS = [
+        self::APP_PACK => self::APP_PACK,
+        self::APP_PACK_MOBILE => self::APP_PACK,
+        self::AdsTOP => self::AdsTOP,
+        self::AdsTOP_MOBILE => self::AdsTOP,
+        self::AdsDOWN => self::AdsDOWN,
+        self::AdsDOWN_MOBILE => self::AdsDOWN,
+        self::MISSPELLING => self::MISSPELLING_OLD_VERSION,
+        self::MISSPELING_MOBILE => self::MISSPELLING_OLD_VERSION,
+        self::HOTELS => self::HOTELS,
+        self::HOTELS_MOBILE => self::HOTELS,
+        self::KNOWLEDGE_GRAPH => self::KNOWLEDGE_GRAPH_MINE,
+        self::KNOWLEDGE_GRAPH_MOBILE => self::KNOWLEDGE_GRAPH_MINE_MOBILE,
+        self::FEATURED_SNIPPED => self::FEATURED_SNIPPED,
+        self::FEATURED_SNIPPED_MOBILE => self::FEATURED_SNIPPED,
+        self::RECIPES_GROUP => self::RECIPES_GROUP,
+        self::RECIPES_LINKS => self::RECIPES_LINKS,
+        self::PRODUCT_LISTING => self::PRODUCT_LISTING,
+        self::PRODUCT_LISTING_MOBILE => self::PRODUCT_LISTING,
+        self::QUESTIONS => self::QUESTIONS,
+        self::QUESTIONS_MOBILE => self::QUESTIONS,
+        self::FLIGHTS => self::FLIGHTS,
+        self::FLIGHTS_MOBILE => self::FLIGHTS,
+        self::DEFINITIONS => self::DEFINITIONS,
+        self::DEFINITIONS_MOBILE => self::DEFINITIONS,
+        self::JOBS => self::JOBS,
+        self::JOBS_MOBILE => self::JOBS,
+        self::DIRECTIONS => self::DIRECTIONS,
+        self::DIRECTIONS_MOBILE => self::DIRECTIONS,
+        self::IMAGE_GROUP => self::IMAGE_GROUP,
+        self::IMAGE_GROUP_MOBILE => self::IMAGE_GROUP,
+        self::TOP_STORIES => self::TOP_STORIES_OLD_VERSION,
+        self::TOP_STORIES_MOBILE => self::TOP_STORIES_OLD_VERSION,
+        self::MAPS_LINKS => self::MAPS_LINKS,
+        self::VIDEO_CAROUSEL => self::VIDEOS,
+        self::VIDEO_CAROUSEL_MOBILE => self::VIDEOS,
+        self::MAP => self::MAP,
+        self::MAP_MOBILE => self::MAP,
+    ];
 
 }
