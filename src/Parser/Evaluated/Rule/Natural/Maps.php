@@ -50,12 +50,17 @@ class Maps implements ParsingRuleInterface
             return;
         }
 
+        $spanElements = [];
+
         foreach ($ratingStars as $ratingStarNode) {
             if (empty($ratingStarNode->parentNode->childNodes[1])) {
                 continue;
             }
 
-            $spanElements['title'][] = $ratingStarNode->parentNode->childNodes[1]->textContent;
+            $spanElements[] = [
+                'title' => $ratingStarNode->parentNode->childNodes[1]->textContent,
+                'href' => null, // TODO: find the href
+            ];
         }
 
         if(!empty($spanElements)) {
@@ -71,12 +76,26 @@ class Maps implements ParsingRuleInterface
             return;
         }
 
+        $spanElements = [];
+
         foreach ($ratingStars as $ratingStarNode) {
             if($ratingStarNode->childNodes->length ==0) {
                 continue;
             }
 
-            $spanElements['title'][] =  $ratingStarNode->childNodes->item(0)->textContent;
+            $href = null;
+            if ($ratingStarNode->parentNode->parentNode->parentNode->nextSibling !== null &&
+                $ratingStarNode->parentNode->parentNode->parentNode->nextSibling->hasAttribute('href') &&
+                $ratingStarNode->parentNode->parentNode->parentNode->nextSibling->hasAttribute('class') &&
+                $ratingStarNode->parentNode->parentNode->parentNode->nextSibling->getAttribute('class') === 'yYlJEf Q7PwXb L48Cpd brKmxb'
+            ) {
+                $href = $ratingStarNode->parentNode->parentNode->parentNode->nextSibling->getAttribute('href');
+            }
+
+            $spanElements[] = [
+                'title' => $ratingStarNode->childNodes->item(0)->textContent,
+                'href' => $href,
+            ];
         }
 
         if(!empty($spanElements)) {
@@ -96,8 +115,11 @@ class Maps implements ParsingRuleInterface
         $spanElements = [];
 
         foreach ($ratingStars as $ratingStarNode) {
-            $spanElements['title'][] = $ratingStarNode->parentNode->parentNode->parentNode->childNodes[1]
-                ->childNodes[0]->textContent;
+            $spanElements[] = [
+                'title' => $ratingStarNode->parentNode->parentNode->parentNode->childNodes[1]
+                    ->childNodes[0]->textContent,
+                'href' => null, // TODO: find the href
+            ];
         }
 
         $resultSet->addItem(new BaseResult(NaturalResultType::MAP, $spanElements, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));

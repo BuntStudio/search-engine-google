@@ -38,11 +38,14 @@ class MapsMobile implements ParsingRuleInterface
             return;
         }
 
-        foreach ($ratingStars as $ratingStarNode) {
-            $spanElements['title'][] = $ratingStarNode->firstChild->firstChild->textContent;
-        }
+        $spanElements = [];
 
-        $spanElements['title'] = array_unique($spanElements['title']);
+        foreach ($ratingStars as $ratingStarNode) {
+            $spanElements[] = [
+                'title' => $ratingStarNode->firstChild->firstChild->textContent,
+                'href' => null, // TODO: find the href
+            ];
+        }
 
         $resultSet->addItem(new BaseResult(NaturalResultType::MAP, $spanElements, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }
@@ -58,7 +61,10 @@ class MapsMobile implements ParsingRuleInterface
         $spanElements = [];
 
         foreach ($ratingStars as $ratingStarNode) {
-            $spanElements['title'][] = $ratingStarNode->parentNode->parentNode->childNodes[0]->childNodes[0]->textContent;
+            $spanElements[] = [
+                'title' => $ratingStarNode->parentNode->parentNode->childNodes[0]->childNodes[0]->textContent,
+                'href' => null, // TODO: find the href
+            ];
         }
 
         $resultSet->addItem(new BaseResult(NaturalResultType::MAP_MOBILE, $spanElements, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));

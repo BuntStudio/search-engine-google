@@ -226,8 +226,11 @@ class TranslateService
             $this->response[NaturalResultType::MAP]              = true;
             $this->response[NaturalResultType::MAPS_OLD_VERSION] = true;
 
-            foreach ($item->getData()['title'] as $title) {
-                $this->response[NaturalResultType::MAPS_LINKS][] = ['title' => $title, 'url' => ''];
+            foreach ($item->getData() as $mapResult) {
+                $title = $mapResult['title'];
+                $href = $mapResult['href'];
+
+                $this->response[NaturalResultType::MAPS_LINKS][] = ['title' => $title, 'url' => $href];
             }
         }
 
