@@ -113,7 +113,6 @@ class NaturalParser extends AbstractParser
         //@id= 'bres' -> related searches
         return $googleDom->xpathQuery("//*[
             @id='rso' or
-            @id='botstuff' or
             @id='rhs' or
             @id='iur' or
             @id='tads' or

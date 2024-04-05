@@ -16,7 +16,7 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
 {
     public function match(GoogleDom $dom, DomElement $node)
     {
-        if ($node->getAttribute('id') == 'rso' || $node->getAttribute('id') == 'botstuff') {
+        if ($node->getAttribute('id') == 'rso') {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -106,7 +106,7 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         if( $organicResult->hasClasses(['g-blk'])) {
             return true;
         }
-
+        
         $fsnParent =   $googleDOM->getXpath()->query("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' xpdopen ')]", $organicResult);
 
         if ($fsnParent->length > 0) {
