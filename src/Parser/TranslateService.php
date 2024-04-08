@@ -395,6 +395,10 @@ class TranslateService
             $this->processSerpFeatures($item);
         }
 
+        if ($rank === 0) {
+            $this->monolog->error('Cannot identify results in html page', ['class' => self::class, 'keyword' => $options['keyword_name'] ?? 'N/A']);
+        }
+
         if (!empty($processLast)) {
             foreach ($processLast as $item) {
                 $this->processSerpFeatures($item);
