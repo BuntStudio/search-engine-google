@@ -56,8 +56,9 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         $naturalResults = $dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' g ') or contains(concat(' ', normalize-space(@class), ' '), ' MYVUIe ')]", $node);
 
         if ($naturalResults->length == 0) {
-
-            $resultSet->addItem(new BaseResult(NaturalResultType::EXCEPTIONS, [], $node));
+            if ($node->getAttribute('id') == 'rso') {
+                $resultSet->addItem(new BaseResult(NaturalResultType::EXCEPTIONS, [], $node));
+            }
 
             return;
         }
