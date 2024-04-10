@@ -21,11 +21,6 @@ class TranslateService
         $urlAlias = null,
         $response = [];
 
-    /**
-     * @var Logger|null
-     */
-    protected $logger = null;
-
     const DEFAULT_POSITION = 666;
 
     /**
@@ -41,7 +36,8 @@ class TranslateService
         $this->siteHost        = $this->extractDomain($siteHost);
         $this->crawlSubdomains = $crawlSubdomains;
         $this->urlAlias        = $urlAlias;
-        $this->logger          = $logger;
+
+        $this->initLogger($logger);
     }
 
     /**
