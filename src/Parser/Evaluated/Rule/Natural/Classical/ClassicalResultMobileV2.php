@@ -13,7 +13,9 @@ class ClassicalResultMobileV2 extends ClassicalResultMobile
 
     public function match(GoogleDom $dom, DomElement $node)
     {
-        if ($node->getAttribute('id') == 'center_col') {
+        $nodeId = $node->getAttribute('id');
+
+        if (in_array($nodeId, ['center_col', 'botstuff'])) {
             return self::RULE_MATCH_MATCHED;
         }
 

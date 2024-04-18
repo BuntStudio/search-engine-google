@@ -20,7 +20,9 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
 
     public function match(GoogleDom $dom, DomElement $node)
     {
-        if ($node->getAttribute('id') == 'center_col' || $node->getAttribute('id') =='sports-app') {
+        $nodeId = $node->getAttribute('id');
+
+        if (in_array($nodeId, ['center_col', 'sports-app', 'botstuff'])) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -41,8 +43,11 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
     {
         $naturalResults = $dom->xpathQuery("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ') or contains(concat(' ', normalize-space(@class), ' '), ' xpd EtOod ') or contains(concat(' ', normalize-space(@class), ' '), ' svwwZ ') or contains(concat(' ', normalize-space(@class), ' '), 'UDZeY fAgajc') or (contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage') and contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage-osrp'))] | //a[contains(concat(' ', normalize-space(@class), ' '), 'zwqzjb')]", $node);
         if ($naturalResults->length == 0) {
-            $resultSet->addItem(new BaseResult(NaturalResultType::EXCEPTIONS, [], $node));
-            $this->monolog->error('Cannot identify results in html page', ['class' => self::class]);
+            $nodeId = $node->getAttribute('id');
+
+            if (in_array($nodeId, ['center_col', 'sports-app'])) {
+                $resultSet->addItem(new BaseResult(NaturalResultType::EXCEPTIONS, [], $node));
+            }
 
             return;
         }
