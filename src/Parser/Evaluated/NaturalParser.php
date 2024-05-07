@@ -95,6 +95,7 @@ class NaturalParser extends AbstractParser
         // [contains(@class, 'cu-container')]  = product listing on right, like ads
         // [contains(@class, 'related-question-pair')]  = questions
         // [contains(@class, 'gws-plugins-horizon-jobs__li-ed')]  = jobs
+        // [contains(@class, 'L5NwLd')]  = jobs
         // [@class='xpdopen']  = features snipped/position zero
         //   @jsname='MGJTwe'   = recipes
         // //*[g-section-with-header[@class='yG4QQe TBC9ub']]]/child::* = top stories
@@ -138,6 +139,7 @@ class NaturalParser extends AbstractParser
             contains(@class, 'cu-container') or
             contains(@class, 'related-question-pair') or
             contains(@class, 'gws-plugins-horizon-jobs__li-ed') or
+            contains(@class, 'L5NwLd') or
             g-section-with-header[@class='yG4QQe TBC9ub'] or
             @id='kp-wp-tab-cont-Latest' or
             @id = 'oFNiHe' or
