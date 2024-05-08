@@ -126,6 +126,7 @@ class MobileNaturalParser extends AbstractParser
             @class='xpdopen' or
             contains(@class, 'CWesnb') or
             contains(@class, 'gws-plugins-horizon-jobs__li-ed') or
+            contains(@class, 'L5NwLd') or
             @jscontroller='G42bz' or
             contains(@class, 'LQQ1Bd') or
             @class='BNeawe DwrKqd' or
