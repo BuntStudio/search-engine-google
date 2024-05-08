@@ -15,7 +15,7 @@ class DesktopV1 implements ParsingRuleByVersionInterface
 
         $aTag = $dom->xpathQuery("descendant::*[(self::span)]/a", $organicResult)->item(0);
         if (!$aTag) {
-            $aTag = $dom->xpathQuery("descendant::*[(self::div)]/a[not(contains(@class, 'fl'))]", $organicResult)->item(0);
+            $aTag = $dom->xpathQuery("descendant::*[(self::div|self::g-link)]/a[not(contains(@class, 'fl'))]", $organicResult)->item(0);
         }
         if (!$aTag) {
             throw new InvalidDOMException('Cannot parse a classical result.');
