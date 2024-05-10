@@ -336,12 +336,17 @@ class TranslateService
         if ($item->is(NaturalResultType::NO_MORE_RESULTS)) {
             $this->response[NaturalResultType::NO_MORE_RESULTS] = true;
         }
+
         if ($item->is(NaturalResultType::VISUAL_DIGEST)) {
-            $this->response[NaturalResultType::VISUAL_DIGEST] =  $item->getData();;
+            $this->response[NaturalResultType::VISUAL_DIGEST] =  $item->getData();
         }
 
         if ($item->is(NaturalResultType::HIGHLY_LOCALIZED)) {
             $this->response[NaturalResultType::HIGHLY_LOCALIZED] =  true;
+        }
+
+        if ($item->is(NaturalResultType::PLACES_SITES)) {
+            $this->response[NaturalResultType::PLACES_SITES] =  $item->getData();
         }
     }
 
@@ -411,6 +416,10 @@ class TranslateService
 
         $this->response['list_of_urls'][0] = !empty($this->response['list_of_urls'][0]) ? array_reverse($this->response['list_of_urls'][0]):[];
         $this->response['competition'] = !empty($this->response['competition'])?array_reverse($this->response['competition'], true):[];
+
+        if (!empty($this->response[NaturalResultType::PLACES_SITES])) {
+            $this->monolog->notice('PLACES_SITES SERP Feature found', ['keyword' => $options['keyword_name'] ?? 'N/A', 'site' => $this->siteHost, 'places_sites' => $this->response[NaturalResultType::PLACES_SITES]]);
+        }
 
         return $this;
     }

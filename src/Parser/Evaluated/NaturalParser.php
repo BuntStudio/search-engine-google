@@ -23,6 +23,7 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Maps;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\MapsCoords;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Misspelling;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\NoMoreResults;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\PlacesSites;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ProductListing;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Questions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Recipes;
@@ -70,7 +71,8 @@ class NaturalParser extends AbstractParser
             new NoMoreResults(),
             new VisualDigest(),
             new HighlyLocalized(),
-            new RelatedSearches()
+            new RelatedSearches(),
+            new PlacesSites()
         ];
     }
 
@@ -112,6 +114,7 @@ class NaturalParser extends AbstractParser
 //        @class = 'H93uF' - coords
          //@class = 'e8Ck0d SS4zp' //VisualDigest
         //@id= 'bres' -> related searches
+        //@class = 'KYLHhb' // places sites
         return $googleDom->xpathQuery("//*[
             @id='rso' or
             @id='botstuff' or
@@ -151,7 +154,8 @@ class NaturalParser extends AbstractParser
             video-voyager or
             @id= 'ofr' or
             @class = 'vqkKIe wHYlTd' or
-            @id= 'bres'
+            @id= 'bres' or
+            contains(@class, 'KYLHhb')
         ][not(self::script) and not(self::style)]");
     }
 }

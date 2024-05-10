@@ -105,6 +105,7 @@ abstract class NaturalResultType
     const VISUAL_DIGEST               = 'visual_digest';
     const HIGHLY_LOCALIZED            = 'highly_localized';
     const RELATED_SEARCHES            = 'related_searches';
+    const PLACES_SITES                = 'places_sites';
 
     const SERP_FEATURES_OLD_RESPONSE_TEMPLATE = [
         self::SITE_LINKS              => 0,
@@ -138,7 +139,8 @@ abstract class NaturalResultType
         self::NO_MORE_RESULTS => null,
         self::VISUAL_DIGEST => null,
         self::KNOWLEDGE_GRAPH_LINK => null,
-        self::HIGHLY_LOCALIZED => null
+        self::HIGHLY_LOCALIZED => null,
+        self::PLACES_SITES => null
     ];
 
     const SERP_FEATURES_TYPE_TO_OLD_RESPONSE_FOR_POSITIONS = [
