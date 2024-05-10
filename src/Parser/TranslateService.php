@@ -15,6 +15,12 @@ class TranslateService
 {
     use \Serps\SearchEngine\Google\Parser\Helper\Log;
 
+    const SERP_FEATURES_TO_RESEARCH = [
+        NaturalResultType::PLACES_SITES,
+        NaturalResultType::FLIGHT_AIRLINE_OPTIONS,
+        NaturalResultType::FLIGHT_SITES
+    ];
+
     protected $siteHost = null,
         $mobile = false,
         $crawlSubdomains = false,
@@ -348,6 +354,14 @@ class TranslateService
         if ($item->is(NaturalResultType::PLACES_SITES)) {
             $this->response[NaturalResultType::PLACES_SITES] =  $item->getData();
         }
+
+        if ($item->is(NaturalResultType::FLIGHT_AIRLINE_OPTIONS)) {
+            $this->response[NaturalResultType::FLIGHT_AIRLINE_OPTIONS] =  $item->getData();
+        }
+
+        if ($item->is(NaturalResultType::FLIGHT_SITES)) {
+            $this->response[NaturalResultType::FLIGHT_SITES] =  $item->getData();
+        }
     }
 
     /**
@@ -417,8 +431,10 @@ class TranslateService
         $this->response['list_of_urls'][0] = !empty($this->response['list_of_urls'][0]) ? array_reverse($this->response['list_of_urls'][0]):[];
         $this->response['competition'] = !empty($this->response['competition'])?array_reverse($this->response['competition'], true):[];
 
-        if (!empty($this->response[NaturalResultType::PLACES_SITES])) {
-            $this->monolog->notice('PLACES_SITES SERP Feature found', ['keyword' => $options['keyword_name'] ?? 'N/A', 'site' => $this->siteHost, 'places_sites' => $this->response[NaturalResultType::PLACES_SITES]]);
+        foreach (self::SERP_FEATURES_TO_RESEARCH as $researchSerpFeature) {
+            if (!empty($this->response[$researchSerpFeature])) {
+                $this->monolog->notice($researchSerpFeature . ' SERP Feature found', ['keyword' => $options['keyword_name'] ?? 'N/A', 'site' => $this->siteHost, 'data' => $this->response[$researchSerpFeature]]);
+            }
         }
 
         return $this;

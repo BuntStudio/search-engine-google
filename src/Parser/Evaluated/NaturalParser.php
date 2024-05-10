@@ -13,7 +13,9 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Definitions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Directions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FeaturedSnipped;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Flight;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FlightAirlineOptions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Flights;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FlightSites;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\HighlyLocalized;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Hotels;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ImageGroup;
@@ -72,7 +74,9 @@ class NaturalParser extends AbstractParser
             new VisualDigest(),
             new HighlyLocalized(),
             new RelatedSearches(),
-            new PlacesSites()
+            new PlacesSites(),
+            new FlightAirlineOptions(),
+            new FlightSites(),
         ];
     }
 
@@ -115,6 +119,8 @@ class NaturalParser extends AbstractParser
          //@class = 'e8Ck0d SS4zp' //VisualDigest
         //@id= 'bres' -> related searches
         //@class = 'KYLHhb' // places sites
+        //@class = 'Kcn6oc' // flight airline options
+        //@class = 'zJUuqf' // flight sites
         return $googleDom->xpathQuery("//*[
             @id='rso' or
             @id='botstuff' or
@@ -155,7 +161,9 @@ class NaturalParser extends AbstractParser
             @id= 'ofr' or
             @class = 'vqkKIe wHYlTd' or
             @id= 'bres' or
-            contains(@class, 'KYLHhb')
+            contains(@class, 'KYLHhb') or
+            contains(@class, 'Kcn6oc') or
+            contains(@class, 'zJUuqf')
         ][not(self::script) and not(self::style)]");
     }
 }

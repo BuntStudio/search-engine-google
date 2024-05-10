@@ -106,6 +106,8 @@ abstract class NaturalResultType
     const HIGHLY_LOCALIZED            = 'highly_localized';
     const RELATED_SEARCHES            = 'related_searches';
     const PLACES_SITES                = 'places_sites';
+    const FLIGHT_AIRLINE_OPTIONS      = 'fligh_airline_options';
+    const FLIGHT_SITES                = 'fligh_sites';
 
     const SERP_FEATURES_OLD_RESPONSE_TEMPLATE = [
         self::SITE_LINKS              => 0,
