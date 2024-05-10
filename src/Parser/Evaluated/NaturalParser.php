@@ -15,7 +15,6 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FeaturedSnipped;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Flight;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FlightAirlineOptions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Flights;
-use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FlightSites;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\HighlyLocalized;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Hotels;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ImageGroup;
@@ -25,7 +24,7 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Maps;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\MapsCoords;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Misspelling;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\NoMoreResults;
-use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\PlacesSites;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Sites;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ProductListing;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Questions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Recipes;
@@ -74,9 +73,8 @@ class NaturalParser extends AbstractParser
             new VisualDigest(),
             new HighlyLocalized(),
             new RelatedSearches(),
-            new PlacesSites(),
+            new Sites(),
             new FlightAirlineOptions(),
-            new FlightSites(),
         ];
     }
 
@@ -118,9 +116,8 @@ class NaturalParser extends AbstractParser
 //        @class = 'H93uF' - coords
          //@class = 'e8Ck0d SS4zp' //VisualDigest
         //@id= 'bres' -> related searches
-        //@class = 'KYLHhb' // places sites
-        //@class = 'Kcn6oc' // flight airline options
-        //@class = 'zJUuqf' // flight sites
+        //@class = 'zJUuqf' // sites
+        //@jscontroller = 'hKbgK' // flight airline options
         return $googleDom->xpathQuery("//*[
             @id='rso' or
             @id='botstuff' or
@@ -161,9 +158,8 @@ class NaturalParser extends AbstractParser
             @id= 'ofr' or
             @class = 'vqkKIe wHYlTd' or
             @id= 'bres' or
-            contains(@class, 'KYLHhb') or
-            contains(@class, 'Kcn6oc') or
-            contains(@class, 'zJUuqf')
+            contains(@class, 'zJUuqf') or
+            @jscontroller='hKbgK'
         ][not(self::script) and not(self::style)]");
     }
 }

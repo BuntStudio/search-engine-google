@@ -12,7 +12,7 @@ class FlightAirlineOptions implements ParsingRuleInterface
 {
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if (strpos($node->getAttribute('class'), 'Kcn6oc') !== false) {
+        if (strpos($node->getAttribute('jscontroller'), 'hKbgK') !== false) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -21,7 +21,7 @@ class FlightAirlineOptions implements ParsingRuleInterface
 
     public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
     {
-        $flightAirlineOptions = $googleDOM->getXpath()->query('ancestor::div[contains(concat(" ", @class, " "), " Ww4FFb ")]/descendant::div[@role="list"]/descendant::*[@role="listitem"]', $node);
+        $flightAirlineOptions = $googleDOM->getXpath()->query('descendant::div[@role="list"]/descendant::*[@role="listitem"]', $node);
 
         if ($flightAirlineOptions->length > 1) {
             $resultSet->addItem(new BaseResult(NaturalResultType::FLIGHT_AIRLINE_OPTIONS, ['count' => $flightAirlineOptions->length], $node));

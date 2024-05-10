@@ -16,9 +16,8 @@ class TranslateService
     use \Serps\SearchEngine\Google\Parser\Helper\Log;
 
     const SERP_FEATURES_TO_RESEARCH = [
-        NaturalResultType::PLACES_SITES,
-        NaturalResultType::FLIGHT_AIRLINE_OPTIONS,
-        NaturalResultType::FLIGHT_SITES
+        NaturalResultType::SITES,
+        NaturalResultType::FLIGHT_AIRLINE_OPTIONS
     ];
 
     protected $siteHost = null,
@@ -351,16 +350,12 @@ class TranslateService
             $this->response[NaturalResultType::HIGHLY_LOCALIZED] =  true;
         }
 
-        if ($item->is(NaturalResultType::PLACES_SITES)) {
-            $this->response[NaturalResultType::PLACES_SITES] =  $item->getData();
+        if ($item->is(NaturalResultType::SITES)) {
+            $this->response[NaturalResultType::SITES] =  $item->getData();
         }
 
         if ($item->is(NaturalResultType::FLIGHT_AIRLINE_OPTIONS)) {
             $this->response[NaturalResultType::FLIGHT_AIRLINE_OPTIONS] =  $item->getData();
-        }
-
-        if ($item->is(NaturalResultType::FLIGHT_SITES)) {
-            $this->response[NaturalResultType::FLIGHT_SITES] =  $item->getData();
         }
     }
 

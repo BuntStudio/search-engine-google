@@ -105,9 +105,8 @@ abstract class NaturalResultType
     const VISUAL_DIGEST               = 'visual_digest';
     const HIGHLY_LOCALIZED            = 'highly_localized';
     const RELATED_SEARCHES            = 'related_searches';
-    const PLACES_SITES                = 'places_sites';
+    const SITES                       = 'sites';
     const FLIGHT_AIRLINE_OPTIONS      = 'flight_airline_options';
-    const FLIGHT_SITES                = 'flight_sites';
 
     const SERP_FEATURES_OLD_RESPONSE_TEMPLATE = [
         self::SITE_LINKS              => 0,
@@ -142,7 +141,7 @@ abstract class NaturalResultType
         self::VISUAL_DIGEST => null,
         self::KNOWLEDGE_GRAPH_LINK => null,
         self::HIGHLY_LOCALIZED => null,
-        self::PLACES_SITES => null
+        self::SITES => null
     ];
 
     const SERP_FEATURES_TYPE_TO_OLD_RESPONSE_FOR_POSITIONS = [

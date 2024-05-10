@@ -8,7 +8,7 @@ use Serps\SearchEngine\Google\Page\GoogleDom;
 use Serps\SearchEngine\Google\NaturalResultType;
 use Serps\SearchEngine\Google\Parser\ParsingRuleInterface;
 
-class FlightSites implements ParsingRuleInterface
+class Sites implements ParsingRuleInterface
 {
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
@@ -21,10 +21,16 @@ class FlightSites implements ParsingRuleInterface
 
     public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
     {
-        $flightSitesItems = $googleDOM->getXpath()->query('ancestor::div[contains(concat(" ", @class, " "), " Ww4FFb ")]/descendant::div[@role="list"]/*[contains( @jscontroller,"QQ51Ce" )]', $node);
+        $sitesTitle = null;
+        $sitesTitleNodeList = $googleDOM->getXpath()->query('descendant::span[contains(concat(" ", @class, " "), " mgAbYb OSrXXb RES9jf IFnjPb ")]', $node);
+        if ($sitesTitleNodeList->length) {
+            $sitesTitle = $sitesTitleNodeList->current()->textContent;
+        }
 
-        if ($flightSitesItems->length > 1) {
-            $resultSet->addItem(new BaseResult(NaturalResultType::FLIGHT_SITES, ['count' => $flightSitesItems->length], $node));
+        $sitesItems = $googleDOM->getXpath()->query('following-sibling::div[@jscontroller="s0j7C"]/descendant::*[contains( @jscontroller,"QQ51Ce" )]', $node);
+
+        if ($sitesItems->length > 1) {
+            $resultSet->addItem(new BaseResult(NaturalResultType::SITES, ['count' => $sitesItems->length, 'title' => $sitesTitle], $node));
         }
     }
 }
