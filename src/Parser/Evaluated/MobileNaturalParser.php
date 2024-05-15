@@ -144,7 +144,9 @@ class MobileNaturalParser extends AbstractParser
             video-voyager or
             inline-video or
             @id= 'ofr' or
-            contains(@class, 'e8Ck0d')
+            contains(@class, 'e8Ck0d') or
+            @id='eKIzJc' or
+            @jsname='ZLxsqf'
         ][not(self::script) and not(self::style)]");
     }
 }

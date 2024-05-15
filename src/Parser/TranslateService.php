@@ -17,7 +17,9 @@ class TranslateService
 
     const SERP_FEATURES_TO_RESEARCH = [
         NaturalResultType::SITES,
-        NaturalResultType::FLIGHT_AIRLINE_OPTIONS
+        NaturalResultType::FLIGHT_AIRLINE_OPTIONS,
+        NaturalResultType::SGE_BUTTON,
+        NaturalResultType::SGE_WIDGET,
     ];
 
     protected $siteHost = null,
@@ -357,6 +359,19 @@ class TranslateService
         if ($item->is(NaturalResultType::FLIGHT_AIRLINE_OPTIONS)) {
             $this->response[NaturalResultType::FLIGHT_AIRLINE_OPTIONS] =  $item->getData();
         }
+
+        if ($item->is(NaturalResultType::SGE_BUTTON) || $item->is(NaturalResultType::SGE_BUTTON_MOBILE)) {
+            $this->response[NaturalResultType::SGE_BUTTON] = true;
+        }
+
+        if ($item->is(NaturalResultType::SGE_WIDGET) || $item->is(NaturalResultType::SGE_WIDGET_MOBILE)) {
+            $this->response[NaturalResultType::SGE_WIDGET] = true;
+            $this->response[NaturalResultType::SGE_WIDGET_CONTENT] = $item->getData()[NaturalResultType::SGE_WIDGET_CONTENT];
+            if (!empty($item->getData()[NaturalResultType::SGE_WIDGET_LINKS])) {
+                $this->response[NaturalResultType::SGE_WIDGET_LINKS] = $item->getData()[NaturalResultType::SGE_WIDGET_LINKS];
+            }
+        }
+
     }
 
     /**
