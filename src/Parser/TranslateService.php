@@ -366,11 +366,7 @@ class TranslateService
 
         if ($item->is(NaturalResultType::SGE_WIDGET) || $item->is(NaturalResultType::SGE_WIDGET_MOBILE)) {
             $this->response[NaturalResultType::SGE_WIDGET] = true;
-            $this->response[NaturalResultType::SGE_WIDGET_CONTENT] = $item->getData()[NaturalResultType::SGE_WIDGET_CONTENT];
-            $this->response[NaturalResultType::SGE_WIDGET_LOADED] = $item->getData()[NaturalResultType::SGE_WIDGET_LOADED];
-            if (!empty($item->getData()[NaturalResultType::SGE_WIDGET_LINKS])) {
-                $this->response[NaturalResultType::SGE_WIDGET_LINKS] = $item->getData()[NaturalResultType::SGE_WIDGET_LINKS];
-            }
+            $this->response[NaturalResultType::SGE_WIDGET_OPTIONS] = $item->getData();
         }
 
     }
