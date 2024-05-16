@@ -14,11 +14,11 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($node->getAttribute('jsname') == 'ZLxsqf' && $this->hasWidget($dom, $node)) {
+        if ($node->getAttribute('jsname') == 'ZLxsqf' && $this->isWidget($dom, $node)) {
             return self::RULE_MATCH_MATCHED;
         }
 
-        if ($node->getAttribute('id') =='eKIzJc' && $this->hasWidget($dom, $node)) {
+        if ($node->getAttribute('id') =='eKIzJc' && $this->isWidget($dom, $node)) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -36,7 +36,13 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $resultSet->addItem(new BaseResult($this->getType($isMobile), $this->extractWidgetData($googleDOM, $node), $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }
 
-    protected function hasWidget(GoogleDom $dom, $node)
+    protected function isWidget(GoogleDom $dom, $node)
+    {
+        $generateButton = $dom->xpathQuery('descendant::div[@jsname="B76aWe"]', $node);
+        return $generateButton->length == 0;
+    }
+
+    protected function isWidgetLoaded(GoogleDom $dom, $node)
     {
         $widgetContent = $dom->xpathQuery('descendant::div[@data-attrid="SGEParagraphFeedback"]', $node);
         return $widgetContent->length > 0;

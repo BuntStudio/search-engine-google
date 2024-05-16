@@ -14,11 +14,11 @@ class SGEButton implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($node->getAttribute('jsname') == 'ZLxsqf' && $this->hasButton($dom, $node)) {
+        if ($node->getAttribute('jsname') == 'ZLxsqf' && $this->isButton($dom, $node)) {
             return self::RULE_MATCH_MATCHED;
         }
 
-        if ($node->getAttribute('id') =='eKIzJc' && $this->hasButton($dom, $node)) {
+        if ($node->getAttribute('id') =='eKIzJc' && $this->isButton($dom, $node)) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -38,7 +38,7 @@ class SGEButton implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $resultSet->addItem(new BaseResult($this->getType($isMobile), [], $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }
 
-    protected function hasButton(GoogleDom $dom, $node)
+    protected function isButton(GoogleDom $dom, $node)
     {
         $generateButton = $dom->xpathQuery('descendant::div[@jsname="B76aWe"]', $node);
         return $generateButton->length > 0;
