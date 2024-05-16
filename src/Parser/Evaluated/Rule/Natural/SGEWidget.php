@@ -86,8 +86,8 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         }
 
         // Remove min-height from inline style attribute
-        $st = $dom->xpathQuery('descendant::div[@class="h7Tj7e"]', $node);
-        foreach ($st as $st) $st->removeAttribute('style');
+        $maxHeightDivs = $dom->xpathQuery('descendant::div[@class="h7Tj7e"]', $node);
+        foreach ($maxHeightDivs as $st) $st->removeAttribute('style');
 
         // Remove the "Show more" button and overlay div
         $showMoreButton = $dom->xpathQuery('descendant::div[@jsname="rPRdsc"]', $node);
