@@ -52,9 +52,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         foreach ($linkElements as $cage) {
             $link = $dom->xpathQuery('descendant::a', $cage)->item(0);
             $data[NaturalResultType::SGE_WIDGET_LINKS][] = [
-                'title'          => $link ? $link->getAttribute('aria-label') : '',
-                'url'            => $link ? $link->getAttribute('href') : '',
-                'container_text' => $cage->ownerDocument->saveHTML($cage),
+                'title' => $link ? $link->getAttribute('aria-label') : '',
+                'url'   => $link ? $link->getAttribute('href') : '',
+                'html'  => $cage->ownerDocument->saveHTML($cage),
             ];
         }
         return $data;
