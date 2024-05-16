@@ -12,6 +12,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     protected $hasSerpFeaturePosition = false;
     protected $hasSideSerpFeaturePosition = false;
 
+    protected $removeStyles = true;
+    protected $removeScripts = true;
+
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
         if ($node->getAttribute('jsname') == 'ZLxsqf' && $this->isWidget($dom, $node)) {
@@ -50,7 +53,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     protected function extractWidgetData($dom, $node)
     {
-        $node = $this->transformNode($dom, $node, true, true);
+        $node = $this->transformNode($dom, $node, $this->removeStyles, $this->removeScripts);
         $data = [
             NaturalResultType::SGE_WIDGET_CONTENT => $node->ownerDocument->saveHTML($node),
             NaturalResultType::SGE_WIDGET_LOADED  => $this->isWidgetLoaded($dom, $node),
