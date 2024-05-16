@@ -52,6 +52,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     {
         $data = [
             NaturalResultType::SGE_WIDGET_CONTENT => $node->ownerDocument->saveHTML($node),
+            NaturalResultType::SGE_WIDGET_LOADED  => $this->isWidgetLoaded($dom, $node),
             NaturalResultType::SGE_WIDGET_LINKS   => [],
         ];
         $linkElements = $dom->xpathQuery('descendant::div[@data-attrid="SGEAttributionFeedback"]', $node);
