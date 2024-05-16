@@ -50,6 +50,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     protected function extractWidgetData($dom, $node)
     {
+        $node = $this->transformNode($dom, $node, true, true);
         $data = [
             NaturalResultType::SGE_WIDGET_CONTENT => $node->ownerDocument->saveHTML($node),
             NaturalResultType::SGE_WIDGET_LOADED  => $this->isWidgetLoaded($dom, $node),
@@ -65,5 +66,33 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             ];
         }
         return $data;
+    }
+
+    protected function transformNode($dom, $node, $removeStyles = false, $removeScripts = false)
+    {
+        // Delete <style> tags
+        if ($removeStyles) {
+            $styleTags = $dom->xpathQuery('//style', $node);
+            foreach ($styleTags as $styleTag) $styleTag->parentNode->removeChild($styleTag);
+        }
+
+        // Delete <script> tags
+        if ($removeScripts) {
+            $scriptTags = $dom->xpathQuery('//script', $node);
+            foreach ($scriptTags as $scriptTag) $scriptTag->parentNode->removeChild($scriptTag);
+        }
+
+        // Remove min-height from inline style attribute
+        $st = $dom->xpathQuery('descendant::div[@class="h7Tj7e"]', $node);
+        foreach ($st as $st) $st->removeAttribute('style');
+
+        // Remove the "Show more" button and overlay div
+        $showMoreButton = $dom->xpathQuery('descendant::div[@jsname="rPRdsc"]', $node);
+        foreach ($showMoreButton as $button) $button->parentNode->removeChild($button);
+        $overlayDiv = $dom->xpathQuery('.//div[contains(@class, "RDmXvc")]', $node);
+        foreach ($overlayDiv as $overlay) $overlay->parentNode->removeChild($overlay);
+
+        // Return the node
+        return $node;
     }
 }
