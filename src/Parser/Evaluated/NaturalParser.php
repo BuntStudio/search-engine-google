@@ -24,6 +24,8 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Maps;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\MapsCoords;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Misspelling;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\NoMoreResults;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\SGEButton;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\SGEWidget;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Sites;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ProductListing;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Questions;
@@ -75,6 +77,8 @@ class NaturalParser extends AbstractParser
             new RelatedSearches(),
             new Sites(),
             new FlightAirlineOptions(),
+            new SGEButton(),
+            new SGEWidget()
         ];
     }
 
@@ -159,7 +163,9 @@ class NaturalParser extends AbstractParser
             @class = 'vqkKIe wHYlTd' or
             @id= 'bres' or
             contains(@class, 'zJUuqf') or
-            @jscontroller='hKbgK'
+            @jscontroller='hKbgK' or
+            @id='eKIzJc' or
+            @jsname='ZLxsqf'
         ][not(self::script) and not(self::style)]");
     }
 }
