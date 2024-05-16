@@ -24,6 +24,8 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ProductListing;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ProductListingMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Questions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Recipes;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\SGEButton;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\SGEWidget;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\TopStoriesMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VideoCarouselMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VideosMobile;
@@ -64,7 +66,9 @@ class MobileNaturalParser extends AbstractParser
             new DirectionsMobile(),
             new VideoCarouselMobile(),
             new NoMoreResults(),
-            new VisualDigest()
+            new VisualDigest(),
+            new SGEButton(),
+            new SGEWidget()
         ];
     }
 

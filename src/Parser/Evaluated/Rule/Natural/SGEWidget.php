@@ -14,11 +14,11 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($node->getAttribute('jsname') == 'ZLxsqf' && $this->hasWidget($node)) {
+        if ($node->getAttribute('jsname') == 'ZLxsqf' && $this->hasWidget($dom, $node)) {
             return self::RULE_MATCH_MATCHED;
         }
 
-        if ($node->getAttribute('id') =='eKIzJc' && $this->hasWidget($node)) {
+        if ($node->getAttribute('id') =='eKIzJc' && $this->hasWidget($dom, $node)) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -38,23 +38,23 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     protected function hasWidget(GoogleDom $dom, $node)
     {
-        $generateButton = $dom->xpathQuery('descendant::div[data-attrid="SGEParagraphFeedback"]', $node);
-        return true;
+        $widgetContent = $dom->xpathQuery('descendant::div[@data-attrid="SGEParagraphFeedback"]', $node);
+        return $widgetContent->length > 0;
     }
 
-    protected function extractWidgetData(GoogleDom $googleDOM, $node)
+    protected function extractWidgetData($dom, $node)
     {
         $data = [
-            NaturalResultType::SGE_WIDGET_CONTENT => $node->textContent,
+            NaturalResultType::SGE_WIDGET_CONTENT => $node->ownerDocument->saveHTML($node),
             NaturalResultType::SGE_WIDGET_LINKS   => [],
         ];
-        $linkElements = $googleDOM->xpathQuery('descendant::div[@data-attrid="SGEAttributionFeedback"]', $node);
+        $linkElements = $dom->xpathQuery('descendant::div[@data-attrid="SGEAttributionFeedback"]', $node);
         foreach ($linkElements as $cage) {
-            $link = $googleDOM->xpathQuery('descendant::a[@class="ddkIM"]', $cage);
+            $link = $dom->xpathQuery('descendant::a', $cage)->item(0);
             $data[NaturalResultType::SGE_WIDGET_LINKS][] = [
-                'title'          => $link->getAttribute('aria-label'),
-                'url'            => $link->getAttribute('href'),
-                'container_text' => $cage->textContent,
+                'title'          => $link ? $link->getAttribute('aria-label') : '',
+                'url'            => $link ? $link->getAttribute('href') : '',
+                'container_text' => $cage->ownerDocument->saveHTML($cage),
             ];
         }
         return $data;

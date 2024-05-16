@@ -40,7 +40,7 @@ class SGEButton implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     protected function hasButton(GoogleDom $dom, $node)
     {
-        $generateButton = $dom->xpathQuery('descendant::div[@class="kHtcsd"]//span[@class="sjVJQd"]', $node);
+        $generateButton = $dom->xpathQuery('descendant::div[@jsname="B76aWe"]', $node);
         return $generateButton->length > 0;
     }
 }
