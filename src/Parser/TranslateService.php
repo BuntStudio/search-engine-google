@@ -440,7 +440,7 @@ class TranslateService
 
         foreach (self::SERP_FEATURES_TO_RESEARCH as $researchSerpFeature) {
             if (!empty($this->response[$researchSerpFeature])) {
-                $this->monolog->notice($researchSerpFeature . ' SERP Feature found', ['keyword' => $options['keyword_name'] ?? 'N/A', 'site' => $this->siteHost, 'mobile' => $this->mobile ? '1' : '0', 'data' => $this->response[$researchSerpFeature]]);
+                $this->monolog->notice($researchSerpFeature . ' SERP Feature found', ['keyword' => $options['keyword_name'] ?? 'N/A', 'site' => $this->siteHost, 'mobile' => ($options['mobile'] ?? false) ? '1' : '0', 'data' => $this->response[$researchSerpFeature]]);
             }
         }
 
