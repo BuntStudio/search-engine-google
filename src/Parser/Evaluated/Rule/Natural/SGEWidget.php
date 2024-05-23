@@ -53,8 +53,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     protected function extractWidgetData($dom, $node)
     {
+        $sgec = $this->transformNode($dom, clone($node));
         $node = $this->transformNode($dom, $node, $this->removeStyles, $this->removeScripts);
         $data = [
+            NaturalResultType::SGE_WIDGET_BASE    => $sgec->ownerDocument->saveHTML($sgec),
             NaturalResultType::SGE_WIDGET_CONTENT => $node->ownerDocument->saveHTML($node),
             NaturalResultType::SGE_WIDGET_LOADED  => $this->isWidgetLoaded($dom, $node),
             NaturalResultType::SGE_WIDGET_LINKS   => [],
