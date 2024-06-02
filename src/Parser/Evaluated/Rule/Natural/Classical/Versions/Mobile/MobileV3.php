@@ -16,9 +16,16 @@ class MobileV3 implements ParsingRuleByVersionInterface
             contains(concat(' ', normalize-space(@class), ' '), ' d5oMvf KJDcUb ') or
             contains(concat(' ', normalize-space(@class), ' '), ' tKdlvb KJDcUb ') or
             contains(concat(' ', normalize-space(@class), ' '), ' C8nzq BmP5tf ') or
+
              @class='KJDcUb'
          ]/a", $organicResult);
 
+        if (empty($aTag->length)) {
+            $aTag = $dom->xpathQuery("descendant::a[
+            contains(concat(' ', normalize-space(@class), ' '), ' rTyHce jgWGIe ')
+         ]", $organicResult);
+        }
+        
         if (empty($aTag) && $organicResultObject->getLink() === null) {
             throw new InvalidDOMException('Cannot parse a classical result.');
         }
@@ -27,7 +34,11 @@ class MobileV3 implements ParsingRuleByVersionInterface
             $organicResultObject->setLink($dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href')));
         }
 
-        $titleTag  = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' MUxGbd v0nnCb ')]", $organicResult);
+        $titleTag  = $dom->getXpath()->query("descendant::div[
+        contains(concat(' ', normalize-space(@class), ' '), ' MUxGbd v0nnCb ')  or
+        contains(concat(' ', normalize-space(@class), ' '), ' MBeuO ')
+
+        ]", $organicResult);
 
         if ($titleTag->length ==0) {
             throw new InvalidDOMException('Cannot parse a classical result.');
@@ -37,7 +48,9 @@ class MobileV3 implements ParsingRuleByVersionInterface
             $organicResultObject->setTitle($titleTag->item(0)->textContent);
         }
 
-        $descriptionNodes = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' yDYNvb ')]", $organicResult);
+        $descriptionNodes = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' yDYNvb ')
+        or contains(concat(' ', normalize-space(@class), ' '), ' Hdw6tb ')
+        ]", $organicResult);
 
         if ($descriptionNodes->length > 0) {
             $organicResultObject->setDescription($descriptionNodes->item(0)->textContent);
