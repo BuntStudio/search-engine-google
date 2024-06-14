@@ -138,6 +138,7 @@ class MobileNaturalParser extends AbstractParser
             @class='lU8tTd' or
             @class='cawG4b OvQkSb' or
             @class='uVMCKf mnr-c' or
+            contains(@class, 'uVMCKf Ww4FFb') or
             contains(@class, 'HD8Pae mnr-c') or
             contains(@class, 'hNKF2b') or
             contains(@class, 'lr_container wDYxhc yc7KLc') or
