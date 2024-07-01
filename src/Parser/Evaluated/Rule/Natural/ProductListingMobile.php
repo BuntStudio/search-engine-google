@@ -12,13 +12,17 @@ class ProductListingMobile extends SerpFeaturesVersions
 {
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
-    protected $steps = ['version1', 'version2'];
+    protected $steps = ['version1', 'version2', 'version3'];
 
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
         if ($node->hasClass('commercial-unit-mobile-top') ||
             $node->hasClass('commercial-unit-mobile-bottom')
         ) {
+            return self::RULE_MATCH_MATCHED;
+        }
+
+        if ($node->hasAttribute('data-enable-product-traversal')) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -53,6 +57,25 @@ class ProductListingMobile extends SerpFeaturesVersions
         }
 
         $items[] = ['url' => $productsNodes->item(0)->getAttribute('data-dtld')];
+
+        $resultSet->addItem(
+            new BaseResult(NaturalResultType::PRODUCT_LISTING_MOBILE, $items, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition)
+        );
+    }
+
+    public function version3(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    {
+        $productsNodes = $googleDOM->getXpath()->query("descendant::span[contains(concat(' ', normalize-space(@class), ' '), ' WJMUdc rw5ecc ')] ",
+            $node);
+
+        if ($productsNodes->length == 0) {
+            return;
+        }
+
+        foreach ($productsNodes as $productNode) {
+            $productUrl = $productNode->getNodeValue();
+            $items[]    = ['url' => $productUrl];
+        }
 
         $resultSet->addItem(
             new BaseResult(NaturalResultType::PRODUCT_LISTING_MOBILE, $items, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition)

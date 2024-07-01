@@ -124,6 +124,7 @@ class MobileNaturalParser extends AbstractParser
             contains(@class, 'xxAJT') or
             contains(@class, 'commercial-unit-mobile-top') or
             contains(@class, 'commercial-unit-mobile-bottom') or
+            product-viewer-group or
             contains(@class, 'osrp-blk') or
             contains(@class, 'qs-io') or
             contains(@class, 'ki5rnd') or
