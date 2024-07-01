@@ -9,7 +9,7 @@ use Serps\SearchEngine\Google\Parser\ParsingRuleInterface;
 
 class VideosMobile implements ParsingRuleInterface
 {
-    protected $steps = ['version1', 'version2', 'version3', 'version4'];
+    protected $steps = ['version1', 'version2', 'version3', 'version4', 'version5'];
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
 
@@ -28,6 +28,10 @@ class VideosMobile implements ParsingRuleInterface
         }
 
         if ($node->hasClass('HD8Pae') && $node->hasClass('mnr-c')) {
+            return self::RULE_MATCH_MATCHED;
+        }
+
+        if ($node->hasClass('YJpHnb') && $node->hasClass('mnr-c')) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -97,6 +101,23 @@ class VideosMobile implements ParsingRuleInterface
         $videosPlayerBtns = $googleDOM->getXpath()->query('descendant::a[@class="BG7Pyb"]', $node);
 
         if ($videosPlayerBtns->length ==0) {
+            return;
+        }
+
+        $data = [];
+
+        foreach ($videosPlayerBtns as $videoBtn) {
+            $data[] = ['url'=>$videoBtn->getAttribute('href')];
+        }
+
+        $resultSet->addItem(new BaseResult([NaturalResultType::VIDEOS_MOBILE], $data, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
+    }
+
+    protected function version5(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    {
+        $videosPlayerBtns = $googleDOM->getXpath()->query('descendant::a[@class="ddkIM c30Ztd"]', $node);
+
+        if ($videosPlayerBtns->length == 0) {
             return;
         }
 

@@ -238,8 +238,18 @@ class TranslateService
         }
 
         if ($item->is(NaturalResultType::VIDEOS) || $item->is(NaturalResultType::VIDEOS_MOBILE)) {
-            $this->response[NaturalResultType::VIDEOS]      = $item->getData();
-            $this->response[NaturalResultType::VIDEOS_LIST] = $item->getData();
+            $videoTypes = [
+                NaturalResultType::VIDEOS,
+                NaturalResultType::VIDEOS_LIST
+            ];
+
+            foreach ($videoTypes as $type) {
+                if (isset($this->response[$type]) && !empty($this->response[$type])) {
+                    $this->response[$type] = array_merge($this->response[$type], $item->getData());
+                } else {
+                    $this->response[$type] = $item->getData();
+                }
+            }
         }
 
         if ($item->is(NaturalResultType::KNOWLEDGE_GRAPH) || $item->is(NaturalResultType::KNOWLEDGE_GRAPH_MOBILE)) {

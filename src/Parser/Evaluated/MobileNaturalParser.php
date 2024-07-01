@@ -91,6 +91,7 @@ class MobileNaturalParser extends AbstractParser
         //  @class='cawG4b OvQkSb' = videos
         //  @class='uVMCKf mnr-c' = videos
         //  @class='HD8Pae mnr-c' = videos
+        //  @class='YJpHnb mnr-c' = videos (short)
         // [contains(@class, 'commercial-unit-mobile-top')]  = product listing
         // [contains(@class, 'commercial-unit-mobile-bottom')]  = product listing
         // [contains(@class, 'osrp-blk')]  =  knowledge graph
@@ -141,6 +142,7 @@ class MobileNaturalParser extends AbstractParser
             @class='uVMCKf mnr-c' or
             contains(@class, 'uVMCKf Ww4FFb') or
             contains(@class, 'HD8Pae mnr-c') or
+            contains(@class, 'YJpHnb mnr-c') or
             contains(@class, 'hNKF2b') or
             contains(@class, 'lr_container wDYxhc yc7KLc') or
             @jsname='MGJTwe'  or
