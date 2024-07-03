@@ -29,6 +29,10 @@ class VideoCarousel implements \Serps\SearchEngine\Google\Parser\ParsingRuleInte
             return self::RULE_MATCH_NOMATCH;
         }
 
+        if(!property_exists($firstChild, 'tagName')){
+            return self::RULE_MATCH_NOMATCH;
+        }
+
         $tagName = $firstChild->tagName;
 
         if ($tagName == 'video-voyager') {
