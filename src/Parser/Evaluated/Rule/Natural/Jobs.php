@@ -23,7 +23,10 @@ class Jobs implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
             return self::RULE_MATCH_MATCHED;
         }
 
-        if (strpos($node->getAttribute('jscontroller'), 'b11o3b') !== false) {
+        if (
+            strpos($node->getAttribute('jscontroller'), 'b11o3b') !== false ||
+            strpos($node->parentNode->getAttribute('jscontroller'), 'b11o3b') !== false
+        ) {
             return self::RULE_MATCH_MATCHED;
         }
 
