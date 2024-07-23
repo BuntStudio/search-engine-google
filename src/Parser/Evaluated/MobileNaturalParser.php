@@ -20,6 +20,7 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\MapsMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\MisspellingMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\NoMoreResults;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\PeopleAlsoAsk;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ProductGrid;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ProductListing;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ProductListingMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Questions;
@@ -51,6 +52,7 @@ class MobileNaturalParser extends AbstractParser
             new MapsMobile(),
             new Questions(),
             new TopStoriesMobile(),
+            new ProductGrid(),
             new ProductListingMobile(),
             new KnowledgeGraphMobile(),
             new AdsTopMobile(),
@@ -154,7 +156,8 @@ class MobileNaturalParser extends AbstractParser
             @id= 'ofr' or
             contains(@class, 'e8Ck0d') or
             @id='eKIzJc' or
-            @jsname='ZLxsqf'
+            @jsname='ZLxsqf' or
+            contains(@data-enable-product-traversal, 'true')
         ][not(self::script) and not(self::style)]");
     }
 }

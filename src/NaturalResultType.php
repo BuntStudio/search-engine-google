@@ -39,6 +39,7 @@ abstract class NaturalResultType
     const APP_PACK_MOBILE         = 'app_pack_mobile';
 
     const PRODUCT_LISTING         = 'pla';
+    const PRODUCT_GRID            = 'pgr';
     const PRODUCT_LISTING_MOBILE  = 'pla_mobile';
     const RECIPES_GROUP           = 'recipes';
     const RECIPES_LINKS           = 'recipes_links';

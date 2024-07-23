@@ -24,6 +24,7 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Maps;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\MapsCoords;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Misspelling;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\NoMoreResults;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ProductGrid;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\SGEButton;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\SGEWidget;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Sites;
@@ -60,6 +61,7 @@ class NaturalParser extends AbstractParser
             new Recipes(),
             new TopStories(),
             new FeaturedSnipped(),
+            new ProductGrid(),
             new ProductListing(),
             new Questions(),
             new Hotels(),

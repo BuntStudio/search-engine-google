@@ -20,6 +20,7 @@ class TranslateService
         NaturalResultType::FLIGHT_AIRLINE_OPTIONS,
         NaturalResultType::SGE_BUTTON,
         NaturalResultType::SGE_WIDGET,
+        NaturalResultType::PRODUCT_GRID
     ];
 
     protected $siteHost = null,
@@ -377,6 +378,10 @@ class TranslateService
         if ($item->is(NaturalResultType::SGE_WIDGET) || $item->is(NaturalResultType::SGE_WIDGET_MOBILE)) {
             $this->response[NaturalResultType::SGE_WIDGET] = true;
             $this->response[NaturalResultType::SGE_WIDGET_OPTIONS] = $item->getData();
+        }
+
+        if ($item->is(NaturalResultType::PRODUCT_GRID)) {
+            $this->response[NaturalResultType::PRODUCT_GRID] = true;
         }
 
     }
