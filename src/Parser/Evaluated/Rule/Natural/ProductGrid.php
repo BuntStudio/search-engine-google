@@ -13,17 +13,26 @@ class ProductGrid implements ParsingRuleInterface
 {
     public function match(GoogleDom $dom, DomElement $node)
     {
-        if ($node->getAttribute('data-enable-product-traversal') == true) {
+        if ($node->getAttribute('class') == 'cu-container') {
             return self::RULE_MATCH_MATCHED;
         }
 
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false)
+    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
     {
-        $resultSet->addItem(
-            new BaseResult(NaturalResultType::PRODUCT_GRID, []/*todo*/, $node)
-        );
+        $productGridNodes = $googleDOM->getXpath()->query('descendant::a[contains(concat(\' \', normalize-space(@class), \' \'), \' R0xfCb \')]', $node);
+        if ($productGridNodes->length > 0 ) {
+            $items = [];
+            for ($i = 0; $i < $productGridNodes->length; $i++) {
+                if (!empty($productGridNodes->item($i))){
+                    $items[] = $productGridNodes->item($i)->getNodeValue();
+                }
+            }
+            if (count($items)) {
+                $resultSet->addItem(new BaseResult(NaturalResultType::PRODUCT_GRID, $items));
+            }
+        }
     }
 }

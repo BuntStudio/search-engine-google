@@ -30,8 +30,8 @@ abstract class NaturalResultType
     const JOBS_MINE_MOBILE             = 'jobs_mine_mobile';
 
     const APP_PACK                = 'app_pack';
-    const WIKI                = 'has_wiki';
-        const SITE_LINKS_BIG          = 'site_links_big';
+    const WIKI                    = 'has_wiki';
+    const SITE_LINKS_BIG          = 'site_links_big';
     const SITE_LINKS              = 'site_links';
     const AMP                     = 'amp';
     const SITE_LINKS_BIG_MOBILE   = 'site_links_big_mobile';
@@ -118,6 +118,16 @@ abstract class NaturalResultType
     const SGE_WIDGET_CONTENT = 'sge_widget_content';
     const SGE_WIDGET_LOADED  = 'sge_widget_content_loaded';
     const SGE_WIDGET_LINKS   = 'sge_widget_links';
+
+    const CURRENCY_ANSWER      = 'currency_answer';
+    const FLIGHTS_AIRLINE      = 'flights_airline';
+    const FLIGHTS_SITES        = 'flights_sites';
+    const PLACES               = 'places';
+    const PLACES_SITES         = 'places_sites';
+    const STOCKS_BOX           = 'stocks_box';
+    const THINGS_TO_KNOW       = 'things_to_know';
+    const TOP_SIGHTS           = 'top_sights';
+    const VISUAL_DIGEST_MOBILE = 'visual_digest_mobile';
 
     const SERP_FEATURES_OLD_RESPONSE_TEMPLATE = [
         self::SITE_LINKS              => 0,
