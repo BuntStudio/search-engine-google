@@ -145,6 +145,7 @@ class NaturalParser extends AbstractParser
             @class='BNeawe DwrKqd' or
             contains(@class, 'CH6Bmd') or
             contains(@class, 'zaTIWc') or
+            contains(@class, 'SuIj2') or
             contains(@class, 'VT5Tde') or
             contains(@class, 'commercial-unit-desktop-top') or
             contains(@data-enable-product-traversal, 'true') or

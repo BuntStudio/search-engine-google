@@ -31,6 +31,11 @@ class Hotels implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
             return self::RULE_MATCH_MATCHED;
         }
 
+        if ($node->getAttribute('class') == 'SuIj2'
+        ) {
+            return self::RULE_MATCH_MATCHED;
+        }
+
         return self::RULE_MATCH_NOMATCH;
     }
 
