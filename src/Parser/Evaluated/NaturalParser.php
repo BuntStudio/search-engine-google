@@ -112,6 +112,8 @@ class NaturalParser extends AbstractParser
         // [@id='kp-wp-tab-cont-Latest'] = top stories
         //div[@class='CH6Bmd']/div[@class='ntKMYc P2hV9e'] = hotels
         //div[@class='zaTIWc'] - new hotels desktop
+        //div[@class='SuIj2'] - new hotels desktop
+        //div[@class='Jf0OV'] - new hotels desktop
         //@class='lr_container yc7KLc mBNN3d' - definitions
         // [contains(@class, 'LQQ1Bd')] - flights
         // [@class='BNeawe DwrKqd'] - new flights
@@ -145,7 +147,7 @@ class NaturalParser extends AbstractParser
             @class='BNeawe DwrKqd' or
             contains(@class, 'CH6Bmd') or
             contains(@class, 'zaTIWc') or
-            contains(@class, 'SuIj2') or
+            contains(@jsname, 'YWd0ec') or
             contains(@class, 'VT5Tde') or
             contains(@class, 'commercial-unit-desktop-top') or
             contains(@data-enable-product-traversal, 'true') or
