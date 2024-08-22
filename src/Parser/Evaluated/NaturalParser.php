@@ -9,12 +9,15 @@ use Serps\SearchEngine\Google\Page\GoogleDom;
 use Serps\SearchEngine\Google\Parser\AbstractParser;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\AdsTop;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\ClassicalResult;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\CurrencyAnswer;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Definitions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Directions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FeaturedSnipped;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Flight;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FlightAirlineOptions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Flights;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FlightsAirline;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FlightsSites;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\HighlyLocalized;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Hotels;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ImageGroup;
@@ -24,6 +27,8 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Maps;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\MapsCoords;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Misspelling;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\NoMoreResults;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Places;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\PlacesSites;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ProductGrid;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\SGEButton;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\SGEWidget;
@@ -33,6 +38,8 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Questions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Recipes;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\RelatedSearches;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ResultsNo;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\StocksBox;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\TopSights;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\TopStories;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Videos;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VideoCarousel;
@@ -80,7 +87,14 @@ class NaturalParser extends AbstractParser
             new Sites(),
             new FlightAirlineOptions(),
             new SGEButton(),
-            new SGEWidget()
+            new SGEWidget(),
+            new Places(), //done
+            new PlacesSites(), //done
+            new TopSights(), //done
+            new StocksBox(), //done
+            new FlightsSites(), //to be done seems similar - FlightAirlineOptions
+            new FlightsAirline(), // to be done seems similar - Flights
+            new CurrencyAnswer() //done
         ];
     }
 
@@ -118,10 +132,17 @@ class NaturalParser extends AbstractParser
         //@id = 'oFNiHe' - misspelings
         //@id = 'result-stats' - no of results
         //@id = 'lud-ed' - directions
-//        return $googleDom->xpathQuery("//*[@id='result-stats']/*[not(self::script) and not(self::style)]/*");
-//        @class = 'H93uF' - coords
+        //return $googleDom->xpathQuery("//*[@id='result-stats']/*[not(self::script) and not(self::style)]/*");
+        //@class = 'H93uF' - coords
          //@class = 'e8Ck0d SS4zp' //VisualDigest
         //@id= 'bres' -> related searches
+        //@id= 'rcnt' or -> places
+        //@class= 'EyBnad' or -> places sites
+        //@class= 'aviV4d' or -> stocks box
+        //@class= 'ULSxyf' or -> things to know
+        //@class= 'RyIFgf' or -> top sights
+        //@class= 'osrp-blk' or -> visual digest mobile
+        //@class= 'ULSxyf' or -> currency answer
         //@class = 'zJUuqf' // sites
         //@jscontroller = 'hKbgK' // flight airline options
         return $googleDom->xpathQuery("//*[
@@ -165,6 +186,13 @@ class NaturalParser extends AbstractParser
             @id= 'ofr' or
             @class = 'vqkKIe wHYlTd' or
             @id= 'bres' or
+            @id= 'rcnt' or
+            @class= 'EyBnad' or
+            @class= 'aviV4d' or
+            @class= 'ULSxyf' or
+            @class= 'RyIFgf' or
+            @class= 'osrp-blk' or
+            @class= 'ULSxyf' or
             contains(@class, 'zJUuqf') or
             @jscontroller='hKbgK' or
             @id='eKIzJc' or

@@ -21,7 +21,7 @@ class ThingsToKnow implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
 
     public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
     {
-        $thingsToKnowNodes = $googleDOM->getXpath()->query('descendant::div[contains(concat(\' \', normalize-space(@class), \' \'), \' PZPZlf \')]', $node);
+        $thingsToKnowNodes = $googleDOM->getXpath()->query('descendant::*[contains(concat(\' \', normalize-space(@class), \' \'), \' PZPZlf \')]', $node);
         if ($thingsToKnowNodes->length > 0) {
             $items = [];
             for ($i = 0; $i < $thingsToKnowNodes->length; $i++) {

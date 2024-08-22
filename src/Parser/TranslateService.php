@@ -384,6 +384,22 @@ class TranslateService
             $this->response[NaturalResultType::PRODUCT_GRID] = true;
         }
 
+        if ($item->is(NaturalResultType::PLACES)) {
+            $this->response[NaturalResultType::PLACES] = $item->getData();
+        }
+
+        if ($item->is(NaturalResultType::TOP_SIGHTS)) {
+            $this->response[NaturalResultType::TOP_SIGHTS] = true;
+        }
+
+        if ($item->is(NaturalResultType::STOCKS_BOX)) {
+            $this->response[NaturalResultType::STOCKS_BOX] = true;
+        }
+
+        if ($item->is(NaturalResultType::CURRENCY_ANSWER)) {
+            $this->response[NaturalResultType::CURRENCY_ANSWER] = true;
+        }
+
     }
 
     /**

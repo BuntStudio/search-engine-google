@@ -12,7 +12,11 @@ class CurrencyAnswer implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
 {
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($node->getAttribute('id') == 'knowledge-currency__updatable-data-column') {
+        if ($node->getAttribute('class') == 'ULSxyf') {
+            return self::RULE_MATCH_MATCHED;
+        }
+
+        if ($node->getAttribute('class') == 'obcontainer') {
             return self::RULE_MATCH_MATCHED;
         }
 

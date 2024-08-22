@@ -12,7 +12,7 @@ class StocksBox implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 {
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($node->getAttribute('class') == 'kp-wholepage') {
+        if ($node->getAttribute('class') == 'aviV4d') {
             return self::RULE_MATCH_MATCHED;
         }
 

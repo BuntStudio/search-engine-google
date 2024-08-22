@@ -12,6 +12,7 @@ class FlightsSites implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
 {
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
+        //todo
         if ($node->getAttribute('id') == 'bres') {
             return self::RULE_MATCH_MATCHED;
         }

@@ -11,7 +11,11 @@ class Places implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($node->getAttribute('class') == 'kuydt') {
+        if ($node->getAttribute('id') == 'rcnt') {
+            return self::RULE_MATCH_MATCHED;
+        }
+
+        if ( $node->getAttribute('class') == 'GyAeWb') {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -20,14 +24,17 @@ class Places implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 
     public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
     {
-        $placesNodes = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' rllt__link') or
+        $placesNodes = $googleDOM->getXpath()->query("descendant::a[contains(concat(' ', normalize-space(@class), ' '), ' rllt__link') or
         contains(concat(' ', normalize-space(@class), ' '), 'vwVdIc ')]", $node);
         $items         = [];
         if ($placesNodes->length > 0 ) {
             $items = [];
             for ($i = 0; $i < $placesNodes->length; $i++) {
                 if (!empty($placesNodes->item($i))){
-                    $items[] = $placesNodes->item($i)->getNodeValue();
+                    $value = $placesNodes->item($i)->getNodeValue();
+                    if (!empty($value)) {
+                        $items[] = $value;
+                    }
                 }
             }
             if (count($items)) {
