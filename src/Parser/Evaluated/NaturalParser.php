@@ -39,6 +39,7 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Recipes;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\RelatedSearches;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ResultsNo;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\StocksBox;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ThingsToKnow;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\TopSights;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\TopStories;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Videos;
@@ -92,9 +93,10 @@ class NaturalParser extends AbstractParser
             new PlacesSites(), //done
             new TopSights(), //done
             new StocksBox(), //done
-            new FlightsSites(), //to be done seems similar - FlightAirlineOptions
-            new FlightsAirline(), // to be done seems similar - Flights
-            new CurrencyAnswer() //done
+//            new FlightsSites(), //to be done seems similar - FlightAirlineOptions
+//            new FlightsAirline(), // to be done seems similar - Flights
+            new CurrencyAnswer(), //done
+            new ThingsToKnow() //done
         ];
     }
 

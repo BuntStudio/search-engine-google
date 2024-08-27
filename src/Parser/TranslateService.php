@@ -385,7 +385,11 @@ class TranslateService
         }
 
         if ($item->is(NaturalResultType::PLACES)) {
-            $this->response[NaturalResultType::PLACES] = $item->getData();
+            $this->response[NaturalResultType::PLACES] = true;
+        }
+
+        if ($item->is(NaturalResultType::PLACES_SITES)) {
+            $this->response[NaturalResultType::PLACES_SITES] = $item->getData();
         }
 
         if ($item->is(NaturalResultType::TOP_SIGHTS)) {
@@ -395,6 +399,10 @@ class TranslateService
         if ($item->is(NaturalResultType::STOCKS_BOX)) {
             $this->response[NaturalResultType::STOCKS_BOX] = true;
         }
+
+//        if ($item->is(NaturalResultType::FLIGHTS_SITES)) {
+//            $this->response[NaturalResultType::FLIGHTS_SITES] = true;
+//        }
 
         if ($item->is(NaturalResultType::CURRENCY_ANSWER)) {
             $this->response[NaturalResultType::CURRENCY_ANSWER] = true;
