@@ -45,6 +45,7 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\TopStories;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Videos;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VideoCarousel;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VisualDigest;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VisualDigestMobile;
 
 /**
  * Parses natural results from a google SERP
@@ -96,7 +97,8 @@ class NaturalParser extends AbstractParser
 //            new FlightsSites(), //to be done seems similar - FlightAirlineOptions
 //            new FlightsAirline(), // to be done seems similar - Flights
             new CurrencyAnswer(), //done
-            new ThingsToKnow() //done
+            new ThingsToKnow(), //done
+            new VisualDigestMobile()
         ];
     }
 

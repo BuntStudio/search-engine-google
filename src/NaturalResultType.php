@@ -119,15 +119,50 @@ abstract class NaturalResultType
     const SGE_WIDGET_LOADED  = 'sge_widget_content_loaded';
     const SGE_WIDGET_LINKS   = 'sge_widget_links';
 
-    const CURRENCY_ANSWER      = 'currency_answer';
-    const FLIGHTS_AIRLINE      = 'flights_airline';
-    const FLIGHTS_SITES        = 'flights_sites';
-    const PLACES               = 'places';
-    const PLACES_SITES         = 'places_sites';
-    const STOCKS_BOX           = 'stocks_box';
-    const THINGS_TO_KNOW       = 'things_to_know';
-    const TOP_SIGHTS           = 'top_sights';
-    const VISUAL_DIGEST_MOBILE = 'visual_digest_mobile';
+    const CURRENCY_ANSWER             = 'currency_answer';
+    const CURRENCY_ANSWER_MINE        = 'currency_answer_mine';
+    const CURRENCY_ANSWER_MOBILE      = 'currency_answer_mobile';
+    const CURRENCY_ANSWER_MOBILE_MINE = 'currency_answer_mobile_mine';
+
+    const FLIGHTS_AIRLINE             = 'flights_airline';
+    const FLIGHTS_AIRLINE_MINE        = 'flights_airline_mine';
+    const FLIGHTS_AIRLINE_MOBILE      = 'flights_airline_mobile';
+    const FLIGHTS_AIRLINE_MOBILE_MINE = 'flights_airline_mobile_mine';
+
+    const FLIGHTS_SITES             = 'flights_sites';
+    const FLIGHTS_SITES_MINE        = 'flights_sites_mine';
+    const FLIGHTS_SITES_MOBILE      = 'flights_sites_mobile';
+    const FLIGHTS_SITES_MOBILE_MINE = 'flights_sites_mobile_mine';
+
+    const PLACES             = 'places';
+    const PLACES_MINE        = 'places_mine';
+    const PLACES_MOBILE      = 'places_mobile';
+    const PLACES_MOBILE_MINE = 'places_mobile_mine';
+
+    const PLACES_SITES             = 'places_sites';
+    const PLACES_SITES_MINE        = 'places_sites_mine';
+    const PLACES_SITES_MOBILE      = 'places_sites_mobile';
+    const PLACES_SITES_MOBILE_MINE = 'places_sites_mobile_mine';
+
+    const STOCKS_BOX             = 'stocks_box';
+    const STOCKS_BOX_MINE        = 'stocks_box_mine';
+    const STOCKS_BOX_MOBILE      = 'stocks_box_mobile';
+    const STOCKS_BOX_MOBILE_MINE = 'stocks_box_mobile_mine';
+
+    const THINGS_TO_KNOW             = 'things_to_know';
+    const THINGS_TO_KNOW_MINE        = 'things_to_know_mine';
+    const THINGS_TO_KNOW_MOBILE      = 'things_to_know_mobile';
+    const THINGS_TO_KNOW_MOBILE_MINE = 'things_to_know_mobile_mine';
+
+    const TOP_SIGHTS             = 'top_sights';
+    const TOP_SIGHTS_MINE        = 'top_sights_mine';
+    const TOP_SIGHTS_MOBILE      = 'top_sights_mobile';
+    const TOP_SIGHTS_MOBILE_MINE = 'top_sights_mobile_mine';
+
+    //const VISUAL_DIGEST = 'visual_digest';
+    //const VISUAL_DIGEST_MINE = 'visual_digest_mine';
+    const VISUAL_DIGEST_MOBILE      = 'visual_digest_mobile';
+    const VISUAL_DIGEST_MOBILE_MINE = 'visual_digest_mobile_mine';
 
     const SERP_FEATURES_OLD_RESPONSE_TEMPLATE = [
         self::SITE_LINKS              => 0,
