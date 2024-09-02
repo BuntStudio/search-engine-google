@@ -31,6 +31,7 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\TopStoriesMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VideoCarouselMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VideosMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VisualDigest;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VisualDigestMobile;
 
 /**
  * Parses natural results from a mobile google SERP

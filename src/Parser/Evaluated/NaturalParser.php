@@ -98,7 +98,6 @@ class NaturalParser extends AbstractParser
 //            new FlightsAirline(), // to be done seems similar - Flights
             new CurrencyAnswer(), //done
             new ThingsToKnow(), //done
-            new VisualDigestMobile()
         ];
     }
 
@@ -142,13 +141,12 @@ class NaturalParser extends AbstractParser
         //@class = 'H93uF' - coords
          //@class = 'e8Ck0d SS4zp' //VisualDigest
         //@id= 'bres' -> related searches
-        //@id= 'rcnt' or -> places
-        //@class= 'EyBnad' or -> places sites
+        //@id= 'x3SAYd' or -> places
+        //@class= 'RyIFgf' or -> places sites
         //@class= 'aviV4d' or -> stocks box
-        //@class= 'ULSxyf' or -> things to know
-        //@class= 'RyIFgf' or -> top sights
-        //@class= 'osrp-blk' or -> visual digest mobile
-        //@class= 'ULSxyf' or -> currency answer
+        //@class= 'EyBRub' or -> things to know
+        //@class= 'jhtnKe' or -> top sights
+        //@id= 'knowledge-currency__updatable-data-column' or -> currency answer
         //@class = 'zJUuqf' // sites
         //@jscontroller = 'hKbgK' // flight airline options
         return $googleDom->xpathQuery("//*[
@@ -192,13 +190,12 @@ class NaturalParser extends AbstractParser
             @id= 'ofr' or
             @class = 'vqkKIe wHYlTd' or
             @id= 'bres' or
-            @id= 'rcnt' or
-            @class= 'EyBnad' or
-            @class= 'aviV4d' or
-            @class= 'ULSxyf' or
+            @class= 'x3SAYd' or
             @class= 'RyIFgf' or
-            @class= 'osrp-blk' or
-            @class= 'ULSxyf' or
+            @class= 'aviV4d' or
+            @class= 'EyBRub' or
+            @class= 'jhtnKe' or
+            @id= 'knowledge-currency__updatable-data-column' or
             contains(@class, 'zJUuqf') or
             @jscontroller='hKbgK' or
             @id='eKIzJc' or

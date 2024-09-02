@@ -328,7 +328,6 @@ class TranslateService
             if (isset($data['images'])){
                 $this->response[NaturalResultType::IMAGE_GROUP] = $item->getData()['images'];
             }
-
         }
 
         if ($item->is(NaturalResultType::TOP_STORIES) || $item->is(NaturalResultType::TOP_STORIES_MOBILE) ) {
@@ -385,7 +384,7 @@ class TranslateService
         }
 
         if ($item->is(NaturalResultType::PLACES)) {
-            $this->response[NaturalResultType::PLACES] = true;
+            $this->response[NaturalResultType::PLACES] = $item->getData();
         }
 
         if ($item->is(NaturalResultType::PLACES_SITES)) {
@@ -393,7 +392,7 @@ class TranslateService
         }
 
         if ($item->is(NaturalResultType::TOP_SIGHTS)) {
-            $this->response[NaturalResultType::TOP_SIGHTS] = true;
+            $this->response[NaturalResultType::TOP_SIGHTS] = $item->getData();
         }
 
         if ($item->is(NaturalResultType::STOCKS_BOX)) {
@@ -406,6 +405,10 @@ class TranslateService
 
         if ($item->is(NaturalResultType::CURRENCY_ANSWER)) {
             $this->response[NaturalResultType::CURRENCY_ANSWER] = true;
+        }
+
+        if ($item->is(NaturalResultType::THINGS_TO_KNOW)) {
+            $this->response[NaturalResultType::THINGS_TO_KNOW] = $item->getData();
         }
 
     }
