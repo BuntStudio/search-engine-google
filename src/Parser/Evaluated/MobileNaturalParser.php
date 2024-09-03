@@ -31,6 +31,7 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\TopStoriesMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VideoCarouselMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VideosMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VisualDigest;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VisualDigestMobile;
 
 /**
  * Parses natural results from a mobile google SERP
@@ -69,6 +70,7 @@ class MobileNaturalParser extends AbstractParser
             new VideoCarouselMobile(),
             new NoMoreResults(),
             new VisualDigest(),
+            new VisualDigestMobile(),
             new SGEButton(),
             new SGEWidget()
         ];
@@ -157,7 +159,8 @@ class MobileNaturalParser extends AbstractParser
             contains(@class, 'e8Ck0d') or
             @id='eKIzJc' or
             @jsname='ZLxsqf' or
-            contains(@data-enable-product-traversal, 'true')
+            contains(@data-enable-product-traversal, 'true') or
+            @class='pxiwBd'
         ][not(self::script) and not(self::style)]");
     }
 }

@@ -11,9 +11,12 @@ use Serps\SearchEngine\Google\Parser\ParsingRuleInterface;
 
 class ProductGrid implements ParsingRuleInterface
 {
+
+    public $hasSerpFeaturePosition = true;
+
     public function match(GoogleDom $dom, DomElement $node)
     {
-        if ($node->getAttribute('class') == 'cu-container') {
+        if ($dom->getXpath()->query('.//*[@class="T98FId"]', $node)->length > 0) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -22,7 +25,8 @@ class ProductGrid implements ParsingRuleInterface
 
     public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
     {
-        $productGridNodes = $googleDOM->getXpath()->query('descendant::a[contains(concat(\' \', normalize-space(@class), \' \'), \' R0xfCb \')]', $node);
+        //get all ul li
+        $productGridNodes = $googleDOM->getXpath()->query('.//li', $node);
         if ($productGridNodes->length > 0 ) {
             $items = [];
             for ($i = 0; $i < $productGridNodes->length; $i++) {
@@ -31,7 +35,7 @@ class ProductGrid implements ParsingRuleInterface
                 }
             }
             if (count($items)) {
-                $resultSet->addItem(new BaseResult(NaturalResultType::PRODUCT_GRID, $items));
+                $resultSet->addItem(new BaseResult(NaturalResultType::PRODUCT_GRID, $items, $node, $this->hasSerpFeaturePosition));
             }
         }
     }

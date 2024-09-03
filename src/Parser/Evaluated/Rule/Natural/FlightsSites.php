@@ -12,7 +12,7 @@ class FlightsSites implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
 {
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($node->getAttribute('id') == 'bres') {
+        if ($node->getAttribute('class') == 'XNfAUb') {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -21,12 +21,12 @@ class FlightsSites implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
 
     public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
     {
-        $urlsNodes = $googleDOM->getXpath()->query('descendant::a[contains(concat(\' \', normalize-space(@class), \' \'), \' R0xfCb \')]', $node);
+        $urlsNodes = $googleDOM->getXpath()->query('descendant::a[contains(concat(\' \', normalize-space(@class), \' \'), \' ddkIM \')]', $node);
         if ($urlsNodes->length > 0) {
             $items = [];
             for ($i = 0; $i < $urlsNodes->length; $i++) {
                 if (!empty($urlsNodes->item($i))) {
-                    $items[] = $urlsNodes->item($i)->getNodeValue();
+                    $items[] = $urlsNodes->item($i)->getAttribute('href');
                 }
             }
             if (count($items)) {

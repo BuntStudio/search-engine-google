@@ -9,12 +9,15 @@ use Serps\SearchEngine\Google\Page\GoogleDom;
 use Serps\SearchEngine\Google\Parser\AbstractParser;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\AdsTop;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\ClassicalResult;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\CurrencyAnswer;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Definitions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Directions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FeaturedSnipped;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Flight;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FlightAirlineOptions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Flights;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FlightsAirline;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FlightsSites;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\HighlyLocalized;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Hotels;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ImageGroup;
@@ -24,6 +27,8 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Maps;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\MapsCoords;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Misspelling;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\NoMoreResults;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Places;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\PlacesSites;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ProductGrid;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\SGEButton;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\SGEWidget;
@@ -33,10 +38,14 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Questions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Recipes;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\RelatedSearches;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ResultsNo;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\StocksBox;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ThingsToKnow;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\TopSights;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\TopStories;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Videos;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VideoCarousel;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VisualDigest;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VisualDigestMobile;
 
 /**
  * Parses natural results from a google SERP
@@ -80,7 +89,17 @@ class NaturalParser extends AbstractParser
             new Sites(),
             new FlightAirlineOptions(),
             new SGEButton(),
-            new SGEWidget()
+            new SGEWidget(),
+            new ProductGrid(),
+            new Places(),
+            new PlacesSites(),
+            new TopSights(),
+            new VisualDigestMobile(),
+            new StocksBox(),
+            new FlightsSites(),
+            new FlightsAirline(),
+            new CurrencyAnswer(),
+            new ThingsToKnow()
         ];
     }
 
@@ -167,7 +186,15 @@ class NaturalParser extends AbstractParser
             contains(@class, 'zJUuqf') or
             @jscontroller='hKbgK' or
             @id='eKIzJc' or
-            @jsname='ZLxsqf'
+            @jsname='ZLxsqf' or
+            contains(@class, 'KYLHhb') or
+            @class='ULSxyf' or
+            @class='ixix9e' or
+            @class='Ww4FFb' or
+            @class='wDYxhc' or
+            @class='XNfAUb' or
+            @class='sATSHe' or
+            @class='RyIFgf'
         ][not(self::script) and not(self::style)]");
     }
 }

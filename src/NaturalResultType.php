@@ -162,7 +162,17 @@ abstract class NaturalResultType
         self::VISUAL_DIGEST => null,
         self::KNOWLEDGE_GRAPH_LINK => null,
         self::HIGHLY_LOCALIZED => null,
-        self::SITES => null
+        self::SITES => null,
+        self::PRODUCT_GRID => null,
+        self::CURRENCY_ANSWER => null,
+        self::FLIGHTS_AIRLINE => null,
+        self::FLIGHTS_SITES => null,
+        self::PLACES => null,
+        self::PLACES_SITES => null,
+        self::STOCKS_BOX => null,
+        self::THINGS_TO_KNOW => null,
+        self::TOP_SIGHTS => null,
+        self::VISUAL_DIGEST_MOBILE => null,
     ];
 
     const SERP_FEATURES_TYPE_TO_OLD_RESPONSE_FOR_POSITIONS = [
@@ -204,6 +214,17 @@ abstract class NaturalResultType
         self::VIDEO_CAROUSEL_MOBILE => self::VIDEOS,
         self::MAP => self::MAP,
         self::MAP_MOBILE => self::MAP,
+        self::PRODUCT_GRID => self::PRODUCT_GRID,
+        self::CURRENCY_ANSWER => self::CURRENCY_ANSWER,
+        self::FLIGHTS_AIRLINE => self::FLIGHTS_AIRLINE,
+        self::FLIGHTS_SITES => self::FLIGHTS_SITES,
+        self::PLACES => self::PLACES,
+        self::PLACES_SITES => self::PLACES_SITES,
+        self::STOCKS_BOX => self::STOCKS_BOX,
+        self::THINGS_TO_KNOW => self::THINGS_TO_KNOW,
+        self::TOP_SIGHTS => self::TOP_SIGHTS,
+        self::VISUAL_DIGEST_MOBILE => self::VISUAL_DIGEST_MOBILE,
+
     ];
 
 }

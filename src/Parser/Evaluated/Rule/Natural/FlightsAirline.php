@@ -12,7 +12,7 @@ class FlightsAirline implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
 {
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($node->getAttribute('id') == 'bres') {
+        if ($node->getAttribute('class') == 'ULSxyf' && $dom->getXpath()->query(".//div[contains(@class, 'EDblX')]", $node)->length > 0) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -21,7 +21,7 @@ class FlightsAirline implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
 
     public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
     {
-        $urlsNodes = $googleDOM->getXpath()->query('descendant::a[contains(concat(\' \', normalize-space(@class), \' \'), \' R0xfCb \')]', $node);
+        $urlsNodes = $googleDOM->getXpath()->query('descendant::a[contains(concat(\' \', normalize-space(@class), \' \'), \' s2sa1c \')]', $node);
         if ($urlsNodes->length > 0) {
             $items = [];
             for ($i = 0; $i < $urlsNodes->length; $i++) {

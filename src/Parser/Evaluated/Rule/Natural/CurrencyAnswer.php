@@ -12,7 +12,10 @@ class CurrencyAnswer implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
 {
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($node->getAttribute('id') == 'knowledge-currency__updatable-data-column') {
+        $xpath = new \DOMXPath($node->ownerDocument);
+
+        if (($xpath->query('.//div[@id="knowledge-currency__updatable-data-column"]', $node))->length > 0
+            || $node->getAttribute('id') == 'knowledge-currency__updatable-data-column') {
             return self::RULE_MATCH_MATCHED;
         }
 

@@ -9,9 +9,12 @@ use Serps\SearchEngine\Google\Page\GoogleDom;
 
 class Places implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
+
+    public $hasSerpFeaturePosition = true;
+
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($node->getAttribute('class') == 'kuydt') {
+        if ($node->getAttribute('class') == 'ixix9e') {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -20,8 +23,7 @@ class Places implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 
     public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
     {
-        $placesNodes = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' rllt__link') or
-        contains(concat(' ', normalize-space(@class), ' '), 'vwVdIc ')]", $node);
+        $placesNodes = $googleDOM->getXpath()->query(".//*[@class='rllt__details']", $node);
         $items         = [];
         if ($placesNodes->length > 0 ) {
             $items = [];
@@ -31,7 +33,7 @@ class Places implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
                 }
             }
             if (count($items)) {
-                $resultSet->addItem(new BaseResult(NaturalResultType::PLACES, $items));
+                $resultSet->addItem(new BaseResult(NaturalResultType::PLACES, $items, $node, $this->hasSerpFeaturePosition));
             }
         }
 

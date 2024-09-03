@@ -10,12 +10,12 @@ use Serps\SearchEngine\Google\Page\GoogleDom;
 
 class VisualDigestMobile implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
-    protected $hasSerpFeaturePosition = false;
+    protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
 
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($node->getAttribute('class') == 'osrp-blk') {
+        if ($dom->getXpath()->query(".//div[contains(@class, 'Enb9pe')]", $node)->length > 0) {
             return self::RULE_MATCH_MATCHED;
         }
 
