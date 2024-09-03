@@ -21,6 +21,11 @@ class Hotels implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
+        if ($node->getAttribute('jsname') == 'YWd0ec'
+        ) {
+            return self::RULE_MATCH_MATCHED;
+        }
+
         if ($node->getAttribute('class') == 'CH6Bmd'
         ) {
             return self::RULE_MATCH_MATCHED;
