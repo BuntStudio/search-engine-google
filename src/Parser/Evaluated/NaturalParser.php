@@ -143,11 +143,16 @@ class NaturalParser extends AbstractParser
         //@class = 'H93uF' - coords
          //@class = 'e8Ck0d SS4zp' //VisualDigest
         //@id= 'bres' -> related searches
-        //@id= 'x3SAYd' or -> places
+        //@id= 'x3SAYd' or  -> places
+        //@class='ixix9e' or -> places
         //@class= 'RyIFgf' or -> places sites
         //@class= 'aviV4d' or -> stocks box
+        //@class= 'wDYxhc' or -> stocks box
         //@class= 'EyBRub' or -> things to know
         //@class= 'jhtnKe' or -> top sights
+        //@class= 'XNfAUb' or -> flights sites
+        //[contains(@class, 'EDblX')] or ->  flights airlines
+        //@class= 'ULSxyf' or ->  flights airlines
         //@id= 'knowledge-currency__updatable-data-column' or -> currency answer
         //@class = 'zJUuqf' // sites
         //@jscontroller = 'hKbgK' // flight airline options
@@ -193,23 +198,23 @@ class NaturalParser extends AbstractParser
             @class = 'vqkKIe wHYlTd' or
             @id= 'bres' or
             @class= 'x3SAYd' or
+            @class='ixix9e' or
             @class= 'RyIFgf' or
             @class= 'aviV4d' or
             @class= 'EyBRub' or
             @class= 'jhtnKe' or
+            @class='wDYxhc' or
             @id= 'knowledge-currency__updatable-data-column' or
             contains(@class, 'zJUuqf') or
             @jscontroller='hKbgK' or
             @id='eKIzJc' or
             @jsname='ZLxsqf' or
             contains(@class, 'KYLHhb') or
+            contains(@class, 'EDblX')
             @class='ULSxyf' or
-            @class='ixix9e' or
             @class='Ww4FFb' or
-            @class='wDYxhc' or
             @class='XNfAUb' or
             @class='sATSHe' or
-            @class='RyIFgf'
         ][not(self::script) and not(self::style)]");
     }
 }

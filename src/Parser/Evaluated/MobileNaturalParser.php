@@ -116,6 +116,7 @@ class MobileNaturalParser extends AbstractParser
         //@id='oFNiHe' - misspelings
         //@id='lud-ed' directions
         //contains(@class, 'e8Ck0d') visual digest
+        //contains(@class, 'Enb9pe') - visual digest mobile
         return $googleDom->xpathQuery("//*[@id='iur' or
             @id='sports-app' or
             @id='center_col' or
@@ -160,7 +161,8 @@ class MobileNaturalParser extends AbstractParser
             @id='eKIzJc' or
             @jsname='ZLxsqf' or
             contains(@data-enable-product-traversal, 'true') or
-            @class='pxiwBd'
+            @class='pxiwBd' or
+            contains(@class, 'Enb9pe')
         ][not(self::script) and not(self::style)]");
     }
 }
