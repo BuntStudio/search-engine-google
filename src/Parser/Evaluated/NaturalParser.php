@@ -198,23 +198,23 @@ class NaturalParser extends AbstractParser
             @class = 'vqkKIe wHYlTd' or
             @id= 'bres' or
             @class= 'x3SAYd' or
-            @class='ixix9e' or
+            @class= 'ixix9e' or
             @class= 'RyIFgf' or
             @class= 'aviV4d' or
             @class= 'EyBRub' or
             @class= 'jhtnKe' or
-            @class='wDYxhc' or
+            @class= 'wDYxhc' or
             @id= 'knowledge-currency__updatable-data-column' or
             contains(@class, 'zJUuqf') or
             @jscontroller='hKbgK' or
             @id='eKIzJc' or
             @jsname='ZLxsqf' or
             contains(@class, 'KYLHhb') or
-            contains(@class, 'EDblX')
+            contains(@class, 'EDblX') or
             @class='ULSxyf' or
             @class='Ww4FFb' or
             @class='XNfAUb' or
-            @class='sATSHe' or
+            @class='sATSHe'
         ][not(self::script) and not(self::style)]");
     }
 }

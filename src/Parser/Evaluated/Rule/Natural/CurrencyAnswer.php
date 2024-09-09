@@ -10,6 +10,9 @@ use Serps\SearchEngine\Google\Page\GoogleDom;
 
 class CurrencyAnswer implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
+
+    public $hasSerpFeaturePosition = true;
+
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
         $xpath = new \DOMXPath($node->ownerDocument);
@@ -24,6 +27,6 @@ class CurrencyAnswer implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
 
     public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
     {
-        $resultSet->addItem(new BaseResult(NaturalResultType::CURRENCY_ANSWER, [], $node));
+        $resultSet->addItem(new BaseResult(NaturalResultType::CURRENCY_ANSWER, [], $node, $this->hasSerpFeaturePosition));
     }
 }

@@ -10,6 +10,9 @@ use Serps\SearchEngine\Google\Page\GoogleDom;
 
 class FlightsAirline implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
+
+    public $hasSerpFeaturePosition = true;
+    
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
         if ($node->getAttribute('class') == 'ULSxyf' && $dom->getXpath()->query(".//div[contains(@class, 'EDblX')]", $node)->length > 0) {
@@ -30,7 +33,7 @@ class FlightsAirline implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
                 }
             }
             if (count($items)) {
-                $resultSet->addItem(new BaseResult(NaturalResultType::FLIGHTS_AIRLINE, $items));
+                $resultSet->addItem(new BaseResult(NaturalResultType::FLIGHTS_AIRLINE, $items, $node, $this->hasSerpFeaturePosition));
             }
         }
 

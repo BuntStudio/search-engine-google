@@ -10,6 +10,8 @@ use Serps\SearchEngine\Google\Page\GoogleDom;
 
 class FlightsSites implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
+    public $hasSerpFeaturePosition = true;
+    
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
         if ($node->getAttribute('class') == 'XNfAUb') {
@@ -30,7 +32,7 @@ class FlightsSites implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
                 }
             }
             if (count($items)) {
-                $resultSet->addItem(new BaseResult(NaturalResultType::FLIGHTS_SITES, $items));
+                $resultSet->addItem(new BaseResult(NaturalResultType::FLIGHTS_SITES, $items, $node, $this->hasSerpFeaturePosition));
             }
         }
 
