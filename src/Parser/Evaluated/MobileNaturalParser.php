@@ -69,7 +69,6 @@ class MobileNaturalParser extends AbstractParser
             new DirectionsMobile(),
             new VideoCarouselMobile(),
             new NoMoreResults(),
-            new VisualDigest(),
             new VisualDigestMobile(),
             new SGEButton(),
             new SGEWidget()

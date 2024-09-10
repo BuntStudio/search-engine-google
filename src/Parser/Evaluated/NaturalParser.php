@@ -94,7 +94,6 @@ class NaturalParser extends AbstractParser
             new Places(),
             new PlacesSites(),
             new TopSights(),
-            new VisualDigestMobile(),
             new StocksBox(),
             new FlightsSites(),
             new FlightsAirline(),
