@@ -159,8 +159,6 @@ abstract class NaturalResultType
     const TOP_SIGHTS_MOBILE      = 'top_sights_mobile';
     const TOP_SIGHTS_MOBILE_MINE = 'top_sights_mobile_mine';
 
-    //const VISUAL_DIGEST = 'visual_digest';
-    //const VISUAL_DIGEST_MINE = 'visual_digest_mine';
     const VISUAL_DIGEST_MOBILE      = 'visual_digest_mobile';
     const VISUAL_DIGEST_MOBILE_MINE = 'visual_digest_mobile_mine';
 
@@ -206,8 +204,7 @@ abstract class NaturalResultType
         self::PLACES_SITES => null,
         self::STOCKS_BOX => null,
         self::THINGS_TO_KNOW => null,
-        self::TOP_SIGHTS => null,
-        self::VISUAL_DIGEST_MOBILE => null,
+        self::TOP_SIGHTS => null
     ];
 
     const SERP_FEATURES_TYPE_TO_OLD_RESPONSE_FOR_POSITIONS = [
@@ -258,7 +255,7 @@ abstract class NaturalResultType
         self::STOCKS_BOX => self::STOCKS_BOX,
         self::THINGS_TO_KNOW => self::THINGS_TO_KNOW,
         self::TOP_SIGHTS => self::TOP_SIGHTS,
-        self::VISUAL_DIGEST_MOBILE => self::VISUAL_DIGEST_MOBILE,
+        self::VISUAL_DIGEST => self::VISUAL_DIGEST,
 
     ];
 
