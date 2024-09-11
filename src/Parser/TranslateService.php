@@ -27,6 +27,7 @@ class TranslateService
         $mobile = false,
         $crawlSubdomains = false,
         $urlAlias = null,
+        $trackUrlFolderPath = null,
         $response = [];
 
     const DEFAULT_POSITION = 666;
@@ -39,11 +40,18 @@ class TranslateService
      * @param string|null $urlAlias
      * @param Logger|null $logger
      */
-    public function __construct(string $siteHost, bool $crawlSubdomains = false, $urlAlias = null, Logger $logger = null)
+    public function __construct(
+        string $siteHost,
+        bool $crawlSubdomains = false,
+        $urlAlias = null,
+        Logger $logger = null,
+        $trackUrlFolderPath = null
+    )
     {
-        $this->siteHost        = $this->extractDomain($siteHost);
-        $this->crawlSubdomains = $crawlSubdomains;
-        $this->urlAlias        = $urlAlias;
+        $this->siteHost           = $this->extractDomain($siteHost);
+        $this->crawlSubdomains    = $crawlSubdomains;
+        $this->urlAlias           = $urlAlias;
+        $this->trackUrlFolderPath = $trackUrlFolderPath;
 
         $this->initLogger($logger);
     }
@@ -117,6 +125,34 @@ class TranslateService
 
     /**
      * @param $item
+     *
+     * @return array
+     */
+    protected function matchTrackUrlFolderPath($item)
+    {
+        $matchedTrackUrlFolderPath = [];
+
+        if ($this->crawlSubdomains || $this->mobile) {
+            if ($this->crawlSubdomains === false) {
+                preg_match(
+                    '/m\.' . str_replace('.', '\.', str_replace('/', '\/', \Utils::wwwhostwithpath($this->siteHost . $this->trackUrlFolderPath))) . '/',
+                    \Utils::wwwhostwithpath($item->url),
+                    $matchedTrackUrlFolderPath
+                );
+            } else {
+                preg_match(
+                    '/.*\.' . str_replace('.', '\.', str_replace('/', '\/', \Utils::wwwhostwithpath($this->siteHost . $this->trackUrlFolderPath))) . '/',
+                    \Utils::wwwhostwithpath($item->url),
+                    $matchedTrackUrlFolderPath
+                );
+            }
+        }
+
+        return $matchedTrackUrlFolderPath;
+    }
+
+    /**
+     * @param $item
      * @param $rank
      */
     protected function processClassicalResult($item, &$rank, $rewritePositionFromPosZero = false)
@@ -146,7 +182,13 @@ class TranslateService
             return;
         }
 
-        $matchedSubdomains = $this->matchSubdomainsOrUrlAlias($item);
+        if (empty($this->trackUrlFolderPath)) {
+            $matchedSubdomains = $this->matchSubdomainsOrUrlAlias($item);
+        } else {
+            $matchedSubdomains = [];
+            $matchedTrackUrlFolderPath = $this->matchTrackUrlFolderPath($item);
+        }
+
         $domainName  = $this->extractDomain($url);
 
         if ($rank == 1 && strpos($url, 'wikipedia.org') !== false) {
@@ -155,7 +197,17 @@ class TranslateService
 
         if (
             ($this->response['position'] == self::DEFAULT_POSITION || $rewritePositionFromPosZero) &&
+            empty($this->trackUrlFolderPath) &&
             ( $domainName === $this->siteHost || $domainName === $this->urlAlias || !empty($matchedSubdomains[0]))
+        ) {
+            $this->response['position']     = $rank;
+            $this->response['landing_page'] = $url;
+        }
+
+        if (
+            ($this->response['position'] == self::DEFAULT_POSITION || $rewritePositionFromPosZero) &&
+            !empty($this->trackUrlFolderPath) &&
+            (\Utils::wwwhostwithpath($item->url) == \Utils::wwwhostwithpath($this->siteHost . $this->trackUrlFolderPath) || !empty($matchedTrackUrlFolderPath[0]))
         ) {
             $this->response['position']     = $rank;
             $this->response['landing_page'] = $url;
