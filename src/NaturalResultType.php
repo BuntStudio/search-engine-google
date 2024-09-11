@@ -30,8 +30,8 @@ abstract class NaturalResultType
     const JOBS_MINE_MOBILE             = 'jobs_mine_mobile';
 
     const APP_PACK                = 'app_pack';
-    const WIKI                = 'has_wiki';
-        const SITE_LINKS_BIG          = 'site_links_big';
+    const WIKI                    = 'has_wiki';
+    const SITE_LINKS_BIG          = 'site_links_big';
     const SITE_LINKS              = 'site_links';
     const AMP                     = 'amp';
     const SITE_LINKS_BIG_MOBILE   = 'site_links_big_mobile';
@@ -119,6 +119,49 @@ abstract class NaturalResultType
     const SGE_WIDGET_LOADED  = 'sge_widget_content_loaded';
     const SGE_WIDGET_LINKS   = 'sge_widget_links';
 
+    const CURRENCY_ANSWER             = 'currency_answer';
+    const CURRENCY_ANSWER_MINE        = 'currency_answer_mine';
+    const CURRENCY_ANSWER_MOBILE      = 'currency_answer_mobile';
+    const CURRENCY_ANSWER_MOBILE_MINE = 'currency_answer_mobile_mine';
+
+    const FLIGHTS_AIRLINE             = 'flights_airline';
+    const FLIGHTS_AIRLINE_MINE        = 'flights_airline_mine';
+    const FLIGHTS_AIRLINE_MOBILE      = 'flights_airline_mobile';
+    const FLIGHTS_AIRLINE_MOBILE_MINE = 'flights_airline_mobile_mine';
+
+    const FLIGHTS_SITES             = 'flights_sites';
+    const FLIGHTS_SITES_MINE        = 'flights_sites_mine';
+    const FLIGHTS_SITES_MOBILE      = 'flights_sites_mobile';
+    const FLIGHTS_SITES_MOBILE_MINE = 'flights_sites_mobile_mine';
+
+    const PLACES             = 'places';
+    const PLACES_MINE        = 'places_mine';
+    const PLACES_MOBILE      = 'places_mobile';
+    const PLACES_MOBILE_MINE = 'places_mobile_mine';
+
+    const PLACES_SITES             = 'places_sites';
+    const PLACES_SITES_MINE        = 'places_sites_mine';
+    const PLACES_SITES_MOBILE      = 'places_sites_mobile';
+    const PLACES_SITES_MOBILE_MINE = 'places_sites_mobile_mine';
+
+    const STOCKS_BOX             = 'stocks_box';
+    const STOCKS_BOX_MINE        = 'stocks_box_mine';
+    const STOCKS_BOX_MOBILE      = 'stocks_box_mobile';
+    const STOCKS_BOX_MOBILE_MINE = 'stocks_box_mobile_mine';
+
+    const THINGS_TO_KNOW             = 'things_to_know';
+    const THINGS_TO_KNOW_MINE        = 'things_to_know_mine';
+    const THINGS_TO_KNOW_MOBILE      = 'things_to_know_mobile';
+    const THINGS_TO_KNOW_MOBILE_MINE = 'things_to_know_mobile_mine';
+
+    const TOP_SIGHTS             = 'top_sights';
+    const TOP_SIGHTS_MINE        = 'top_sights_mine';
+    const TOP_SIGHTS_MOBILE      = 'top_sights_mobile';
+    const TOP_SIGHTS_MOBILE_MINE = 'top_sights_mobile_mine';
+
+    const VISUAL_DIGEST_MOBILE      = 'visual_digest_mobile';
+    const VISUAL_DIGEST_MOBILE_MINE = 'visual_digest_mobile_mine';
+
     const SERP_FEATURES_OLD_RESPONSE_TEMPLATE = [
         self::SITE_LINKS              => 0,
         self::MISSPELLING_OLD_VERSION => '',
@@ -152,7 +195,16 @@ abstract class NaturalResultType
         self::VISUAL_DIGEST => null,
         self::KNOWLEDGE_GRAPH_LINK => null,
         self::HIGHLY_LOCALIZED => null,
-        self::SITES => null
+        self::SITES => null,
+        self::PRODUCT_GRID => null,
+        self::CURRENCY_ANSWER => null,
+        self::FLIGHTS_AIRLINE => null,
+        self::FLIGHTS_SITES => null,
+        self::PLACES => null,
+        self::PLACES_SITES => null,
+        self::STOCKS_BOX => null,
+        self::THINGS_TO_KNOW => null,
+        self::TOP_SIGHTS => null
     ];
 
     const SERP_FEATURES_TYPE_TO_OLD_RESPONSE_FOR_POSITIONS = [
@@ -194,6 +246,17 @@ abstract class NaturalResultType
         self::VIDEO_CAROUSEL_MOBILE => self::VIDEOS,
         self::MAP => self::MAP,
         self::MAP_MOBILE => self::MAP,
+        self::PRODUCT_GRID => self::PRODUCT_GRID,
+        self::CURRENCY_ANSWER => self::CURRENCY_ANSWER,
+        self::FLIGHTS_AIRLINE => self::FLIGHTS_AIRLINE,
+        self::FLIGHTS_SITES => self::FLIGHTS_SITES,
+        self::PLACES => self::PLACES,
+        self::PLACES_SITES => self::PLACES_SITES,
+        self::STOCKS_BOX => self::STOCKS_BOX,
+        self::THINGS_TO_KNOW => self::THINGS_TO_KNOW,
+        self::TOP_SIGHTS => self::TOP_SIGHTS,
+        self::VISUAL_DIGEST => self::VISUAL_DIGEST,
+        self::VISUAL_DIGEST_MOBILE => self::VISUAL_DIGEST_MOBILE
     ];
 
 }
