@@ -256,6 +256,7 @@ abstract class NaturalResultType
         self::THINGS_TO_KNOW => self::THINGS_TO_KNOW,
         self::TOP_SIGHTS => self::TOP_SIGHTS,
         self::VISUAL_DIGEST => self::VISUAL_DIGEST,
+        self::VISUAL_DIGEST_MOBILE => self::VISUAL_DIGEST_MOBILE
     ];
 
 }
