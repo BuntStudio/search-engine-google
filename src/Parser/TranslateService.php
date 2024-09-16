@@ -111,10 +111,10 @@ class TranslateService
                 }
 
             } else {
-                preg_match('/.*\.' . str_replace('.', '\.', $this->siteHost) . '/', $url, $matchedSubdomains);
+                preg_match('/.*\.?' . str_replace('.', '\.', $this->siteHost) . '/', $url, $matchedSubdomains);
 
                 if (empty($matchedSubdomains[0]) && $this->urlAlias) {
-                    preg_match('/.*\.' . str_replace('.', '\.', $this->urlAlias) . '/', $url,
+                    preg_match('/.*\.?' . str_replace('.', '\.', $this->urlAlias) . '/', $url,
                         $matchedSubdomains);
                 }
             }
@@ -141,7 +141,7 @@ class TranslateService
                 );
             } else {
                 preg_match(
-                    '/.*\.' . str_replace('.', '\.', str_replace('/', '\/', \Utils::wwwhostwithpath($this->siteHost . $this->trackUrlFolderPath))) . '/',
+                    '/.*\.?' . str_replace('.', '\.', str_replace('/', '\/', \Utils::wwwhostwithpath($this->siteHost . $this->trackUrlFolderPath))) . '/',
                     \Utils::wwwhostwithpath($item->url),
                     $matchedTrackUrlFolderPath
                 );
