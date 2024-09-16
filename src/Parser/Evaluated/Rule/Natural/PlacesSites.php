@@ -13,8 +13,11 @@ class PlacesSites implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterf
 
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($node->getAttribute('class') == 'RyIFgf') {
-            return self::RULE_MATCH_MATCHED;
+        if ($node->getAttribute('class') == 'XNfAUb') {
+            $placesText = $dom->getXpath()->evaluate('string(//*[contains(@class, "mgAbYb")])');
+            if (!empty($placesText) && $placesText == 'Places sites') {
+                return self::RULE_MATCH_MATCHED;
+            }
         }
 
         return self::RULE_MATCH_NOMATCH;
