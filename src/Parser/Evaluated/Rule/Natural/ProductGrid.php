@@ -16,7 +16,7 @@ class ProductGrid implements ParsingRuleInterface
 
     public function match(GoogleDom $dom, DomElement $node)
     {
-        if ($dom->getXpath()->query('.//*[@class="T98FId"]', $node)->length > 0) {
+        if ($node->getAttribute('jscontroller') == 'wuEeed') {
             return self::RULE_MATCH_MATCHED;
         }
 

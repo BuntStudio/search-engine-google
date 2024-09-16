@@ -143,6 +143,7 @@ class NaturalParser extends AbstractParser
          //@class = 'e8Ck0d SS4zp' //VisualDigest
         //@id= 'bres' -> related searches
         //@id= 'x3SAYd' or  -> places
+        //@jscontroller= 'wuEeed' or - product grid
         //@class='ixix9e' or -> places
         //@class= 'RyIFgf' or -> places sites
         //@class= 'aviV4d' or -> stocks box
@@ -197,6 +198,7 @@ class NaturalParser extends AbstractParser
             @id= 'bres' or
             @class= 'x3SAYd' or
             @class= 'ixix9e' or
+            @jscontroller= 'wuEeed' or
             @class= 'RyIFgf' or
             @class= 'aviV4d' or
             @class= 'EyBRub' or

@@ -432,7 +432,7 @@ class TranslateService
         }
 
         if ($item->is(NaturalResultType::PRODUCT_GRID)) {
-            $this->response[NaturalResultType::PRODUCT_GRID] = true;
+            $this->response[NaturalResultType::PRODUCT_GRID] = $item->getData();
         }
 
         if ($item->is(NaturalResultType::PLACES)) {
