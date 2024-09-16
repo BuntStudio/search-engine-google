@@ -151,7 +151,6 @@ class NaturalParser extends AbstractParser
         //@class= 'jhtnKe' or -> top sights
         //@class= 'XNfAUb' or -> flights sites
         //[contains(@class, 'EDblX')] or ->  flights airlines
-        //@class= 'ULSxyf' or ->  flights airlines
         //@id= 'knowledge-currency__updatable-data-column' or -> currency answer
         //@class = 'zJUuqf' // sites
         //@jscontroller = 'hKbgK' // flight airline options
@@ -210,7 +209,6 @@ class NaturalParser extends AbstractParser
             @jsname='ZLxsqf' or
             contains(@class, 'KYLHhb') or
             contains(@class, 'EDblX') or
-            @class='ULSxyf' or
             @class='Ww4FFb' or
             @class='XNfAUb' or
             @class='sATSHe'

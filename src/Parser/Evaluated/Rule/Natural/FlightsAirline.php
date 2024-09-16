@@ -12,10 +12,10 @@ class FlightsAirline implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
 {
 
     public $hasSerpFeaturePosition = true;
-    
+
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($node->getAttribute('class') == 'ULSxyf' && $dom->getXpath()->query(".//div[contains(@class, 'EDblX')]", $node)->length > 0) {
+        if ($node->getAttribute('class') == 'sATSHe') {
             return self::RULE_MATCH_MATCHED;
         }
 

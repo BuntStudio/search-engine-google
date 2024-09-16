@@ -15,7 +15,7 @@ class ThingsToKnow implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
 
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($node->getAttribute('class') == 'ULSxyf') {
+        if ($node->getAttribute('class') == 'EyBRub') {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -24,12 +24,13 @@ class ThingsToKnow implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
 
     public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
     {
-        $thingsToKnowNodes = $googleDOM->getXpath()->query('.//*[@class="tF2Cxc"]', $node);
+        $thingsToKnowNodes = $googleDOM->getXpath()->query('descendant::div[contains(concat(\' \', normalize-space(@class), \' \'), \' trNcde \')]', $node);
         if ($thingsToKnowNodes->length > 0) {
             $items = [];
             for ($i = 0; $i < $thingsToKnowNodes->length; $i++) {
                 if (!empty($thingsToKnowNodes->item($i))) {
-                    $items[] = preg_replace('/#:~:text.*?$/i','', $thingsToKnowNodes->item($i)->getElementsByTagName('a')->item(0)->getAttribute('href'));
+                    $item = $thingsToKnowNodes->item($i);
+                    $items[] = $item->getNodeValue();//preg_replace('/#:~:text.*?$/i','', $thingsToKnowNodes->item($i)->getElementsByTagName('a')->item(0)->getAttribute('href'));
                 }
             }
             if (count($items)) {
