@@ -39,7 +39,7 @@ abstract class NaturalResultType
     const APP_PACK_MOBILE         = 'app_pack_mobile';
 
     const PRODUCT_LISTING         = 'pla';
-    const PRODUCT_GRID            = 'pgr';
+    //const PRODUCT_GRID            = 'pgr';
     const PRODUCT_LISTING_MOBILE  = 'pla_mobile';
     const RECIPES_GROUP           = 'recipes';
     const RECIPES_LINKS           = 'recipes_links';
@@ -138,6 +138,11 @@ abstract class NaturalResultType
     const PLACES_MINE        = 'places_mine';
     const PLACES_MOBILE      = 'places_mobile';
     const PLACES_MOBILE_MINE = 'places_mobile_mine';
+
+    const PRODUCT_GRID             = 'product_grid';
+    const PRODUCT_GRID_MINE        = 'product_grid_mine';
+    const PRODUCT_GRID_MOBILE      = 'product_grid_mobile';
+    const PRODUCT_GRID_MOBILE_MINE = 'product_grid_mobile_mine';
 
     const PLACES_SITES             = 'places_sites';
     const PLACES_SITES_MINE        = 'places_sites_mine';
@@ -247,14 +252,23 @@ abstract class NaturalResultType
         self::MAP => self::MAP,
         self::MAP_MOBILE => self::MAP,
         self::PRODUCT_GRID => self::PRODUCT_GRID,
+        self::PRODUCT_GRID_MOBILE => self::PRODUCT_GRID_MOBILE,
         self::CURRENCY_ANSWER => self::CURRENCY_ANSWER,
+        self::CURRENCY_ANSWER_MOBILE => self::CURRENCY_ANSWER_MOBILE,
         self::FLIGHTS_AIRLINE => self::FLIGHTS_AIRLINE,
+        self::FLIGHTS_AIRLINE_MOBILE => self::FLIGHTS_AIRLINE_MOBILE,
         self::FLIGHTS_SITES => self::FLIGHTS_SITES,
+        self::FLIGHTS_SITES_MOBILE => self::FLIGHTS_SITES_MOBILE,
         self::PLACES => self::PLACES,
+        self::PLACES_MOBILE => self::PLACES_MOBILE,
         self::PLACES_SITES => self::PLACES_SITES,
+        self::PLACES_SITES_MOBILE => self::PLACES_SITES_MOBILE,
         self::STOCKS_BOX => self::STOCKS_BOX,
+        self::STOCKS_BOX_MOBILE => self::STOCKS_BOX_MOBILE,
         self::THINGS_TO_KNOW => self::THINGS_TO_KNOW,
+        self::THINGS_TO_KNOW_MOBILE => self::THINGS_TO_KNOW_MOBILE,
         self::TOP_SIGHTS => self::TOP_SIGHTS,
+        self::TOP_SIGHTS_MOBILE => self::TOP_SIGHTS_MOBILE,
         self::VISUAL_DIGEST => self::VISUAL_DIGEST,
         self::VISUAL_DIGEST_MOBILE => self::VISUAL_DIGEST_MOBILE
     ];
