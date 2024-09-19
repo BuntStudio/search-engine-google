@@ -17,7 +17,10 @@ class MobileV4 implements ParsingRuleByVersionInterface
         contains(concat(' ', normalize-space(@class), ' '), ' C8nzq BmP5tf ') or
         @class='sXtWJb' or
         (contains(concat(' ', normalize-space(@class), ' '), ' BmP5tf ') and
-         contains(concat(' ', normalize-space(@class), ' '), ' cz3goc '))
+         contains(concat(' ', normalize-space(@class), ' '), ' cz3goc ')) or
+        (contains(concat(' ', normalize-space(@class), ' '), ' OcpZAb ') and
+         contains(concat(' ', normalize-space(@class), ' '), ' cz3goc ')
+        )
         ]", $organicResult);
 
         if (empty($aTag->length) && $organicResult->hasClass('zwqzjb')) {
