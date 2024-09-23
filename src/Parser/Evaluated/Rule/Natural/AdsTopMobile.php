@@ -35,6 +35,9 @@ class AdsTopMobile extends AdsTop
         (
             contains(concat(' ', normalize-space(@class), ' '), ' BmP5tf ') and
             contains(concat(' ', normalize-space(@class), ' '), ' cz3goc ')
+        ) or(
+            contains(concat(' ', normalize-space(@class), ' '), ' OcpZAb ') and
+            contains(concat(' ', normalize-space(@class), ' '), ' cz3goc ')
         ) or
         contains(concat(' ', normalize-space(@class), ' '), ' rhgcW ')
 
