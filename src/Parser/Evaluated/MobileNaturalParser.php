@@ -117,6 +117,7 @@ class MobileNaturalParser extends AbstractParser
         //contains(@class, 'e8Ck0d') visual digest
         //contains(@class, 'Enb9pe') - visual digest mobile
         return $googleDom->xpathQuery("//*[@id='iur' or
+            (contains(@class, 'IZE3Td') and .//div[@data-attrid='images universal']) or
             @id='sports-app' or
             @id='center_col' or
             @id='tads' or
