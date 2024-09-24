@@ -24,21 +24,11 @@ class ProductListing implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
             return self::RULE_MATCH_MATCHED;
         }
 
-        if (strpos($node->getAttribute('class'), 'sho-apgc__product-grid') !== false) {
-            return self::RULE_MATCH_MATCHED;
-        }
-
         return self::RULE_MATCH_NOMATCH;
     }
 
     public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false)
     {
-        if (strpos($node->getAttribute('class'), 'sho-apgc__product-grid') !== false) {
-            // these pla don't contain urls. just add the serp
-            $resultSet->addItem(
-                new BaseResult(NaturalResultType::PRODUCT_LISTING, [['url' => '']], $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition)
-            );
-        }
 
         $productsNodes = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' pla-unit ') or
         contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ')]", $node);
