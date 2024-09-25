@@ -33,11 +33,17 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             return self::RULE_MATCH_MATCHED;
         }
 
-        if (
-            strpos($node->getAttribute('class'), 'IZE3Td') !== false &&
-            $node->getChildren()->item(0)->getChildren()->item(0)->getChildren()->item(0)->getChildren()->item(0)->getChildren()->item(0)->getAttribute('data-attrid') == 'images universal'
-        ) {
-            return self::RULE_MATCH_MATCHED;
+        if (strpos($node->getAttribute('class'), 'IZE3Td') !== false) {
+            $child = $node;
+            for ($i = 0; $i < 5; $i++) {
+                $child = $child->getChildren()->item(0);
+                if (empty($child)) {
+                    return self::RULE_MATCH_NOMATCH;
+                }
+            }
+            if ($child->getAttribute('data-attrid') == 'images universal') {
+                return self::RULE_MATCH_MATCHED;
+            }
         }
 
         if ($node->getAttribute('data-attrid') == 'images universal') {
