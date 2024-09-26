@@ -104,17 +104,17 @@ class TranslateService
         $url = $this->removeProtocolAndPath($item->url);
         if ($this->crawlSubdomains || $this->mobile || $this->urlAlias) {
             if ($this->crawlSubdomains === false) {
-                preg_match('/m\.' . str_replace('.', '\.', $this->siteHost) . '/', $url, $matchedSubdomains);
+                preg_match('/m\.' . str_replace('.', '\.', $this->siteHost) . '(\/.*)?$/', $url, $matchedSubdomains);
 
                 if (empty($matchedSubdomains[0]) && $this->urlAlias) {
-                    preg_match('/m\.' . str_replace('.', '\.', $this->urlAlias) . '/', $url, $matchedSubdomains);
+                    preg_match('/m\.' . str_replace('.', '\.', $this->urlAlias) . '(\/.*)?$/', $url, $matchedSubdomains);
                 }
 
             } else {
-                preg_match('/.*\.' . str_replace('.', '\.', $this->siteHost) . '/', $url, $matchedSubdomains);
+                preg_match('/^(.*\.)?' . str_replace('.', '\.', $this->siteHost) . '(\/.*)?$/', $url, $matchedSubdomains);
 
                 if (empty($matchedSubdomains[0]) && $this->urlAlias) {
-                    preg_match('/.*\.' . str_replace('.', '\.', $this->urlAlias) . '/', $url,
+                    preg_match('/^(.*\.)?' . str_replace('.', '\.', $this->urlAlias) . '(\/.*)?$/', $url,
                         $matchedSubdomains);
                 }
             }
@@ -135,13 +135,13 @@ class TranslateService
         if ($this->crawlSubdomains || $this->mobile) {
             if ($this->crawlSubdomains === false) {
                 preg_match(
-                    '/m\.' . str_replace('.', '\.', str_replace('/', '\/', \Utils::wwwhostwithpath($this->siteHost . $this->trackUrlFolderPath))) . '/',
+                    '/m\.' . str_replace('.', '\.', str_replace('/', '\/', \Utils::wwwhostwithpath($this->siteHost . $this->trackUrlFolderPath))) . '(\/.*)?$/',
                     \Utils::wwwhostwithpath($item->url),
                     $matchedTrackUrlFolderPath
                 );
             } else {
                 preg_match(
-                    '/.*\.' . str_replace('.', '\.', str_replace('/', '\/', \Utils::wwwhostwithpath($this->siteHost . $this->trackUrlFolderPath))) . '/',
+                    '/^(.*\.)?' . str_replace('.', '\.', str_replace('/', '\/', \Utils::wwwhostwithpath($this->siteHost . $this->trackUrlFolderPath))) . '(\/.*)?$/',
                     \Utils::wwwhostwithpath($item->url),
                     $matchedTrackUrlFolderPath
                 );
