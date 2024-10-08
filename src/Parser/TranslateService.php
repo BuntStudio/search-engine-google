@@ -78,6 +78,24 @@ class TranslateService
         return $url;
     }
 
+    /**
+     * @param $url
+     *
+     * @return string
+     */
+    protected function extractDomainAndPath($url)
+    {
+        $url = strtolower(trim($url));
+        $url = str_replace(['http://', 'https://'], ['', ''], $url);
+
+        $url = preg_replace('/^www[0-9]*\./', '', $url);
+
+        $url = ltrim($url, '.');
+        $url = ltrim($url, '/');
+
+        return $url;
+    }
+
     protected function removeProtocolAndPath($url)
     {
         $url = strtolower(trim($url));
@@ -85,6 +103,17 @@ class TranslateService
         if (strpos($url, '/') != false) {
             $url = substr($url, 0, strpos($url, '/'));
         }
+
+        $url = ltrim($url, '.');
+        $url = ltrim($url, '/');
+
+        return $url;
+    }
+
+    protected function removeProtocol($url)
+    {
+        $url = strtolower(trim($url));
+        $url = str_replace(['http://', 'https://'], ['', ''], $url);
 
         $url = ltrim($url, '.');
         $url = ltrim($url, '/');
@@ -135,14 +164,14 @@ class TranslateService
         if ($this->crawlSubdomains || $this->mobile) {
             if ($this->crawlSubdomains === false) {
                 preg_match(
-                    '/m\.' . str_replace('.', '\.', str_replace('/', '\/', \Utils::wwwhostwithpath($this->siteHost . $this->trackUrlFolderPath))) . '(\/.*)?$/',
-                    \Utils::wwwhostwithpath($item->url),
+                    '/m\.' . str_replace('.', '\.', str_replace('/', '\/', $this->removeProtocol($this->siteHost . $this->trackUrlFolderPath))) . '(\/.*)?$/',
+                    $this->removeProtocol($item->url),
                     $matchedTrackUrlFolderPath
                 );
             } else {
                 preg_match(
-                    '/^(.*\.)?' . str_replace('.', '\.', str_replace('/', '\/', \Utils::wwwhostwithpath($this->siteHost . $this->trackUrlFolderPath))) . '(\/.*)?$/',
-                    \Utils::wwwhostwithpath($item->url),
+                    '/^(.*\.)?' . str_replace('.', '\.', str_replace('/', '\/', $this->removeProtocol($this->siteHost . $this->trackUrlFolderPath))) . '(\/.*)?$/',
+                    $this->removeProtocol($item->url),
                     $matchedTrackUrlFolderPath
                 );
             }
@@ -207,7 +236,9 @@ class TranslateService
         if (
             ($this->response['position'] == self::DEFAULT_POSITION || $rewritePositionFromPosZero) &&
             !empty($this->trackUrlFolderPath) &&
-            (\Utils::wwwhostwithpath($item->url) == \Utils::wwwhostwithpath($this->siteHost . $this->trackUrlFolderPath) || !empty($matchedTrackUrlFolderPath[0]))
+            (
+                strpos($this->extractDomainAndPath($item->url), $this->extractDomainAndPath($this->siteHost . $this->trackUrlFolderPath)) !== false || !empty($matchedTrackUrlFolderPath[0])
+            )
         ) {
             $this->response['position']     = $rank;
             $this->response['landing_page'] = $url;
