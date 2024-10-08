@@ -14,7 +14,7 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
 
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
-        if ($dom->cssQuery('.kp-wholepage.kp-wholepage-osrp', $node)->length == 1) {
+        if ($dom->cssQuery('.kp-wholepage-osrp', $node)->length == 1) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -30,13 +30,16 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
     {
         $data = [];
 
-        $links = $googleDOM->cssQuery("a[class='ab_button']", $group);
+
+
+
+        $links = $googleDOM->cssQuery("a[data-attrid='visit_official_site']", $group);
         if ($links->length > 0){
             $data['link'] = $links->item(0)->getAttribute('href');
         }
 
         if ($links->length == 0) {
-            $links = $googleDOM->cssQuery("a[data-attrid='visit_official_site']", $group);
+            $links = $googleDOM->cssQuery("a[class='n1obkb mI8Pwc'], a[class='P6Deab']", $group);
             if ($links->length > 0){
                 $data['link'] = $links->item(0)->getAttribute('href');
             }
@@ -48,11 +51,22 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
                 $data['link'] = $links->item(0)->getAttribute('href');
             }
         }
+        if ($links->length == 0) {
+            $links = $googleDOM->cssQuery("a[class='ab_button']", $group);
+            if ($links->length > 0){
+                $data['link'] = $links->item(0)->getAttribute('href');
+            }
+        }
         /** @var \DomElement $titleNode */
         $titleNode = $googleDOM->cssQuery("div[data-attrid='subtitle']", $group)->item(0);
 
         if ($titleNode instanceof \DomElement) {
             $data['title'] = $titleNode->textContent;
+            $subtitle = $googleDOM->cssQuery("*[class='E5BaQ']", $titleNode);
+            if ($subtitle->length >0) {
+                $data['title'] =  $subtitle->item(0)->textContent;
+            }
+
         } else {
             $titleNode = $googleDOM->getXpath()->query("descendant::h2[contains(concat(' ', normalize-space(@class), ' '), ' kno-ecr-pt ')]", $group);
 

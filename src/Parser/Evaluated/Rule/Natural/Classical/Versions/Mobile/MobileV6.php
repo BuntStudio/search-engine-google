@@ -7,9 +7,6 @@ use Serps\SearchEngine\Google\Page\GoogleDom;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\OrganicResultObject;
 use Serps\SearchEngine\Google\Parser\ParsingRuleByVersionInterface;
 
-/*
- * Mobile classical result with no description. only with title
- */
 class MobileV6 implements ParsingRuleByVersionInterface
 {
 
@@ -37,10 +34,19 @@ class MobileV6 implements ParsingRuleByVersionInterface
             $organicResultObject->setTitle($titleNode->item(0)->textContent);
         }
 
-        $descriptionNode = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' ovAMtc')]",
-            $aTag->item(0));
+        $descriptionNode = $dom->getXpath()->query(
+            "descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' ovAMtc')]",
+            $aTag->item(0)
+        );
 
-        if($descriptionNode->length >0 && $organicResultObject->getDescription() === null) {
+        if ($descriptionNode->length === 0) {
+            $descriptionNode = $dom->getXpath()->query(
+                "following::div[contains(concat(' ', normalize-space(@class), ' '), ' hJNv6b')]",
+                $aTag->item(0)
+            );
+        }
+
+        if ($descriptionNode->length > 0 && $organicResultObject->getDescription() === null) {
             $organicResultObject->setDescription($descriptionNode->item(0)->textContent);
         }
     }

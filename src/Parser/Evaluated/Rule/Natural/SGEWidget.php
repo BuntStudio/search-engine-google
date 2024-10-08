@@ -62,13 +62,28 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             NaturalResultType::SGE_WIDGET_LINKS   => [],
         ];
         $linkElements = $dom->xpathQuery('descendant::div[@data-attrid="SGEAttributionFeedback"]', $node);
-        foreach ($linkElements as $cage) {
-            $link = $dom->xpathQuery('descendant::a', $cage)->item(0);
-            $data[NaturalResultType::SGE_WIDGET_LINKS][] = [
-                'title' => $link ? $link->getAttribute('aria-label') : '',
-                'url'   => $link ? $link->getAttribute('href') : '',
-                'html'  => $cage->ownerDocument->saveHTML($cage),
-            ];
+        if ($linkElements->length == 0) {
+            $linkElements = $dom->xpathQuery('descendant::*[@class="BOThhc"]//descendant::*[@class="LLtSOc"]', $node);
+        }
+        if ($linkElements->length > 0) {
+            foreach ($linkElements as $cage) {
+                $link = $dom->xpathQuery('descendant::a', $cage)->item(0);
+                if (empty($link)) {
+                    $link = $cage;
+                }
+                $title = $link->getAttribute('aria-label');
+                if (empty($title)) {
+                    $title = $dom->xpathQuery('descendant::*[@class="mNme1d tNxQIb"]', $cage);
+                    if (!empty($title) && !empty($title->length)) {
+                        $title =  $title->item(0)->textContent;
+                    }
+                }
+                $data[NaturalResultType::SGE_WIDGET_LINKS][] = [
+                    'title' => $link ? $link->getAttribute('aria-label') : '',
+                    'url'   => $link ? $link->getAttribute('href') : '',
+                    'html'  => $cage->ownerDocument->saveHTML($cage),
+                ];
+            }
         }
         return $data;
     }
