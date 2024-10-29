@@ -47,7 +47,8 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     protected function isWidgetLoaded(GoogleDom $dom, $node)
     {
-        $widgetContent = $dom->xpathQuery('descendant::div[@data-attrid="SGEParagraphFeedback"]', $node);
+        $widgetContent = $dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@id), ' '), 'folsrch-')]", $node);
+
         return $widgetContent->length > 0;
     }
 
