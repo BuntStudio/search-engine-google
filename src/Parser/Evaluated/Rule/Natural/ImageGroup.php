@@ -95,11 +95,21 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
     public function version2(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
     {
         $images = $googleDOM->getXpath()->query('descendant::div[contains(concat(" ", @class, " "), " w43QB ")]', $node);
-        $item   = [];
+
         if ($images->length == 0) {
-            //TODO FIX THIS
-            $images = $googleDOM->getXpath()->query('ancestor::div[contains(concat(" ", @class, " "), " MjjYud ")]/descendant::div[@data-lpage]', $node);
+            return;
         }
+
+        $item   = [];
+        if ($images->length > 0) {
+            foreach ($images as $imageNode) {
+                $item['images'][] = ['url'=>$this->parseItem( $imageNode)];
+            }
+        }
+
+        $resultSet->addItem(
+            new BaseResult($this->getType($isMobile), $item, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition)
+        );
     }
 
     protected function getType($isMobile)
