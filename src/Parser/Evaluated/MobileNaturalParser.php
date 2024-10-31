@@ -107,6 +107,7 @@ class MobileNaturalParser extends AbstractParser
         // [contains(@class, 'CWesnb')]  = features snipped/position zero
         //[contains(@class, 'gws-plugins-horizon-jobs__li-ed')]  = jobs
         //@jscontroller='G42bz' = jobs
+        //@jscontroller='wuEeed' = product listing
         //[contains(@class, 'LQQ1Bd')] - flights
         // [@class='BNeawe DwrKqd'] - new flights
         //div[@class='hNKF2b'] = hotels
@@ -160,8 +161,8 @@ class MobileNaturalParser extends AbstractParser
             contains(@class, 'e8Ck0d') or
             @id='eKIzJc' or
             @jsname='ZLxsqf' or
-            contains(@data-enable-product-traversal, 'true') or
             @class='pxiwBd' or
+            @jscontroller='wuEeed' or
             contains(@class, 'Enb9pe')
         ][not(self::script) and not(self::style)]");
     }

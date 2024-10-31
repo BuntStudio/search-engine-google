@@ -22,10 +22,6 @@ class ProductListingMobile extends SerpFeaturesVersions
             return self::RULE_MATCH_MATCHED;
         }
 
-        if ($node->hasAttribute('data-enable-product-traversal')) {
-            return self::RULE_MATCH_MATCHED;
-        }
-
         return self::RULE_MATCH_NOMATCH;
     }
 
