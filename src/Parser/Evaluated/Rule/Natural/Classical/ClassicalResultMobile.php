@@ -35,6 +35,17 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
                 $organicResult->parentNode->parentNode)->length > 0) {
             (new SiteLinksBigMobile())->parse($dom, $organicResult->parentNode->parentNode, $resultSet, false);
         }
+
+
+        if (
+            $dom->xpathQuery(
+                "descendant::form[@class='xBIiEf']",
+                $organicResult->parentNode->parentNode->parentNode
+            )->length > 0 &&
+            $organicResult->parentNode->parentNode->parentNode->getAttribute('class') === 'BYM4Nd'
+        ) {
+            (new SiteLinksBigMobile())->parse($dom, $organicResult->parentNode->parentNode->parentNode, $resultSet, false);
+        }
     }
 
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)

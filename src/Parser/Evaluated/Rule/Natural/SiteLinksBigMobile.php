@@ -23,7 +23,10 @@ class SiteLinksBigMobile implements \Serps\SearchEngine\Google\Parser\ParsingRul
         $siteLinksNodes = $googleDOM->xpathQuery("descendant::div[@class='MUxGbd v0nnCb lyLwlc']", $node);
 
         if ($siteLinksNodes->length == 0) {
-            return;
+            $siteLinksNodes = $googleDOM->xpathQuery("descendant::div[@class='DkX4ue Va3FIb EE3Upf lVm3ye']", $node);
+            if ($siteLinksNodes->length == 0) {
+                return;
+            }
         }
 
         $items = [];
