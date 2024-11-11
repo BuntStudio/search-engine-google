@@ -110,17 +110,6 @@ class TranslateService
         return $url;
     }
 
-    protected function removeProtocol($url)
-    {
-        $url = strtolower(trim($url));
-        $url = str_replace(['http://', 'https://'], ['', ''], $url);
-
-        $url = ltrim($url, '.');
-        $url = ltrim($url, '/');
-
-        return $url;
-    }
-
     /**
      * @param $item
      *
@@ -159,25 +148,13 @@ class TranslateService
      */
     protected function matchTrackUrlFolderPath($item)
     {
-        $matchedTrackUrlFolderPath = [];
-
-        if ($this->crawlSubdomains || $this->mobile) {
-            if ($this->crawlSubdomains === false) {
-                preg_match(
-                    '/m\.' . str_replace('.', '\.', str_replace('/', '\/', $this->removeProtocol($this->siteHost . $this->trackUrlFolderPath))) . '/',
-                    $this->removeProtocol($item->url),
-                    $matchedTrackUrlFolderPath
-                );
-            } else {
-                preg_match(
-                    '/.*\.' . str_replace('.', '\.', str_replace('/', '\/', $this->removeProtocol($this->siteHost . $this->trackUrlFolderPath))) . '/',
-                    $this->removeProtocol($item->url),
-                    $matchedTrackUrlFolderPath
-                );
-            }
-        }
-
-        return $matchedTrackUrlFolderPath;
+        return \SM_Rank_Service::matchTrackUrlFolderPathGeneral(
+            $item,
+            $this->crawlSubdomains,
+            $this->mobile,
+            $this->siteHost,
+            $this->trackUrlFolderPath
+        );
     }
 
     /**
