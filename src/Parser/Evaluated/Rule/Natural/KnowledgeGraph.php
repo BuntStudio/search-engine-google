@@ -15,7 +15,6 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
         if (
-            $node->getAttribute('id') === 'rhs' &&
             $dom->cssQuery('.kp-wholepage-osrp', $node)->length == 1
         ) {
             return self::RULE_MATCH_MATCHED;
