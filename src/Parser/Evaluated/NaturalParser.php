@@ -182,7 +182,7 @@ class NaturalParser extends AbstractParser
             contains(@class, 'related-question-pair') or
             contains(@class, 'gws-plugins-horizon-jobs__li-ed') or
             contains(@class, 'L5NwLd') or
-            g-section-with-header[@class='yG4QQe TBC9ub'] or
+            self::g-section-with-header[@class='yG4QQe TBC9ub'] or
             @id='kp-wp-tab-cont-Latest' or
             @id = 'oFNiHe' or
             @id='result-stats' or
