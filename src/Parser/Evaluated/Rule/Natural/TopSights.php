@@ -49,7 +49,7 @@ class TopSights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                         $url = $item->getAttribute('href');
                     }
                     if (!empty($url)) {
-                        $items[] = ['name' => $name, 'url' => $url];
+                        $items[] = ['name' => $name, 'url' => \SM_Rank_Service::getUrlFromGoogleTranslate($url)];
                     }
                 }
             }

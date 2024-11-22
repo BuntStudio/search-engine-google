@@ -38,7 +38,7 @@ class SiteLinksBigMobile implements \Serps\SearchEngine\Google\Parser\ParsingRul
                 continue;
             }
 
-            $items[] = ['title' => $aNode->textContent, 'url' => $aNode->getAttribute('href')];
+            $items[] = ['title' => $aNode->textContent, 'url' => \SM_Rank_Service::getUrlFromGoogleTranslate($aNode->getAttribute('href'))];
         }
 
         $resultSet->addItem(

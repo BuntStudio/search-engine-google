@@ -67,7 +67,7 @@ class AdsTop implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
             if (empty($link)) {
                 continue;
             }
-            $links[] = ['url' => $link];
+            $links[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($link)];
         }
 
         if (!empty($links)) {

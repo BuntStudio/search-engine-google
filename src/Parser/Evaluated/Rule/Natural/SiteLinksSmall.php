@@ -29,7 +29,7 @@ class SiteLinksSmall implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
         $items = [];
 
         foreach ($siteLinksNodes as $aNode) {
-            $items[] = ['title' => $aNode->textContent, 'url' => $aNode->getAttribute('href')];
+            $items[] = ['title' => $aNode->textContent, 'url' => \SM_Rank_Service::getUrlFromGoogleTranslate($aNode->getAttribute('href'))];
         }
 
         $resultSet->addItem(

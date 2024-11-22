@@ -17,7 +17,7 @@ class MapMobile implements ParsingRuleInterface
 
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
-    
+
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
         if ($dom->cssQuery('img.wfAGXd', $node)->length == 1) {
@@ -62,7 +62,7 @@ class MapMobile implements ParsingRuleInterface
                     ->getAttribute('href');
 
                 if ($href) {
-                    return $dom->getUrl()->resolveAsString($href);
+                    return $dom->getUrl()->resolveAsString(\SM_Rank_Service::getUrlFromGoogleTranslate($href));
                 }
             },
             'street' => function () use ($localPack, $dom) {

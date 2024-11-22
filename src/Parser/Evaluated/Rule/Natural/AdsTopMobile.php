@@ -67,9 +67,9 @@ class AdsTopMobile extends AdsTop
                 }
 
                 if(empty($links) || empty(array_column($links, 'url'))){
-                    $links[] = ['url' => $href->getAttribute('href')];
+                    $links[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($href->getAttribute('href'))];
                 } elseif (!in_array($href->getAttribute('href'), array_column($links, 'url'))) {
-                    $links[] = ['url' => $href->getAttribute('href')];
+                    $links[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($href->getAttribute('href'))];
                 }
             }
         }

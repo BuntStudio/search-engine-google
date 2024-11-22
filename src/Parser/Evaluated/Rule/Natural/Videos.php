@@ -43,7 +43,7 @@ class Videos implements ParsingRuleInterface
 
         foreach ($aHrefs as $url) {
             $items[] = [
-                'url'    => $url->getAttribute('href'),
+                'url'    => \SM_Rank_Service::getUrlFromGoogleTranslate($url->getAttribute('href')),
                 'height' => '',
             ];
         }

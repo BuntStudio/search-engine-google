@@ -54,7 +54,7 @@ class AnswerBox implements ParsingRuleInterface
                     // TODO ERROR
                     return;
                 }
-                return $dom->getUrl()->resolveAsString($aTag->getAttribute('href'));
+                return $dom->getUrl()->resolveAsString(\SM_Rank_Service::getUrlFromGoogleTranslate($aTag->getAttribute('href')));
             },
             'destination' => function () use ($dom, $node) {
                 $citeTag = $dom->cssQuery('.rc .s cite', $node)

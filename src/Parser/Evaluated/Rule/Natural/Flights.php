@@ -44,7 +44,7 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 
             if($urls->length> 0) {
                 foreach ($urls as $urlNode) {
-                    $item['flights_names'][] = ['name' => $urlNode->firstChild->textContent, 'url' => $urlNode->getAttribute('href')];
+                    $item['flights_names'][] = ['name' => $urlNode->firstChild->textContent, 'url' => \SM_Rank_Service::getUrlFromGoogleTranslate($urlNode->getAttribute('href'))];
                 }
             }
         } else {
@@ -64,7 +64,7 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 
             if($urls->length> 0) {
                 foreach ($urls as $urlNode) {
-                    $item['flights_names'][] = ['name' => $urlNode->firstChild->textContent, 'url' => $urlNode->getAttribute('href')];
+                    $item['flights_names'][] = ['name' => $urlNode->firstChild->textContent, 'url' => \SM_Rank_Service::getUrlFromGoogleTranslate($urlNode->getAttribute('href'))];
                 }
             }
         }

@@ -35,7 +35,7 @@ class ProductListingMobile extends SerpFeaturesVersions
 
         foreach ($productsNodes as $productNode) {
             $productUrl = $productNode->getAttribute('data-dtld');
-            $items[]    = ['url' => $productUrl];
+            $items[]    = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($productUrl)];
         }
 
         $resultSet->addItem(
@@ -52,7 +52,7 @@ class ProductListingMobile extends SerpFeaturesVersions
             return;
         }
 
-        $items[] = ['url' => $productsNodes->item(0)->getAttribute('data-dtld')];
+        $items[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($productsNodes->item(0)->getAttribute('data-dtld'))];
 
         $resultSet->addItem(
             new BaseResult(NaturalResultType::PRODUCT_LISTING_MOBILE, $items, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition)
@@ -70,7 +70,7 @@ class ProductListingMobile extends SerpFeaturesVersions
 
         foreach ($productsNodes as $productNode) {
             $productUrl = $productNode->getNodeValue();
-            $items[]    = ['url' => $productUrl];
+            $items[]    = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($productUrl)];
         }
 
         $resultSet->addItem(

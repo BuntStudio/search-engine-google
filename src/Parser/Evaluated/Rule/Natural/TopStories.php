@@ -68,7 +68,7 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
 
             if ($aNode instanceof DomNodeList && $aNode->length > 0) {
                 $link            = $aNode->item(0)->getAttribute('href');
-                $items['news'][] = ['url' => $link];
+                $items['news'][] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($link)];
             }
         }
 
@@ -100,7 +100,7 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
 
         foreach ($hrefsNodes as $hrefNode) {
             /** @var $hrefNode DomElement */
-            $items['news'][] = ['url' => $hrefNode->getAttribute('href')];
+            $items['news'][] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($hrefNode->getAttribute('href'))];
         }
 
         if (!empty($items)) {
@@ -141,7 +141,7 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
                 continue;
             }
             /** @var $hrefNode DomElement */
-            $items['news'][] = ['url' => $hrefNodes->item(0)->getAttribute('href')];
+            $items['news'][] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($hrefNodes->item(0)->getAttribute('href'))];
         }
 
         if (!empty($items)) {

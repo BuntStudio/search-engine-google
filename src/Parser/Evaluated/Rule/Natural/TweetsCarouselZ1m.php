@@ -46,7 +46,7 @@ class TweetsCarouselZ1m implements ParsingRuleInterface
                 $res = $dom->cssQuery('._Z1m>._ujp>a', $node);
 
                 if ($res->length == 1) {
-                    return $res->item(0)->getAttribute('href');
+                    return \SM_Rank_Service::getUrlFromGoogleTranslate($res->item(0)->getAttribute('href'));
                 } else {
                     throw new InvalidDOMException('Cannot parse url for twitter carousel.');
                 }

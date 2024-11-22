@@ -73,7 +73,7 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
             }
 
             $object              = new \StdClass();
-            $object->url         = \Utils::removeParamFromUrl($aTag->item(0)->getAttribute('href'));
+            $object->url         = \SM_Rank_Service::getUrlFromGoogleTranslate(\Utils::removeParamFromUrl($aTag->item(0)->getAttribute('href')));
             $object->description = (!empty($description) && !empty($description->item(0)) && !empty($description->item(0)->textContent)) ? $description->item(0)->textContent : '';
             $object->title       = (!empty($h3Tag) && !empty($h3Tag->item(0)) && !empty($h3Tag->item(0)->textContent)) ? $h3Tag->item(0)->textContent : '';
 
@@ -108,9 +108,9 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
                 $results[] = $object;
                 break;
             }
-            
+
         }
-        
+
 //        if (!empty($aTag) && !empty($aTag->item(1))) {
 //            $object              = new \StdClass();
 //            $object->url         = $aTag->item(1)->getAttribute('href');

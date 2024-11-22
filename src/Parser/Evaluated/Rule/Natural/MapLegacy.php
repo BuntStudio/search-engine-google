@@ -70,7 +70,7 @@ class MapLegacy implements ParsingRuleInterface
             'url' => function () use ($localPack, $dom) {
                 $item = $dom->getXpath()->query('descendant::a', $localPack)->item(1);
                 if ($item) {
-                    return $item->getAttribute('href');
+                    return \SM_Rank_Service::getUrlFromGoogleTranslate($item->getAttribute('href'));
                 }
                 return null;
             },

@@ -39,7 +39,7 @@ class PlacesSites implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterf
                     } else {
                         $name = trim($parent->textContent);
                     }
-                    $items[] = ['name' => $name, 'url' => $item->getAttribute('href')];
+                    $items[] = ['name' => $name, 'url' => \SM_Rank_Service::getUrlFromGoogleTranslate($item->getAttribute('href'))];
                 }
             }
 

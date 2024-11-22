@@ -56,7 +56,7 @@ class InTheNews implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $aTag = $googleDOM->getXpath()->query($xpathTitle, $node)->item(0);
         if ($aTag) {
             $card['title'] = $aTag->nodeValue;
-            $card['url'] = $aTag->getAttribute('href');
+            $card['url'] = \SM_Rank_Service::getUrlFromGoogleTranslate($aTag->getAttribute('href'));
             $card['description'] = function () use ($googleDOM, $node) {
                 $span = $googleDOM->getXpath()->query("descendant::span[@class='_dwd st s std']", $node);
                 if ($span && $span->length > 0) {

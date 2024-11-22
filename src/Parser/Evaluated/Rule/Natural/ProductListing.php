@@ -60,7 +60,7 @@ class ProductListing implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
                 $productUrl = explode('-',$seller->textContent)[0];
             }
 
-            $items[]    = ['url' => $productUrl];
+            $items[]    = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($productUrl)];
         }
 
         if (!empty($items)) {

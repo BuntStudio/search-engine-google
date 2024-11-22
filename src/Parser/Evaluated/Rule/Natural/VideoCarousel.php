@@ -59,7 +59,7 @@ class VideoCarousel implements \Serps\SearchEngine\Google\Parser\ParsingRuleInte
                 continue;
             }
             $items[] = [
-                'url'    => $theUrl,
+                'url'    => \SM_Rank_Service::getUrlFromGoogleTranslate($theUrl),
                 'height' => '',
             ];
         }

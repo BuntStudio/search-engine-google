@@ -48,7 +48,7 @@ class TopStoriesVertical implements ParsingRuleInterface
                         },
                         'url' => function () use ($dom, $newsNode) {
                             $el = $dom->cssQuery('a', $newsNode)->item(0);
-                            return $el->getAttribute('href');
+                            return \SM_Rank_Service::getUrlFromGoogleTranslate($el->getAttribute('href'));
                         }
                     ]);
                 }

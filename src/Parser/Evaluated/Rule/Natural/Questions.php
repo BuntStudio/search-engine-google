@@ -39,7 +39,7 @@ class Questions implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             $qText = $qTextNodes->item(0)->getNodeValue();
         }
         $resultSet->addItem(
-            new BaseResult($this->getType($isMobile), ['url' => $firstUrl, 'title' => $qText], $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition)
+            new BaseResult($this->getType($isMobile), ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($firstUrl), 'title' => $qText], $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition)
         );
 
     }

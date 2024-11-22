@@ -53,7 +53,7 @@ class VideosMobile implements ParsingRuleInterface
             return;
         }
 
-        $data[] = ['url' => $node->parentNode->getAttribute('href')];
+        $data[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($node->parentNode->getAttribute('href'))];
 
         $resultSet->addItem(new BaseResult([NaturalResultType::VIDEOS_MOBILE], $data, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }
@@ -71,7 +71,7 @@ class VideosMobile implements ParsingRuleInterface
         foreach ($videosContainer as $videoNode) {
             $url = $googleDOM->getXpath()->query("descendant::a", $videoNode)->item(0);
 
-            $data[] = ['url'=>$url->getAttribute('href')];
+            $data[] = ['url'=> \SM_Rank_Service::getUrlFromGoogleTranslate($url->getAttribute('href'))];
         }
 
         $resultSet->addItem(new BaseResult([NaturalResultType::VIDEOS_MOBILE], $data, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
@@ -90,7 +90,7 @@ class VideosMobile implements ParsingRuleInterface
         foreach ($videosPlayerBtns as $videoBtn) {
             $url = $videoBtn->parentNode->parentNode->parentNode->parentNode->parentNode;
 
-            $data[] = ['url'=>$url->getAttribute('href')];
+            $data[] = ['url'=> \SM_Rank_Service::getUrlFromGoogleTranslate($url->getAttribute('href'))];
         }
 
         $resultSet->addItem(new BaseResult([NaturalResultType::VIDEOS_MOBILE], $data, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
@@ -107,7 +107,7 @@ class VideosMobile implements ParsingRuleInterface
         $data = [];
 
         foreach ($videosPlayerBtns as $videoBtn) {
-            $data[] = ['url'=>$videoBtn->getAttribute('href')];
+            $data[] = ['url'=> \SM_Rank_Service::getUrlFromGoogleTranslate($videoBtn->getAttribute('href'))];
         }
 
         $resultSet->addItem(new BaseResult([NaturalResultType::VIDEOS_MOBILE], $data, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
@@ -124,7 +124,7 @@ class VideosMobile implements ParsingRuleInterface
         $data = [];
 
         foreach ($videosPlayerBtns as $videoBtn) {
-            $data[] = ['url'=>$videoBtn->getAttribute('href')];
+            $data[] = ['url'=> \SM_Rank_Service::getUrlFromGoogleTranslate($videoBtn->getAttribute('href'))];
         }
 
         $resultSet->addItem(new BaseResult([NaturalResultType::VIDEOS_MOBILE], $data, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));

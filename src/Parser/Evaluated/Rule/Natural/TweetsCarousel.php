@@ -42,7 +42,7 @@ class TweetsCarousel implements ParsingRuleInterface
 
             $data = [
                 'title'   => $title,
-                'url'     => $aTag->getAttribute('href'),
+                'url'     => \SM_Rank_Service::getUrlFromGoogleTranslate($aTag->getAttribute('href')),
                 'user'    => isset($match[0]) ? $match[0] : null
             ];
 

@@ -59,7 +59,7 @@ class VideoCarouselMobile implements \Serps\SearchEngine\Google\Parser\ParsingRu
                 continue;
             }
             $items[] = [
-                'url'    => $theUrl,
+                'url'    => \SM_Rank_Service::getUrlFromGoogleTranslate($theUrl),
                 'height' => '',
             ];
         }
@@ -84,7 +84,7 @@ class VideoCarouselMobile implements \Serps\SearchEngine\Google\Parser\ParsingRu
         }
 
         $items[] = [
-            'url' => $url,
+            'url' => \SM_Rank_Service::getUrlFromGoogleTranslate($url),
             'height' => '',
         ];
 

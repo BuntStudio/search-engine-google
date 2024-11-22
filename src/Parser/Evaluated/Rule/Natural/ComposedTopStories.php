@@ -17,7 +17,7 @@ class ComposedTopStories implements ParsingRuleInterface
 {
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
-    
+
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
         if ($dom->cssQuery('._Fzo ._HSj', $node)->length == 1
@@ -36,8 +36,8 @@ class ComposedTopStories implements ParsingRuleInterface
         $item = new BaseResult(
             [NaturalResultType::TOP_STORIES, NaturalResultType::TOP_STORIES_COMPOSED],
             $this->parseNode($dom, $node),
-            $node, 
-            $this->hasSerpFeaturePosition, 
+            $node,
+            $this->hasSerpFeaturePosition,
             $this->hasSideSerpFeaturePosition
         );
         $resultSet->addItem($item);
@@ -75,7 +75,7 @@ class ComposedTopStories implements ParsingRuleInterface
                 },
                 'url' => function () use ($dom, $newsNode) {
                     $el = $dom->cssQuery('._rNq>a', $newsNode)->item(0);
-                    return $el->getAttribute('href');
+                    return \SM_Rank_Service::getUrlFromGoogleTranslate($el->getAttribute('href'));
                 }
             ]);
         }
@@ -96,7 +96,7 @@ class ComposedTopStories implements ParsingRuleInterface
                 },
                 'url' => function () use ($dom, $newsNode) {
                     $el = $dom->cssQuery('g-inner-card._KBh>a', $newsNode)->item(0);
-                    return $el->getAttribute('href');
+                    return \SM_Rank_Service::getUrlFromGoogleTranslate($el->getAttribute('href'));
                 }
             ]);
         }

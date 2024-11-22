@@ -82,7 +82,7 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
 
         if ($images->length > 0) {
             foreach ($images as $imageNode) {
-                $item['images'][] = ['url'=>$this->parseItem( $imageNode)];
+                $item['images'][] = ['url'=> \SM_Rank_Service::getUrlFromGoogleTranslate($this->parseItem( $imageNode))];
             }
         }
 
@@ -103,7 +103,7 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
         $item   = [];
         if ($images->length > 0) {
             foreach ($images as $imageNode) {
-                $item['images'][] = ['url'=>$this->parseItem( $imageNode)];
+                $item['images'][] = ['url'=> \SM_Rank_Service::getUrlFromGoogleTranslate($this->parseItem( $imageNode))];
             }
         }
 

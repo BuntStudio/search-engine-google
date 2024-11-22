@@ -81,7 +81,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 }
                 $data[NaturalResultType::SGE_WIDGET_LINKS][] = [
                     'title' => $link ? $link->getAttribute('aria-label') : '',
-                    'url'   => $link ? $link->getAttribute('href') : '',
+                    'url'   => $link ? \SM_Rank_Service::getUrlFromGoogleTranslate($link->getAttribute('href')) : '',
                     'html'  => $cage->ownerDocument->saveHTML($cage),
                 ];
             }

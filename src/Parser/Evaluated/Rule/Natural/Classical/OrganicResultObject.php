@@ -53,7 +53,7 @@ class OrganicResultObject
      */
     public function setLink($link)
     {
-        $this->link = \Utils::removeParamFromUrl($link);
+        $this->link = \SM_Rank_Service::getUrlFromGoogleTranslate(\Utils::removeParamFromUrl($link));
     }
 
 }
