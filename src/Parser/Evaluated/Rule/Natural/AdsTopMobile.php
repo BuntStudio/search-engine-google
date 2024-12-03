@@ -18,7 +18,13 @@ class AdsTopMobile extends AdsTop
 
     public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
     {
-        $adsNodes = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ') or contains(concat(' ', normalize-space(@class), ' '), ' Ww4FFb ') or contains(concat(' ', normalize-space(@class), ' '), ' uEierd ')]",
+        $adsNodes = $googleDOM->getXpath()->query(
+            "descendant::div[
+                        contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ') or
+                        contains(concat(' ', normalize-space(@class), ' '), ' Ww4FFb ') or
+                        contains(concat(' ', normalize-space(@class), ' '), ' uEierd ') or
+                        contains(concat(' ', normalize-space(@class), ' '), ' ozeYlc ')
+                        ]",
             $node);
 
         $links    = [];
@@ -66,7 +72,7 @@ class AdsTopMobile extends AdsTop
                     continue;
                 }
 
-                if(empty($links) || empty(array_column($links, 'url'))){
+                if (empty($links) || empty(array_column($links, 'url'))) {
                     $links[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($href->getAttribute('href'))];
                 } elseif (!in_array($href->getAttribute('href'), array_column($links, 'url'))) {
                     $links[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($href->getAttribute('href'))];
