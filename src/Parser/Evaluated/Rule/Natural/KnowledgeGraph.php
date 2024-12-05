@@ -28,54 +28,54 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
         return $isMobile ? NaturalResultType::KNOWLEDGE_GRAPH_MOBILE : NaturalResultType::KNOWLEDGE_GRAPH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $group, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         $data = [];
 
 
 
 
-        $links = $googleDOM->cssQuery("a[data-attrid='visit_official_site']", $group);
+        $links = $dom->cssQuery("a[data-attrid='visit_official_site']", $node);
         if ($links->length > 0){
             $data['link'] = $links->item(0)->getAttribute('href');
         }
 
         if ($links->length == 0) {
-            $links = $googleDOM->cssQuery("a[class='n1obkb mI8Pwc'], a[class='P6Deab']", $group);
+            $links = $dom->cssQuery("a[class='n1obkb mI8Pwc'], a[class='P6Deab']", $node);
             if ($links->length > 0){
                 $data['link'] = $links->item(0)->getAttribute('href');
             }
         }
 
         if ($links->length == 0) {
-            $links = $googleDOM->cssQuery("a[class='sXtWJb']", $group);
+            $links = $dom->cssQuery("a[class='sXtWJb']", $node);
             if ($links->length > 0){
                 $data['link'] = $links->item(0)->getAttribute('href');
             }
         }
         if ($links->length == 0) {
-            $links = $googleDOM->cssQuery("a[class='ab_button']", $group);
+            $links = $dom->cssQuery("a[class='ab_button']", $node);
             if ($links->length > 0){
                 $data['link'] = $links->item(0)->getAttribute('href');
             }
         }
         /** @var \DomElement $titleNode */
-        $titleNode = $googleDOM->cssQuery("div[data-attrid='subtitle']", $group)->item(0);
+        $titleNode = $dom->cssQuery("div[data-attrid='subtitle']", $node)->item(0);
 
         if ($titleNode instanceof \DomElement) {
             $data['title'] = $titleNode->textContent;
-            $subtitle = $googleDOM->cssQuery("*[class='E5BaQ']", $titleNode);
+            $subtitle = $dom->cssQuery("*[class='E5BaQ']", $titleNode);
             if ($subtitle->length >0) {
                 $data['title'] =  $subtitle->item(0)->textContent;
             }
 
         } else {
-            $titleNode = $googleDOM->getXpath()->query("descendant::h2[contains(concat(' ', normalize-space(@class), ' '), ' kno-ecr-pt ')]", $group);
+            $titleNode = $dom->getXpath()->query("descendant::h2[contains(concat(' ', normalize-space(@class), ' '), ' kno-ecr-pt ')]", $node);
 
             if($titleNode->length >0) {
                 $data['title'] = $titleNode->item(0)->firstChild->textContent;
             } else {
-                $titleNode = $googleDOM->cssQuery("h2[data-attrid='title']", $group)->item(0);
+                $titleNode = $dom->cssQuery("h2[data-attrid='title']", $node)->item(0);
                 if ($titleNode instanceof \DomElement) {
                     $data['title'] = $titleNode->textContent;
                 }
@@ -84,16 +84,16 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
 
         // Has no definition -> take "general presentation" text
         if(empty($data)) {
-            $data['title']= $this->detectGeneralPresentationText($googleDOM, $group);
+            $data['title']= $this->detectGeneralPresentationText($dom, $node);
         }
 
-        $inResults = $googleDOM->getXpath()->query("ancestor-or-self::div[contains(concat(' ', normalize-space(@class), ' '), ' MjjYud ')]", $group);
+        $inResults = $dom->getXpath()->query("ancestor-or-self::div[contains(concat(' ', normalize-space(@class), ' '), ' MjjYud ')]", $node);
 
         if ($isMobile || $inResults->length) {
             $this->hasSideSerpFeaturePosition = false;
         }
 
-        $resultSet->addItem(new BaseResult($this->getType($isMobile), $data, $group, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
+        $resultSet->addItem(new BaseResult($this->getType($isMobile), $data, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }
 
     protected function detectGeneralPresentationText(GoogleDom $googleDOM, \DomElement $group)

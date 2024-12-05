@@ -15,7 +15,7 @@ class Flight implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
-    
+
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
         if ('flun' == $node->getAttribute('id')) {
@@ -24,8 +24,8 @@ class Flight implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $group, IndexedResultSet $resultSet, $isMobile=false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $resultSet->addItem(new BaseResult(NaturalResultType::FLIGHTS, [], $group, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
+        $resultSet->addItem(new BaseResult(NaturalResultType::FLIGHTS, [], $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }
 }

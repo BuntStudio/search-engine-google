@@ -18,9 +18,9 @@ class SiteLinksSmall implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
         return self::RULE_MATCH_MATCHED;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $siteLinksNodes = $googleDOM->xpathQuery("descendant::div[@class='HiHjCd']/a", $node);
+        $siteLinksNodes = $dom->xpathQuery("descendant::div[@class='HiHjCd']/a", $node);
 
         if ($siteLinksNodes->length == 0) {
             return;

@@ -19,15 +19,15 @@ class Sites implements ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         $sitesTitle = null;
-        $sitesTitleNodeList = $googleDOM->getXpath()->query('descendant::span[contains(concat(" ", @class, " "), " mgAbYb OSrXXb RES9jf IFnjPb ")]', $node);
+        $sitesTitleNodeList = $dom->getXpath()->query('descendant::span[contains(concat(" ", @class, " "), " mgAbYb OSrXXb RES9jf IFnjPb ")]', $node);
         if ($sitesTitleNodeList->length) {
             $sitesTitle = $sitesTitleNodeList->current()->textContent;
         }
 
-        $sitesItems = $googleDOM->getXpath()->query('following-sibling::div[@jscontroller="s0j7C"]/descendant::*[contains( @jscontroller,"QQ51Ce" )]', $node);
+        $sitesItems = $dom->getXpath()->query('following-sibling::div[@jscontroller="s0j7C"]/descendant::*[contains( @jscontroller,"QQ51Ce" )]', $node);
 
         if ($sitesItems->length > 1) {
             $resultSet->addItem(new BaseResult(NaturalResultType::SITES, ['count' => $sitesItems->length, 'title' => $sitesTitle], $node));

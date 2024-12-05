@@ -18,12 +18,12 @@ class SiteLinksBigMobile implements \Serps\SearchEngine\Google\Parser\ParsingRul
         return self::RULE_MATCH_MATCHED;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $siteLinksNodes = $googleDOM->xpathQuery("descendant::div[@class='MUxGbd v0nnCb lyLwlc']", $node);
+        $siteLinksNodes = $dom->xpathQuery("descendant::div[@class='MUxGbd v0nnCb lyLwlc']", $node);
 
         if ($siteLinksNodes->length == 0) {
-            $siteLinksNodes = $googleDOM->xpathQuery("descendant::div[@class='DkX4ue Va3FIb EE3Upf lVm3ye']", $node);
+            $siteLinksNodes = $dom->xpathQuery("descendant::div[@class='DkX4ue Va3FIb EE3Upf lVm3ye']", $node);
             if ($siteLinksNodes->length == 0) {
                 return;
             }
@@ -32,7 +32,7 @@ class SiteLinksBigMobile implements \Serps\SearchEngine\Google\Parser\ParsingRul
         $items = [];
 
         foreach ($siteLinksNodes as $siteLinksNode) {
-            $aNode   = $googleDOM->xpathQuery("descendant::a", $siteLinksNode)->item(0);
+            $aNode   = $dom->xpathQuery("descendant::a", $siteLinksNode)->item(0);
 
             if ($aNode === null) {
                 continue;

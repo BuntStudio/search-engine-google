@@ -26,10 +26,10 @@ class Questions implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         return $isMobile ? NaturalResultType::QUESTIONS_MOBILE : NaturalResultType::QUESTIONS;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $urlsNodes  = $googleDOM->getXpath()->query('descendant::a', $node);
-        $qTextNodes = $googleDOM->getXpath()->query('descendant::span', $node);
+        $urlsNodes  = $dom->getXpath()->query('descendant::a', $node);
+        $qTextNodes = $dom->getXpath()->query('descendant::span', $node);
         $firstUrl = '';
         $qText = '';
         if ($urlsNodes->length > 0) {

@@ -30,7 +30,7 @@ class Definitions implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterf
     }
 
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         $resultSet->addItem(new BaseResult(NaturalResultType::DEFINITIONS, [], $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }

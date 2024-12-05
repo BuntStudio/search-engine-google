@@ -16,9 +16,9 @@ use Serps\SearchEngine\Google\NaturalResultType;
 class AdsTopMobile extends AdsTop
 {
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $adsNodes = $googleDOM->getXpath()->query(
+        $adsNodes = $dom->getXpath()->query(
             "descendant::div[
                         contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ') or
                         contains(concat(' ', normalize-space(@class), ' '), ' Ww4FFb ') or
@@ -35,7 +35,7 @@ class AdsTopMobile extends AdsTop
 
         foreach ($adsNodes as $adsNode) {
 
-            $aHrefs = $googleDOM->getXpath()->query("descendant::a[
+            $aHrefs = $dom->getXpath()->query("descendant::a[
         contains(concat(' ', normalize-space(@class), ' '), ' C8nzq BmP5tf ') or
         @class='sXtWJb' or
         (
@@ -49,7 +49,7 @@ class AdsTopMobile extends AdsTop
 
         ]", $adsNode);
 
-            $pla = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' commercial-unit-mobile-top ')]", $adsNode);
+            $pla = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' commercial-unit-mobile-top ')]", $adsNode);
             if ($pla->length != 0) {
                 //these are product listings, not just ads
                 continue;

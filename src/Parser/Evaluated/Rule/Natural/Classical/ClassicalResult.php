@@ -23,12 +23,12 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         return self::RULE_MATCH_NOMATCH;
     }
 
-    protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k)
+    protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, string $onlyRemoveSrsltidForDomain = '')
     {
-        $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k);
+        $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $onlyRemoveSrsltidForDomain);
 
         if( $dom->xpathQuery("descendant::table[@class='jmjoTe']", $organicResult)->length >0) {
-            (new SiteLinksBig())->parse($dom,$organicResult, $resultSet, false);
+            (new SiteLinksBig())->parse($dom, $organicResult, $resultSet, false);
         }
 
         $parentWithSameClass = $dom->xpathQuery("ancestor::div[@class='g']", $organicResult);
@@ -36,22 +36,22 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
 
         if($parentWithSameClass->length > 0) {
             if( $dom->xpathQuery("descendant::table[@class='jmjoTe']", $parentWithSameClass->item(0))->length >0) {
-                (new SiteLinksBig())->parse($dom,$parentWithSameClass->item(0), $resultSet, false);
+                (new SiteLinksBig())->parse($dom, $parentWithSameClass->item(0), $resultSet, false);
             }
         }
 
         if( $dom->xpathQuery("descendant::div[@class='HiHjCd']", $organicResult)->length >0) {
-            (new SiteLinksSmall())->parse($dom,$organicResult, $resultSet, false);
+            (new SiteLinksSmall())->parse($dom, $organicResult, $resultSet, false);
         }
 
         if($parentWithSameClass->length > 0) {
             if( $dom->xpathQuery("descendant::div[@class='HiHjCd']", $parentWithSameClass->item(0))->length >0) {
-                (new SiteLinksBig())->parse($dom,$parentWithSameClass->item(0), $resultSet, false);
+                (new SiteLinksBig())->parse($dom, $parentWithSameClass->item(0), $resultSet, false);
             }
         }
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         $naturalResults = $dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' g ') or contains(concat(' ', normalize-space(@class), ' '), ' MYVUIe ')]", $node);
 
@@ -72,7 +72,7 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
             }
 
             $k++;
-            $this->parseNode($dom, $organicResult, $resultSet, $k);
+            $this->parseNode($dom, $organicResult, $resultSet, $k, $onlyRemoveSrsltidForDomain);
         }
 
     }

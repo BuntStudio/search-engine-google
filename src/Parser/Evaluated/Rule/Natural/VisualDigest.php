@@ -21,15 +21,15 @@ class VisualDigest implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $visualDigestItems = $googleDOM->getXpath()->query('descendant::*[contains( @data-attrid,"VisualDigest" )]   ', $node);
+        $visualDigestItems = $dom->getXpath()->query('descendant::*[contains( @data-attrid,"VisualDigest" )]   ', $node);
         $item = [];
 
         if ($visualDigestItems->length > 1) {
             foreach ($visualDigestItems as $visualDigestItem) {
                 $visualDigestType = $visualDigestItem->getAttribute('data-attrid');
-                $link = $googleDOM->getXpath()->query('descendant::a', $visualDigestItem);
+                $link = $dom->getXpath()->query('descendant::a', $visualDigestItem);
                 $info = true;
                 if (!empty($link->item(0))) {
                     $info = $link->item(0)->getAttribute('href');

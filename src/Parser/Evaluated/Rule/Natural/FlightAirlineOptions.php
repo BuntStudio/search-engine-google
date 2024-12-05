@@ -19,9 +19,9 @@ class FlightAirlineOptions implements ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $flightAirlineOptions = $googleDOM->getXpath()->query('descendant::div[@role="list"]/descendant::*[@role="listitem"]', $node);
+        $flightAirlineOptions = $dom->getXpath()->query('descendant::div[@role="list"]/descendant::*[@role="listitem"]', $node);
 
         if ($flightAirlineOptions->length > 1) {
             $resultSet->addItem(new BaseResult(NaturalResultType::FLIGHT_AIRLINE_OPTIONS, ['count' => $flightAirlineOptions->length], $node));

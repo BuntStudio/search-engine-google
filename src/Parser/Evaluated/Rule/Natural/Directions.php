@@ -23,7 +23,7 @@ class Directions implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
             $resultSet->addItem(new BaseResult(NaturalResultType::DIRECTIONS, [], $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }

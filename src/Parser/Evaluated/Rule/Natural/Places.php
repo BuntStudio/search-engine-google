@@ -21,9 +21,9 @@ class Places implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $placesNodes = $googleDOM->getXpath()->query(".//*[@class='rllt__details']", $node);
+        $placesNodes = $dom->getXpath()->query(".//*[@class='rllt__details']", $node);
         $items         = [];
         if ($placesNodes->length > 0 ) {
             $items = [];

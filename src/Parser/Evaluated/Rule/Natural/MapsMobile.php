@@ -23,10 +23,10 @@ class MapsMobile implements ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false, string $onlyRemoveSrsltidForDomain = '')
     {
         foreach ($this->steps as $functionName) {
-            call_user_func_array([$this, $functionName], [$googleDOM, $node, $resultSet, $isMobile]);
+            call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile]);
         }
     }
 

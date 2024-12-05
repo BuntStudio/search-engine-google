@@ -21,7 +21,7 @@ class AppPack implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false, string $onlyRemoveSrsltidForDomain = '')
     {
         if($node->childNodes <=1) {
             return;

@@ -22,9 +22,9 @@ class TopSights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $topSightsNodes = $googleDOM->getXpath()->query("descendant::a[contains(concat(' ', normalize-space(@class), ' '), 'ddkIM')]", $node);
+        $topSightsNodes = $dom->getXpath()->query("descendant::a[contains(concat(' ', normalize-space(@class), ' '), 'ddkIM')]", $node);
 //        if ($topSightsNodes->length > 0) {
 //            $resultSet->addItem(new BaseResult(NaturalResultType::TOP_SIGHTS, [], $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
 //        }
@@ -35,14 +35,14 @@ class TopSights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 if (!empty($topSightsNodes->item($i))){
                     $item = $topSightsNodes->item($i);
                     $parent = $item->parentNode;
-                    $nameNodes = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' yVCOtc ')]", $parent);
+                    $nameNodes = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' yVCOtc ')]", $parent);
                     if ($nameNodes->length > 0) {
                         $name = trim($nameNodes->item(0)->textContent);
                     } else {
                         $name = trim($parent->textContent);
                     }
 
-                    $urlNodes = $googleDOM->getXpath()->query("descendant::a[contains(concat(' ', normalize-space(@class), ' '), ' hHB9mc ')]", $parent);
+                    $urlNodes = $dom->getXpath()->query("descendant::a[contains(concat(' ', normalize-space(@class), ' '), ' hHB9mc ')]", $parent);
                     if ($urlNodes->length > 0) {
                         $url = $urlNodes->item(0)->getAttribute('href');
                     } else {

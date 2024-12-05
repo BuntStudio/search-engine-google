@@ -53,7 +53,7 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         foreach ($this->steps as $functionName) {
 
@@ -62,7 +62,7 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             }
 
             try {
-                call_user_func_array([$this, $functionName], [$googleDOM, $node, $resultSet, $isMobile]);
+                call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile]);
             } catch (\Exception $exception) {
                 continue;
             }

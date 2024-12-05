@@ -37,7 +37,7 @@ class TweetsCarouselZ1m implements ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
 
         $item = new BaseResult(NaturalResultType::TWEETS_CAROUSEL, [

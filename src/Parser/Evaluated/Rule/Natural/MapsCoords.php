@@ -20,7 +20,7 @@ class MapsCoords implements ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false, string $onlyRemoveSrsltidForDomain = '')
     {
 
         $aNode = $node->getElementsByTagName('a')->item(0);

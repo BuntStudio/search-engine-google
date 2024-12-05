@@ -30,19 +30,19 @@ class InTheNews implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $group, IndexedResultSet $resultSet)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         $item = [
             'news' => []
         ];
         $xpathCards = "div/div[contains(concat(' ',normalize-space(@class),' '),' card-section ')]";
-        $cardNodes = $googleDOM->getXpath()->query($xpathCards, $group);
+        $cardNodes = $dom->getXpath()->query($xpathCards, $node);
 
         foreach ($cardNodes as $cardNode) {
-            $item['news'][] = $this->parseItem($googleDOM, $cardNode);
+            $item['news'][] = $this->parseItem($dom, $cardNode);
         }
 
-        $resultSet->addItem(new BaseResult(NaturalResultType::IN_THE_NEWS, $item, $group, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
+        $resultSet->addItem(new BaseResult(NaturalResultType::IN_THE_NEWS, $item, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }
     /**
      * @param GoogleDOM $googleDOM

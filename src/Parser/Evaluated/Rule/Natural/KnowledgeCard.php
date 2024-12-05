@@ -16,7 +16,7 @@ class KnowledgeCard implements ParsingRuleInterface
 {
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
-    
+
     public function match(GoogleDom $dom, DomElement $node)
     {
         if ($node->hasClass('mnr-c') && $node->hasClass('kno-kp')) {
@@ -25,24 +25,24 @@ class KnowledgeCard implements ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
 
         $data = [
-            'title' => function () use ($googleDOM, $node) {
-                $item = $googleDOM->cssQuery('._OKe ._Q1n ._sdf');
+            'title' => function () use ($dom, $node) {
+                $item = $dom->cssQuery('._OKe ._Q1n ._sdf');
 
                 if (!$item->length) {
-                    $item = $googleDOM->cssQuery('.d1rFIf>.kno-ecr-pt>span');
+                    $item = $dom->cssQuery('.d1rFIf>.kno-ecr-pt>span');
                 }
 
                 return $item->getNodeAt(0)->getNodeValue();
             },
-            'shortDescription' => function () use ($googleDOM, $node) {
-                $item = $googleDOM->cssQuery('._OKe ._Q1n ._gdf', $node); // appears to be outdated
+            'shortDescription' => function () use ($dom, $node) {
+                $item = $dom->cssQuery('._OKe ._Q1n ._gdf', $node); // appears to be outdated
 
                 if (!$item->length) {
-                    $item = $googleDOM->cssQuery('.sthby', $node);
+                    $item = $dom->cssQuery('.sthby', $node);
                 }
 
                 return $item->getNodeAt(0)->getNodeValue();

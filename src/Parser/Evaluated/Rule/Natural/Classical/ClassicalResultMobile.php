@@ -27,13 +27,13 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         return self::RULE_MATCH_NOMATCH;
     }
 
-    protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k)
+    protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, string $onlyRemoveSrsltidForDomain = '')
     {
-        $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k);
+        $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $onlyRemoveSrsltidForDomain);
 
         if ($dom->xpathQuery("descendant::div[@class='MUxGbd v0nnCb lyLwlc']",
                 $organicResult->parentNode->parentNode)->length > 0) {
-            (new SiteLinksBigMobile())->parse($dom, $organicResult->parentNode->parentNode, $resultSet, false);
+            (new SiteLinksBigMobile())->parse($dom, $organicResult->parentNode->parentNode, $resultSet, false, $onlyRemoveSrsltidForDomain);
         }
 
 
@@ -48,7 +48,7 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         }
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         $naturalResults = $dom->xpathQuery("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ') or contains(concat(' ', normalize-space(@class), ' '), ' xpd EtOod ') or contains(concat(' ', normalize-space(@class), ' '), ' svwwZ ') or contains(concat(' ', normalize-space(@class), ' '), 'UDZeY fAgajc') or (contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage') and contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage-osrp'))] | //a[contains(concat(' ', normalize-space(@class), ' '), 'zwqzjb')]", $node);
         if ($naturalResults->length == 0) {
@@ -68,7 +68,7 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
 
             try {
                 $k++;
-                $this->parseNode($dom, $organicResult, $resultSet, $k);
+                $this->parseNode($dom, $organicResult, $resultSet, $k, $onlyRemoveSrsltidForDomain);
             } catch (\Exception $exception) {
 
                 // If first position detected with classical class it's not a results, do not decrement position

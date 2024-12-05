@@ -21,21 +21,21 @@ class Recipes implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $urls = $googleDOM->getXpath()->query('descendant::g-link', $node);
+        $urls = $dom->getXpath()->query('descendant::g-link', $node);
         $item = [];
 
         $urlOnAttribute  = false;
 
         if ($urls->length == 0) {
             $urlOnAttribute =  true;
-            $urls = $googleDOM->getXpath()->query('descendant::a[@data-rl]', $node);
+            $urls = $dom->getXpath()->query('descendant::a[@data-rl]', $node);
         }
 
         if ($urls->length == 0) {
             $urlOnAttribute = false;
-            $urls = $googleDOM->getXpath()->query("descendant::div[@jsname='Gbzile']", $node);
+            $urls = $dom->getXpath()->query("descendant::div[@jsname='Gbzile']", $node);
         }
 
         if ($urls->length > 0) {

@@ -30,7 +30,7 @@ class DefinitionsMobile implements \Serps\SearchEngine\Google\Parser\ParsingRule
     }
 
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         $resultSet->addItem(new BaseResult(NaturalResultType::DEFINITIONS_MOBILE, [], $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }

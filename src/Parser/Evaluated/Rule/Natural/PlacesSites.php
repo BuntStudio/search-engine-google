@@ -23,17 +23,17 @@ class PlacesSites implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterf
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         //todo is we have already added places
-        $placesSitesNodes = $googleDOM->getXpath()->query("descendant::a[contains(concat(' ', normalize-space(@class), ' '), ' ddkIM ')]", $node);
+        $placesSitesNodes = $dom->getXpath()->query("descendant::a[contains(concat(' ', normalize-space(@class), ' '), ' ddkIM ')]", $node);
         if ($placesSitesNodes->length > 0 ) {
             $items = [];
             for ($i = 0; $i < $placesSitesNodes->length; $i++) {
                 if (!empty($placesSitesNodes->item($i))){
                     $item = $placesSitesNodes->item($i);
                     $parent = $item->parentNode;
-                    $nameNodes = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' VaiWld ')]", $parent);
+                    $nameNodes = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' VaiWld ')]", $parent);
                     if ($nameNodes->length > 0) {
                         $name = trim($nameNodes->item(0)->textContent);
                     } else {

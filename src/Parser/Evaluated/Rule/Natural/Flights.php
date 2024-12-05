@@ -36,10 +36,10 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
     }
 
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         if ($this->isNewFlight) {
-            $urls = $googleDOM->getXpath()->query('ancestor::tbody/descendant::a', $node->firstChild);
+            $urls = $dom->getXpath()->query('ancestor::tbody/descendant::a', $node->firstChild);
             $item = [];
 
             if($urls->length> 0) {
@@ -48,18 +48,18 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
                 }
             }
         } else {
-            if ($googleDOM->xpathQuery("ancestor::g-accordion-expander", $node)->length >0) {
+            if ($dom->xpathQuery("ancestor::g-accordion-expander", $node)->length > 0) {
                 return false;
             }
 
             //bCOlv - this is a kowledge used in things to know/people also ask. these are not flights results
             if (
-                $googleDOM->xpathQuery("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' bCOlv ')]", $node)->length > 0
+                $dom->xpathQuery("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' bCOlv ')]", $node)->length > 0
             ) {
                 return false;
             }
 
-            $urls = $googleDOM->getXpath()->query('descendant::a', $node->firstChild);
+            $urls = $dom->getXpath()->query('descendant::a', $node->firstChild);
             $item = [];
 
             if($urls->length> 0) {

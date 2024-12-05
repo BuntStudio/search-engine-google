@@ -27,7 +27,7 @@ class AppPackMobile implements \Serps\SearchEngine\Google\Parser\ParsingRuleInte
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false, string $onlyRemoveSrsltidForDomain = '')
     {
         $resultSet->addItem(
             new BaseResult(NaturalResultType::APP_PACK_MOBILE, [], $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition)

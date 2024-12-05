@@ -22,9 +22,9 @@ class StocksBox implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $companyNameNode =  $googleDOM->getXpath()->query('descendant::span[contains(concat(\' \', normalize-space(@data-attrid), \' \'), \' Company Name \')]', $node)->item(0);
+        $companyNameNode =  $dom->getXpath()->query('descendant::span[contains(concat(\' \', normalize-space(@data-attrid), \' \'), \' Company Name \')]', $node)->item(0);
         if (!empty($companyNameNode)) {
             $companyName = $companyNameNode->textContent;
             $resultSet->addItem(new BaseResult(NaturalResultType::STOCKS_BOX, [$companyName], $node, $this->hasSerpFeaturePosition));

@@ -30,28 +30,28 @@ class AdwordsItemMobile implements ParsingRuleInterface
     /**
      * @inheritdoc
      */
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         $item = [
-            'title' => function () use ($googleDOM, $node) {
-                $aTag = $googleDOM->cssQuery('a .MUxGbd.v0nnCb', $node)->item(0);
+            'title' => function () use ($dom, $node) {
+                $aTag = $dom->cssQuery('a .MUxGbd.v0nnCb', $node)->item(0);
                 if (!$aTag) {
                     throw new InvalidDOMException('Cannot find title for mobile adwords.');
                 }
                 return $aTag->nodeValue;
             },
-            'url' => function () use ($node, $googleDOM) {
-                $aTag = $googleDOM->cssQuery('a', $node)->item(0);
+            'url' => function () use ($node, $dom) {
+                $aTag = $dom->cssQuery('a', $node)->item(0);
                 if (!$aTag) {
                     throw new InvalidDOMException('Cannot find ads anchor');
                 }
-                return $googleDOM->getUrl()->resolveAsString($aTag->getAttribute('href'));
+                return $dom->getUrl()->resolveAsString($aTag->getAttribute('href'));
             },
-            'visurl' => function () use ($node, $googleDOM) {
-                return $googleDOM->cssQuery('.qzEoUe', $node)->getNodeAt(0)->getNodeValue();
+            'visurl' => function () use ($node, $dom) {
+                return $dom->cssQuery('.qzEoUe', $node)->getNodeAt(0)->getNodeValue();
             },
-            'description' => function () use ($node, $googleDOM) {
-                return $googleDOM->cssQuery('div.BmP5tf>div.MUxGbd', $node)
+            'description' => function () use ($node, $dom) {
+                return $dom->cssQuery('div.BmP5tf>div.MUxGbd', $node)
                     ->getNodeAt(0)
                     ->getNodeValue();
             },

@@ -23,10 +23,10 @@ class ProductGrid implements ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         //get all ul li
-        $productGridNodes = $googleDOM->getXpath()->query('.//li', $node);
+        $productGridNodes = $dom->getXpath()->query('.//li', $node);
         if ($productGridNodes->length > 0 ) {
             $items = [];
             for ($i = 0; $i < $productGridNodes->length; $i++) {

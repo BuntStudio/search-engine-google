@@ -27,16 +27,16 @@ class ProductListing implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false, string $onlyRemoveSrsltidForDomain = '')
     {
 
-        $productsNodes = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' pla-unit ') or
+        $productsNodes = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' pla-unit ') or
         contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ')]", $node);
         $items         = [];
 
         if ($productsNodes->length == 0) {
 
-            $productsNodes = $googleDOM->getXpath()->query("descendant::li[contains(concat(' ', normalize-space(@data-offer-surface), ' '), ' search-result-surface ')]", $node);
+            $productsNodes = $dom->getXpath()->query("descendant::li[contains(concat(' ', normalize-space(@data-offer-surface), ' '), ' search-result-surface ')]", $node);
             if ($productsNodes->length == 0) {
                 return;
             }
@@ -49,7 +49,7 @@ class ProductListing implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
             }
             $seller = false;
             if (!$aHrefProduct instanceof DomElement || (!empty($aHrefProduct) && $aHrefProduct->getTagName() != 'a')) {
-                $seller = $googleDOM->getXpath()->query("descendant::span[@class='WJMUdc rw5ecc']", $productNode)->item(0);
+                $seller = $dom->getXpath()->query("descendant::span[@class='WJMUdc rw5ecc']", $productNode)->item(0);
                 if (empty($seller)) {
                     continue;
                 }

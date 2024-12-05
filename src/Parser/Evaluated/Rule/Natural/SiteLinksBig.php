@@ -18,9 +18,9 @@ class SiteLinksBig implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
         return self::RULE_MATCH_MATCHED;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $siteLinksNodes = $googleDOM->xpathQuery("descendant::div[@class='usJj9c']", $node);
+        $siteLinksNodes = $dom->xpathQuery("descendant::div[@class='usJj9c']", $node);
 
         if ($siteLinksNodes->length == 0) {
             return;
@@ -29,7 +29,7 @@ class SiteLinksBig implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
         $items = [];
 
         foreach ($siteLinksNodes as $siteLinksNode) {
-            $aNode   = $googleDOM->xpathQuery("descendant::a", $siteLinksNode)->item(0);
+            $aNode   = $dom->xpathQuery("descendant::a", $siteLinksNode)->item(0);
 
             if ($aNode === null) {
                 continue;

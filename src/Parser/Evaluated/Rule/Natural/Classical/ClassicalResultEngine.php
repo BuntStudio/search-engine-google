@@ -23,7 +23,7 @@ class ClassicalResultEngine
         $this->initLogger($logger);
     }
 
-    protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k) {}
+    protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, string $onlyRemoveSrsltidForDomain = '') {}
 
     protected function parseNodeWithRules(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, string $onlyRemoveSrsltidForDomain = '')
     {

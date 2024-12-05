@@ -31,10 +31,10 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         return $isMobile ? NaturalResultType::FEATURED_SNIPPED_MOBILE : NaturalResultType::FEATURED_SNIPPED;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         foreach ($this->steps as $functionName) {
-            call_user_func_array([$this, $functionName], [$googleDOM, $node, $resultSet, $isMobile]);
+            call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile]);
         }
     }
 

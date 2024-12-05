@@ -36,9 +36,9 @@ class AdsTop implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $adsNodes = $googleDOM->getXpath()->query('descendant::a', $node);
+        $adsNodes = $dom->getXpath()->query('descendant::a', $node);
         $links    = [];
 
         if ($adsNodes->length == 0) {
@@ -57,7 +57,7 @@ class AdsTop implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
             $link = false;
             $link = $adsNode->getAttribute('href');
             if (empty($link) && !$adsNode->hasClass('Krnil')) {
-                $linkNodes = $googleDOM->getXpath()->query('descendant::span[contains(concat(\' \', normalize-space(@role), \' \'), \' text \')]', $adsNode);
+                $linkNodes = $dom->getXpath()->query('descendant::span[contains(concat(\' \', normalize-space(@role), \' \'), \' text \')]', $adsNode);
                 if ($linkNodes->length == 0) {
                     continue;
                 }

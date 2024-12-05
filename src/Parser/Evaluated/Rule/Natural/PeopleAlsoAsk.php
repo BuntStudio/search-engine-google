@@ -26,7 +26,7 @@ class PeopleAlsoAsk implements ParsingRuleInterface
 
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
-    
+
     public function match(GoogleDom $dom, DomElement $node)
     {
         if ($node->hasClasses(['kno-kp', 'mnr-c'])) {
@@ -39,7 +39,7 @@ class PeopleAlsoAsk implements ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
 
         $data = [

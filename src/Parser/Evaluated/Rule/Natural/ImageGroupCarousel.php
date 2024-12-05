@@ -18,7 +18,7 @@ class ImageGroupCarousel implements \Serps\SearchEngine\Google\Parser\ParsingRul
 
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
-    
+
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
         if ($dom->cssQuery('._ekh image-viewer-group g-scrolling-carousel', $node)->length == 1) {
@@ -27,25 +27,25 @@ class ImageGroupCarousel implements \Serps\SearchEngine\Google\Parser\ParsingRul
             return self::RULE_MATCH_NOMATCH;
         }
     }
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         $item = [
-            'images' => function () use ($node, $googleDOM) {
+            'images' => function () use ($node, $dom) {
                 $items = [];
 
-                $imageNodes = $googleDOM->cssQuery('.rg_ul>._sqh g-inner-card', $node);
+                $imageNodes = $dom->cssQuery('.rg_ul>._sqh g-inner-card', $node);
                 foreach ($imageNodes as $imageNode) {
-                    $items[] = $this->parseItem($googleDOM, $imageNode);
+                    $items[] = $this->parseItem($dom, $imageNode);
                 }
 
                 return $items;
             },
             'isCarousel' => true,
-            'moreUrl' => function () use ($node, $googleDOM) {
-                $a = $googleDOM->cssQuery('g-tray-header ._Nbi a');
+            'moreUrl' => function () use ($node, $dom) {
+                $a = $dom->cssQuery('g-tray-header ._Nbi a');
                 $a = $a->item(0);
                 if ($a instanceof \DOMElement) {
-                    return $googleDOM->getUrl()->resolveAsString($a->getAttribute('href'));
+                    return $dom->getUrl()->resolveAsString($a->getAttribute('href'));
                 }
                 return null;
             }

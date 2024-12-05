@@ -43,9 +43,9 @@ class VideoCarousel implements \Serps\SearchEngine\Google\Parser\ParsingRuleInte
     }
 
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $aHrefs = $googleDOM->getXpath()->query('descendant::a[@class="X5OiLe"]', $node);
+        $aHrefs = $dom->getXpath()->query('descendant::a[@class="X5OiLe"]', $node);
 
         if ($aHrefs->length == 0) {
             return;

@@ -23,32 +23,32 @@ class AdwordsItem implements ParsingRuleInterface
         }
         return self::RULE_MATCH_NOMATCH;
     }
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         $item = [
-            'title' => function () use ($googleDOM, $node) {
-                $aTag = $googleDOM->getXpath()->query('descendant::h3/a[2]', $node)->item(0);
+            'title' => function () use ($dom, $node) {
+                $aTag = $dom->getXpath()->query('descendant::h3/a[2]', $node)->item(0);
                 if (!$aTag) {
-                    $aTag = $googleDOM->getXpath()->query('descendant::h3', $node)->item(0);
+                    $aTag = $dom->getXpath()->query('descendant::h3', $node)->item(0);
                     if (!$aTag) {
                         return null;
                     }
                 }
                 return $aTag->nodeValue;
             },
-            'url' => function () use ($node, $googleDOM) {
-                $aTag = $googleDOM->getXpath()->query('descendant::h3/a[2]', $node)->item(0); // TODO remove
+            'url' => function () use ($node, $dom) {
+                $aTag = $dom->getXpath()->query('descendant::h3/a[2]', $node)->item(0); // TODO remove
                 if (!$aTag) {
-                    $aTag = $googleDOM->cssQuery('a', $node)->item(0);
+                    $aTag = $dom->cssQuery('a', $node)->item(0);
                     if (!$aTag) {
                         throw new InvalidDOMException('Cannot find ads anchor');
                     }
                 }
 
-                return $googleDOM->getUrl()->resolveAsString($aTag->getAttribute('href'));
+                return $dom->getUrl()->resolveAsString($aTag->getAttribute('href'));
             },
-            'visurl' => function () use ($node, $googleDOM) {
-                $aTag = $googleDOM->getXpath()->query(
+            'visurl' => function () use ($node, $dom) {
+                $aTag = $dom->getXpath()->query(
                     Css::toXPath('div.ads-visurl>cite'),
                     $node
                 )->item(0);
@@ -58,8 +58,8 @@ class AdwordsItem implements ParsingRuleInterface
                 }
                 return $aTag->nodeValue;
             },
-            'description' => function () use ($node, $googleDOM) {
-                $aTag = $googleDOM->getXpath()->query(
+            'description' => function () use ($node, $dom) {
+                $aTag = $dom->getXpath()->query(
                     Css::toXPath('div.ads-creative'),
                     $node
                 )->item(0);

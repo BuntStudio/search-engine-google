@@ -25,15 +25,15 @@ class Shopping implements ParsingRuleInterface
         }
         return self::RULE_MATCH_NOMATCH;
     }
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
         $item = [
-            'products' => function () use ($googleDOM, $node) {
+            'products' => function () use ($dom, $node) {
                 $items = [];
                 $xpathCards = Css::toXPath('.pla-unit');
-                $productNodes = $googleDOM->getXpath()->query($xpathCards, $node);
+                $productNodes = $dom->getXpath()->query($xpathCards, $node);
                 foreach ($productNodes as $productNode) {
-                    $items[] = $this->parseItem($googleDOM, $productNode);
+                    $items[] = $this->parseItem($dom, $productNode);
                 }
                 return $items;
             }

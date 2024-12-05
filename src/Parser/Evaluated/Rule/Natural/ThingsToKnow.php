@@ -22,9 +22,9 @@ class ThingsToKnow implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
     {
-        $thingsToKnowNodes = $googleDOM->getXpath()->query('descendant::div[contains(concat(\' \', normalize-space(@class), \' \'), \' trNcde \')]', $node);
+        $thingsToKnowNodes = $dom->getXpath()->query('descendant::div[contains(concat(\' \', normalize-space(@class), \' \'), \' trNcde \')]', $node);
         if ($thingsToKnowNodes->length > 0) {
             $items = [];
             for ($i = 0; $i < $thingsToKnowNodes->length; $i++) {
