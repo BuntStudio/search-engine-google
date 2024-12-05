@@ -9,7 +9,7 @@ use Serps\SearchEngine\Google\Parser\ParsingRuleByVersionInterface;
 
 class MobileV3 implements ParsingRuleByVersionInterface
 {
-    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject)
+    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, string $onlyRemoveSrsltidForDomain = '')
     {
         /* @var $aTag \DOMElement */
         $aTag = $dom->xpathQuery("descendant::*[
@@ -25,13 +25,16 @@ class MobileV3 implements ParsingRuleByVersionInterface
             contains(concat(' ', normalize-space(@class), ' '), ' rTyHce jgWGIe ')
          ]", $organicResult);
         }
-        
+
         if (empty($aTag) && $organicResultObject->getLink() === null) {
             throw new InvalidDOMException('Cannot parse a classical result.');
         }
 
-        if($organicResultObject->getLink() === null) {
-            $organicResultObject->setLink($dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href')));
+        if ($organicResultObject->getLink() === null) {
+            $organicResultObject->setLink(
+                $dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href')),
+                $onlyRemoveSrsltidForDomain
+            );
         }
 
         $titleTag  = $dom->getXpath()->query("descendant::div[

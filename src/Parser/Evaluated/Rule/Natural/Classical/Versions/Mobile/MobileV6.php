@@ -10,7 +10,7 @@ use Serps\SearchEngine\Google\Parser\ParsingRuleByVersionInterface;
 class MobileV6 implements ParsingRuleByVersionInterface
 {
 
-    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject)
+    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, string $onlyRemoveSrsltidForDomain = '')
     {
         /* @var $aTag \DOMElement */
         $aTag = $dom->xpathQuery("descendant::a", $organicResult);
@@ -24,7 +24,10 @@ class MobileV6 implements ParsingRuleByVersionInterface
         }
 
         if($organicResultObject->getLink() === null) {
-            $organicResultObject->setLink($dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href')));
+            $organicResultObject->setLink(
+                $dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href')),
+                $onlyRemoveSrsltidForDomain
+            );
         }
 
         $titleNode = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' HBAK1')]",

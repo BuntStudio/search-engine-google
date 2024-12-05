@@ -10,7 +10,7 @@ use Serps\SearchEngine\Google\Parser\ParsingRuleByVersionInterface;
 
 class MobileV4 implements ParsingRuleByVersionInterface
 {
-    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject)
+    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, string $onlyRemoveSrsltidForDomain = '')
     {
         /* @var $aTag \DOMElement */
         $aTag = $dom->xpathQuery("descendant::*[
@@ -55,11 +55,16 @@ class MobileV4 implements ParsingRuleByVersionInterface
         }
 
 
-
-        if(!($aTag instanceof DomElement)  && $organicResultObject->getLink() === null) {
-            $organicResultObject->setLink($dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href')));
-        } else if (($aTag instanceof DomElement)  && $organicResultObject->getLink() === null) {
-            $organicResultObject->setLink($dom->getUrl()->resolveAsString($aTag->getAttribute('href')));
+        if (!($aTag instanceof DomElement) && $organicResultObject->getLink() === null) {
+            $organicResultObject->setLink(
+                $dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href')),
+                $onlyRemoveSrsltidForDomain
+            );
+        } else if (($aTag instanceof DomElement) && $organicResultObject->getLink() === null) {
+            $organicResultObject->setLink(
+                $dom->getUrl()->resolveAsString($aTag->getAttribute('href')),
+                $onlyRemoveSrsltidForDomain
+            );
         }
 
         if (!$titleTag instanceof DomElement && !$titleTag instanceof \DOMText ) {

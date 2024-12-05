@@ -25,7 +25,7 @@ class ClassicalResultEngine
 
     protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k) {}
 
-    protected function parseNodeWithRules(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k)
+    protected function parseNodeWithRules(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, string $onlyRemoveSrsltidForDomain = '')
     {
         $organicResultObject = new OrganicResultObject();
 
@@ -33,7 +33,7 @@ class ClassicalResultEngine
         foreach ($this->getRules() as $versionRule) {
 
             try {
-                $versionRule->parseNode($dom, $organicResult, $organicResultObject);
+                $versionRule->parseNode($dom, $organicResult, $organicResultObject, $onlyRemoveSrsltidForDomain);
             } catch (\Throwable $exception) {
                 continue;
             }

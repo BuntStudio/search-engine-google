@@ -7,5 +7,5 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\OrganicRes
 
 interface ParsingRuleByVersionInterface
 {
-    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject);
+    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, string $onlyRemoveSrsltidForDomain = '');
 }

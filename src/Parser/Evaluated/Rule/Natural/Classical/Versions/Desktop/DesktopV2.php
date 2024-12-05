@@ -8,7 +8,7 @@ use Serps\SearchEngine\Google\Parser\ParsingRuleByVersionInterface;
 
 class DesktopV2 implements ParsingRuleByVersionInterface
 {
-    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject)
+    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, string $onlyRemoveSrsltidForDomain = '')
     {
         if ($organicResultObject->getDescription() === null) {
 
