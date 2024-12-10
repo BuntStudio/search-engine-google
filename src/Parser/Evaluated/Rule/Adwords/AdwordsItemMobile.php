@@ -30,7 +30,7 @@ class AdwordsItemMobile implements ParsingRuleInterface
     /**
      * @inheritdoc
      */
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         $item = [
             'title' => function () use ($dom, $node) {

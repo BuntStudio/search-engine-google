@@ -25,7 +25,7 @@ class CurrencyAnswer implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         $resultSet->addItem(new BaseResult(NaturalResultType::CURRENCY_ANSWER, [], $node, $this->hasSerpFeaturePosition));
     }

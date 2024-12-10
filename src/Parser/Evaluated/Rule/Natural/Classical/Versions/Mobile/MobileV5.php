@@ -13,7 +13,7 @@ use Serps\SearchEngine\Google\Parser\ParsingRuleByVersionInterface;
 class MobileV5 implements ParsingRuleByVersionInterface
 {
 
-    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, string $onlyRemoveSrsltidForDomain = '')
+    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, string $doNotRemoveSrsltidForDomain = '')
     {
         /* @var $aTag \DOMElement */
         $aTag = $dom->xpathQuery("descendant::*[@class='sXtWJb']", $organicResult);
@@ -29,7 +29,7 @@ class MobileV5 implements ParsingRuleByVersionInterface
         if ($organicResultObject->getLink() === null) {
             $organicResultObject->setLink(
                 $dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href')),
-                $onlyRemoveSrsltidForDomain
+                $doNotRemoveSrsltidForDomain
             );
         }
 

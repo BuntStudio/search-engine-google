@@ -9,7 +9,7 @@ use Serps\SearchEngine\Google\Parser\ParsingRuleByVersionInterface;
 
 class DesktopV1 implements ParsingRuleByVersionInterface
 {
-    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, string $onlyRemoveSrsltidForDomain = '')
+    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, string $doNotRemoveSrsltidForDomain = '')
     {
         /* @var $aTag \DOMElement */
 
@@ -23,7 +23,7 @@ class DesktopV1 implements ParsingRuleByVersionInterface
 
         $organicResultObject->setLink(
             $aTag->getAttribute('href'),
-            $onlyRemoveSrsltidForDomain
+            $doNotRemoveSrsltidForDomain
         );
 
         $h3Tag = $dom->xpathQuery('descendant::h3', $organicResult)->item(0);

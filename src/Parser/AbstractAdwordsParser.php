@@ -45,10 +45,10 @@ abstract class AbstractAdwordsParser implements ParserInterface
     }
 
     /**
-     * @param string $onlyRemoveSrsltidForDomain
+     * @param string $doNotRemoveSrsltidForDomain
      * @inheritdoc
      */
-    public function parse(GoogleDom $googleDom, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $googleDom, string $doNotRemoveSrsltidForDomain = '')
     {
         $resultsSets = new CompositeResultSet();
 
@@ -56,7 +56,7 @@ abstract class AbstractAdwordsParser implements ParserInterface
 
         foreach ($parsers as $parser) {
             $resultsSets->addResultSet(
-                $parser->parse($googleDom, $onlyRemoveSrsltidForDomain)
+                $parser->parse($googleDom, $doNotRemoveSrsltidForDomain)
             );
         }
 

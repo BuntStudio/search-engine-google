@@ -31,7 +31,7 @@ class ComposedTopStories implements ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         $item = new BaseResult(
             [NaturalResultType::TOP_STORIES, NaturalResultType::TOP_STORIES_COMPOSED],

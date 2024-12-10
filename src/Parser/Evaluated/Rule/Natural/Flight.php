@@ -24,7 +24,7 @@ class Flight implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false, string $doNotRemoveSrsltidForDomain = '')
     {
         $resultSet->addItem(new BaseResult(NaturalResultType::FLIGHTS, [], $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }

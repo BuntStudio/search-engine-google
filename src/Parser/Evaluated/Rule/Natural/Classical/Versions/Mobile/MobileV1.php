@@ -10,7 +10,7 @@ use Serps\SearchEngine\Google\Parser\ParsingRuleByVersionInterface;
 
 class MobileV1 implements ParsingRuleByVersionInterface
 {
-    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, string $onlyRemoveSrsltidForDomain = '')
+    public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, string $doNotRemoveSrsltidForDomain = '')
     {
         /* @var $aTag \DOMElement */
         //tKdlvb KJDcUb
@@ -38,7 +38,7 @@ class MobileV1 implements ParsingRuleByVersionInterface
         if ($organicResultObject->getLink() === null) {
             $organicResultObject->setLink(
                 $aTag->getAttribute('href'),
-                $onlyRemoveSrsltidForDomain
+                $doNotRemoveSrsltidForDomain
             );
         }
 

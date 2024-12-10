@@ -19,7 +19,7 @@ class FlightAirlineOptions implements ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         $flightAirlineOptions = $dom->getXpath()->query('descendant::div[@role="list"]/descendant::*[@role="listitem"]', $node);
 

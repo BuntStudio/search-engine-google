@@ -23,7 +23,7 @@ class PlacesSites implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterf
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         //todo is we have already added places
         $placesSitesNodes = $dom->getXpath()->query("descendant::a[contains(concat(' ', normalize-space(@class), ' '), ' ddkIM ')]", $node);

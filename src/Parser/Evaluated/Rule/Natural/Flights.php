@@ -36,7 +36,7 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
     }
 
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         if ($this->isNewFlight) {
             $urls = $dom->getXpath()->query('ancestor::tbody/descendant::a', $node->firstChild);

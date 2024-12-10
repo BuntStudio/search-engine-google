@@ -30,7 +30,7 @@ class HighlyLocalized implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
     }
 
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
 
         $highlyLocalizedNode = $dom->getXpath()->query("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' BBwThe ')]", $node);

@@ -50,18 +50,15 @@ class OrganicResultObject
 
     /**
      * @param null $link
-     * @param string $onlyRemoveSrsltidForDomain
+     * @param string $doNotRemoveSrsltidForDomain
      */
-    public function setLink($link, string $onlyRemoveSrsltidForDomain = '')
+    public function setLink($link, string $doNotRemoveSrsltidForDomain = '')
     {
-        $this->link = \SM_Rank_Service::getUrlFromGoogleTranslate(\Utils::removeParamFromUrl($link));
-        if(
-            $onlyRemoveSrsltidForDomain &&
-            \Utils::wwwhost($onlyRemoveSrsltidForDomain) != \Utils::wwwhost(\SM_Rank_Service::getUrlFromGoogleTranslate($link))
-        ) {
-            // if $onlyRemoveSrsltidForDomain present, only remove srsltid for specified domain
-            $this->link = \SM_Rank_Service::getUrlFromGoogleTranslate($link);
-        }
+        $this->link = \Utils::removeParamFromUrl(
+            \SM_Rank_Service::getUrlFromGoogleTranslate($link),
+            'srsltid',
+            $doNotRemoveSrsltidForDomain
+        );
     }
 
 }

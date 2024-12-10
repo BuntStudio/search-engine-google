@@ -33,7 +33,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         return $isMobile ? NaturalResultType::SGE_WIDGET_MOBILE : NaturalResultType::SGE_WIDGET;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         if (!empty($resultSet->getResultsByType($this->getType($isMobile))->getItems())) { return; }
         $resultSet->addItem(new BaseResult($this->getType($isMobile), $this->extractWidgetData($dom, $node), $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));

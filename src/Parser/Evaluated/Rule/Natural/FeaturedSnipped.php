@@ -31,15 +31,20 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         return $isMobile ? NaturalResultType::FEATURED_SNIPPED_MOBILE : NaturalResultType::FEATURED_SNIPPED;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         foreach ($this->steps as $functionName) {
-            call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile]);
+            call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile, $doNotRemoveSrsltidForDomain]);
         }
     }
 
-    public function version1(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
-    {
+    public function version1(
+        GoogleDom $googleDOM,
+        \DomElement $node,
+        IndexedResultSet $resultSet,
+        $isMobile = false,
+        $doNotRemoveSrsltidForDomain
+    ) {
         $naturalResultNodes = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' g ')]", $node);
 
         if ($naturalResultNodes->length == 0) {
@@ -73,7 +78,13 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
             }
 
             $object              = new \StdClass();
-            $object->url         = \SM_Rank_Service::getUrlFromGoogleTranslate(\Utils::removeParamFromUrl($aTag->item(0)->getAttribute('href')));
+
+            $object->url         = \Utils::removeParamFromUrl(
+                \SM_Rank_Service::getUrlFromGoogleTranslate($aTag->item(0)->getAttribute('href')),
+                'srsltid',
+                $doNotRemoveSrsltidForDomain
+            );
+
             $object->description = (!empty($description) && !empty($description->item(0)) && !empty($description->item(0)->textContent)) ? $description->item(0)->textContent : '';
             $object->title       = (!empty($h3Tag) && !empty($h3Tag->item(0)) && !empty($h3Tag->item(0)->textContent)) ? $h3Tag->item(0)->textContent : '';
 
@@ -87,8 +98,13 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         }
     }
 
-    public function version2(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
-    {
+    public function version2(
+        GoogleDom $googleDOM,
+        \DomElement $node,
+        IndexedResultSet $resultSet,
+        $isMobile = false,
+        $doNotRemoveSrsltidForDomain
+    ) {
         if (!$isMobile) {
             return;
         }
@@ -98,7 +114,11 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         $description = $googleDOM->getXpath()->query("descendant::div[@class='LGOjhe']", $node);//description
 
         foreach ($aTag as $item) {
-            $url = $item->getAttribute('href');
+            $url = \Utils::removeParamFromUrl(
+                \SM_Rank_Service::getUrlFromGoogleTranslate($item->getAttribute('href')),
+                'srsltid',
+                $doNotRemoveSrsltidForDomain
+            );
             //if valid url has hostname and is not google
             if (parse_url($url, PHP_URL_HOST) && strpos(parse_url($url, PHP_URL_HOST), 'google') === false) {
                 $object              = new \StdClass();

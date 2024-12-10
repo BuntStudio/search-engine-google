@@ -22,7 +22,7 @@ class TopSights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         $topSightsNodes = $dom->getXpath()->query("descendant::a[contains(concat(' ', normalize-space(@class), ' '), 'ddkIM')]", $node);
 //        if ($topSightsNodes->length > 0) {

@@ -42,7 +42,7 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         foreach ($this->steps as $functionName) {
             call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile]);

@@ -23,9 +23,9 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         return self::RULE_MATCH_NOMATCH;
     }
 
-    protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, string $onlyRemoveSrsltidForDomain = '')
+    protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, string $doNotRemoveSrsltidForDomain = '')
     {
-        $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $onlyRemoveSrsltidForDomain);
+        $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomain);
 
         if( $dom->xpathQuery("descendant::table[@class='jmjoTe']", $organicResult)->length >0) {
             (new SiteLinksBig())->parse($dom, $organicResult, $resultSet, false);
@@ -51,7 +51,7 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         }
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         $naturalResults = $dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' g ') or contains(concat(' ', normalize-space(@class), ' '), ' MYVUIe ')]", $node);
 
@@ -72,7 +72,7 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
             }
 
             $k++;
-            $this->parseNode($dom, $organicResult, $resultSet, $k, $onlyRemoveSrsltidForDomain);
+            $this->parseNode($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomain);
         }
 
     }

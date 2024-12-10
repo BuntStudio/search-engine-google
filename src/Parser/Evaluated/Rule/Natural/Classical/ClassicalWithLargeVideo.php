@@ -26,7 +26,7 @@ class ClassicalWithLargeVideo implements ParsingRuleInterface
         }
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         $xpath = $dom->getXpath();
         $aTag = $xpath->query("descendant::h3[@class='r'][1]/a", $node)->item(0);

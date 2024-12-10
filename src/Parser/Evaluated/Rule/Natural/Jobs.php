@@ -38,7 +38,7 @@ class Jobs implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
         return $isMobile ? NaturalResultType::JOBS_MOBILE : NaturalResultType::JOBS;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         if (!empty($resultSet->getResultsByType($this->getType($isMobile))->getItems())) {
             return;

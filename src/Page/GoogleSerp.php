@@ -54,11 +54,11 @@ class GoogleSerp extends GoogleDom
     }
 
     /**
-     * @param string $onlyRemoveSrsltidForDomain
+     * @param string $doNotRemoveSrsltidForDomain
      * @return IndexedResultSet|void
      * @throws InvalidDOMException
      */
-    public function getNaturalResults($mobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function getNaturalResults($mobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         if ($this->javascriptIsEvaluated()) {
             if ($this->isMobile() || $mobile) {
@@ -71,7 +71,7 @@ class GoogleSerp extends GoogleDom
             (new IndexedResultSet())->addItem(new BaseResult(NaturalResultType::CLASSICAL, []));
         }
 
-        return $parser->parse($this, $onlyRemoveSrsltidForDomain);
+        return $parser->parse($this, $doNotRemoveSrsltidForDomain);
     }
 
 

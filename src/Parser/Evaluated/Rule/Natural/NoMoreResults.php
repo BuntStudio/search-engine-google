@@ -22,7 +22,7 @@ class NoMoreResults implements \Serps\SearchEngine\Google\Parser\ParsingRuleInte
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $onlyRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
     {
         $resultSet->addItem(new BaseResult(NaturalResultType::NO_MORE_RESULTS , ["true"], $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }

@@ -13,8 +13,8 @@ interface ParserInterface
 
     /**
      * @param GoogleDom $googleDom
-     * @param string $onlyRemoveSrsltidForDomain
+     * @param string $doNotRemoveSrsltidForDomain
      * @return ResultSetInterface
      */
-    public function parse(GoogleDom $googleDom, string $onlyRemoveSrsltidForDomain = '');
+    public function parse(GoogleDom $googleDom, string $doNotRemoveSrsltidForDomain = '');
 }
