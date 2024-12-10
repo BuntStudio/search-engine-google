@@ -43,7 +43,7 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         \DomElement $node,
         IndexedResultSet $resultSet,
         $isMobile = false,
-        $doNotRemoveSrsltidForDomain
+        $doNotRemoveSrsltidForDomain = ''
     ) {
         $naturalResultNodes = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' g ')]", $node);
 
@@ -103,7 +103,7 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         \DomElement $node,
         IndexedResultSet $resultSet,
         $isMobile = false,
-        $doNotRemoveSrsltidForDomain
+        $doNotRemoveSrsltidForDomain = ''
     ) {
         if (!$isMobile) {
             return;
