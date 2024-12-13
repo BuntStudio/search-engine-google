@@ -31,10 +31,10 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         return $isMobile ? NaturalResultType::FEATURED_SNIPPED_MOBILE : NaturalResultType::FEATURED_SNIPPED;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
         foreach ($this->steps as $functionName) {
-            call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile, $doNotRemoveSrsltidForDomain]);
+            call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile, $doNotRemoveSrsltidForDomains]);
         }
     }
 
@@ -43,7 +43,7 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         \DomElement $node,
         IndexedResultSet $resultSet,
         $isMobile = false,
-        $doNotRemoveSrsltidForDomain = ''
+        array $doNotRemoveSrsltidForDomains = []
     ) {
         $naturalResultNodes = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' g ')]", $node);
 
@@ -82,7 +82,7 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
             $object->url         = \Utils::removeParamFromUrl(
                 \SM_Rank_Service::getUrlFromGoogleTranslate($aTag->item(0)->getAttribute('href')),
                 'srsltid',
-                $doNotRemoveSrsltidForDomain
+                $doNotRemoveSrsltidForDomains
             );
 
             $object->description = (!empty($description) && !empty($description->item(0)) && !empty($description->item(0)->textContent)) ? $description->item(0)->textContent : '';
@@ -103,7 +103,7 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         \DomElement $node,
         IndexedResultSet $resultSet,
         $isMobile = false,
-        $doNotRemoveSrsltidForDomain = ''
+        array $doNotRemoveSrsltidForDomains = []
     ) {
         if (!$isMobile) {
             return;
@@ -117,7 +117,7 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
             $url = \Utils::removeParamFromUrl(
                 \SM_Rank_Service::getUrlFromGoogleTranslate($item->getAttribute('href')),
                 'srsltid',
-                $doNotRemoveSrsltidForDomain
+                $doNotRemoveSrsltidForDomains
             );
             //if valid url has hostname and is not google
             if (parse_url($url, PHP_URL_HOST) && strpos(parse_url($url, PHP_URL_HOST), 'google') === false) {

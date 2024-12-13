@@ -18,7 +18,7 @@ class SiteLinksBigMobile implements \Serps\SearchEngine\Google\Parser\ParsingRul
         return self::RULE_MATCH_MATCHED;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
         $siteLinksNodes = $dom->xpathQuery("descendant::div[@class='MUxGbd v0nnCb lyLwlc']", $node);
 

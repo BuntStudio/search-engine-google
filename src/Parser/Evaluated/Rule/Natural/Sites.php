@@ -19,7 +19,7 @@ class Sites implements ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
         $sitesTitle = null;
         $sitesTitleNodeList = $dom->getXpath()->query('descendant::span[contains(concat(" ", @class, " "), " mgAbYb OSrXXb RES9jf IFnjPb ")]', $node);

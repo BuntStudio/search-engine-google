@@ -16,7 +16,7 @@ use Serps\SearchEngine\Google\NaturalResultType;
 class AdsTopMobile extends AdsTop
 {
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
         $adsNodes = $dom->getXpath()->query(
             "descendant::div[

@@ -61,7 +61,7 @@ class TopStoriesVertical implements ParsingRuleInterface
         ];
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
         $item = new BaseResult(
             [NaturalResultType::TOP_STORIES],

@@ -38,7 +38,7 @@ class VideosMobile implements ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false, string $doNotRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false, array $doNotRemoveSrsltidForDomains = [])
     {
         foreach ($this->steps as $functionName) {
             call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile]);

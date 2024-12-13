@@ -10,7 +10,7 @@ class SerpFeaturesVersions implements ParsingRuleInterface
 {
     protected $steps = [];
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
         if(empty($this->steps)) {
             return;

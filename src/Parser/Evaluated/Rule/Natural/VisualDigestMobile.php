@@ -22,7 +22,7 @@ class VisualDigestMobile implements \Serps\SearchEngine\Google\Parser\ParsingRul
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, string $doNotRemoveSrsltidForDomain = '')
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
         $visualDigestItems = $dom->getXpath()->query('descendant::*[contains( @data-attrid,"VisualDigest" )]   ', $node);
         $item = [];

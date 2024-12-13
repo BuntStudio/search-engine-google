@@ -23,9 +23,9 @@ class ClassicalResultEngine
         $this->initLogger($logger);
     }
 
-    protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, string $doNotRemoveSrsltidForDomain = '') {}
+    protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, array $doNotRemoveSrsltidForDomains = []) {}
 
-    protected function parseNodeWithRules(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, string $doNotRemoveSrsltidForDomain = '')
+    protected function parseNodeWithRules(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, array $doNotRemoveSrsltidForDomains = [])
     {
         $organicResultObject = new OrganicResultObject();
 
@@ -33,7 +33,7 @@ class ClassicalResultEngine
         foreach ($this->getRules() as $versionRule) {
 
             try {
-                $versionRule->parseNode($dom, $organicResult, $organicResultObject, $doNotRemoveSrsltidForDomain);
+                $versionRule->parseNode($dom, $organicResult, $organicResultObject, $doNotRemoveSrsltidForDomains);
             } catch (\Throwable $exception) {
                 continue;
             }
