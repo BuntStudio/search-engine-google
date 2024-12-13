@@ -24,10 +24,13 @@ class MobileV6 implements ParsingRuleByVersionInterface
         }
 
         if($organicResultObject->getLink() === null) {
-            $organicResultObject->setLink(
-                $dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href')),
-                $doNotRemoveSrsltidForDomain
+            $link = \Utils::removeParamFromUrl(
+                \SM_Rank_Service::getUrlFromGoogleTranslate($dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href'))),
+                'srsltid',
+                $doNotRemoveSrsltidForDomains
             );
+
+            $organicResultObject->setLink($link);
         }
 
         $titleNode = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' HBAK1')]",

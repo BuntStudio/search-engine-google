@@ -50,15 +50,10 @@ class OrganicResultObject
 
     /**
      * @param null $link
-     * @param string $doNotRemoveSrsltidForDomain
      */
-    public function setLink($link, string $doNotRemoveSrsltidForDomain = '')
+    public function setLink($link)
     {
-        $this->link = \Utils::removeParamFromUrl(
-            \SM_Rank_Service::getUrlFromGoogleTranslate($link),
-            'srsltid',
-            $doNotRemoveSrsltidForDomain
-        );
+        $this->link = $link;
     }
 
 }

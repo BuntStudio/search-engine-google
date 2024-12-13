@@ -56,15 +56,21 @@ class MobileV4 implements ParsingRuleByVersionInterface
 
 
         if (!($aTag instanceof DomElement) && $organicResultObject->getLink() === null) {
-            $organicResultObject->setLink(
-                $dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href')),
-                $doNotRemoveSrsltidForDomain
+            $link = \Utils::removeParamFromUrl(
+                \SM_Rank_Service::getUrlFromGoogleTranslate($dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href'))),
+                'srsltid',
+                $doNotRemoveSrsltidForDomains
             );
+
+            $organicResultObject->setLink($link);
         } else if (($aTag instanceof DomElement) && $organicResultObject->getLink() === null) {
-            $organicResultObject->setLink(
-                $dom->getUrl()->resolveAsString($aTag->getAttribute('href')),
-                $doNotRemoveSrsltidForDomain
+            $link = \Utils::removeParamFromUrl(
+                \SM_Rank_Service::getUrlFromGoogleTranslate($dom->getUrl()->resolveAsString($aTag->getAttribute('href'))),
+                'srsltid',
+                $doNotRemoveSrsltidForDomains
             );
+
+            $organicResultObject->setLink($link);
         }
 
         if (!$titleTag instanceof DomElement && !$titleTag instanceof \DOMText ) {

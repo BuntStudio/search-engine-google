@@ -31,10 +31,13 @@ class MobileV3 implements ParsingRuleByVersionInterface
         }
 
         if ($organicResultObject->getLink() === null) {
-            $organicResultObject->setLink(
-                $dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href')),
-                $doNotRemoveSrsltidForDomain
+            $link = \Utils::removeParamFromUrl(
+                \SM_Rank_Service::getUrlFromGoogleTranslate($dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href'))),
+                'srsltid',
+                $doNotRemoveSrsltidForDomains
             );
+
+            $organicResultObject->setLink($link);
         }
 
         $titleTag  = $dom->getXpath()->query("descendant::div[

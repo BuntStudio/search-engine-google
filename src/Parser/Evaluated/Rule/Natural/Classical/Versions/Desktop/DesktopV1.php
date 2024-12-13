@@ -21,10 +21,13 @@ class DesktopV1 implements ParsingRuleByVersionInterface
             throw new InvalidDOMException('Cannot parse a classical result.');
         }
 
-        $organicResultObject->setLink(
-            $aTag->getAttribute('href'),
-            $doNotRemoveSrsltidForDomain
+        $link = \Utils::removeParamFromUrl(
+            \SM_Rank_Service::getUrlFromGoogleTranslate($aTag->getAttribute('href')),
+            'srsltid',
+            $doNotRemoveSrsltidForDomains
         );
+
+        $organicResultObject->setLink($link);
 
         $h3Tag = $dom->xpathQuery('descendant::h3', $organicResult)->item(0);
 
