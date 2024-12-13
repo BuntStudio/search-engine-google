@@ -390,8 +390,20 @@ class TranslateService
             }
         }
 
-        if ($item->is(NaturalResultType::TOP_STORIES) || $item->is(NaturalResultType::TOP_STORIES_MOBILE) ) {
-            $this->response[NaturalResultType::TOP_STORIES_OLD_VERSION] = $item->getData()['news'];
+        if ($item->is(NaturalResultType::TOP_STORIES) || $item->is(NaturalResultType::TOP_STORIES_MOBILE)) {
+            if (
+                isset($this->response[NaturalResultType::TOP_STORIES_OLD_VERSION]) &&
+                !empty($this->response[NaturalResultType::TOP_STORIES_OLD_VERSION]) &&
+                is_array($this->response[NaturalResultType::TOP_STORIES_OLD_VERSION]) &&
+                is_array($item->getData()['news'])
+            ) {
+                $this->response[NaturalResultType::TOP_STORIES_OLD_VERSION] = array_merge(
+                    $this->response[NaturalResultType::TOP_STORIES_OLD_VERSION],
+                    $item->getData()['news']
+                );
+            } else {
+                $this->response[NaturalResultType::TOP_STORIES_OLD_VERSION] = $item->getData()['news'];
+            }
         }
 
         if ($item->is(NaturalResultType::MAPS_COORDONATES)) {
