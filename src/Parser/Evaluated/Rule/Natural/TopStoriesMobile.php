@@ -20,6 +20,22 @@ class TopStoriesMobile extends TopStories
         }
 
         if ($node->hasClass('lU8tTd')) {
+
+            $whatPeopleAreSayingElement = $dom->getXpath()->query("descendant::div[contains(@class, 'koZ5uc')]", $node);
+            if ($whatPeopleAreSayingElement->length > 0) {
+                return;
+            }
+
+            $perspectivesElement = $dom->getXpath()->query("descendant::div[contains(@class, 'lSfe4c Qxqlrc')]", $node);
+            $forContextElement = $dom->getXpath()->query("descendant::div[contains(@class, 'gpjNTe')]", $node);
+            // for Context is news
+            if (
+                $perspectivesElement->length > 0 &&
+                $forContextElement->length = 0
+            ) {
+                return;
+            }
+
             return self::RULE_MATCH_MATCHED;
         }
 

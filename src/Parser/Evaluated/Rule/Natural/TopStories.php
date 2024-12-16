@@ -86,6 +86,10 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
 
     protected function version2(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile)
     {
+        $storiesIcon = $googleDOM->getXpath()->query("descendant::span[contains(@class, 'rq6B5b VDgVie')]", $node);
+        if (!$isMobile && $storiesIcon->length == 0) {
+            return;
+        }
         $hrefsNodes = $googleDOM->getXpath()->query("descendant::a[contains(@class,'WlydOe')]", $node);
 
         if (!$hrefsNodes instanceof DomNodeList) {
