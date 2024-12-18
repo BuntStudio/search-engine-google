@@ -137,6 +137,7 @@ class NaturalParser extends AbstractParser
         //@id = 'oFNiHe' - misspelings
         //@id = 'result-stats' - no of results
         //@id = 'lud-ed' - directions
+        //@jscontroller='h7XEsd' - directions
         //return $googleDom->xpathQuery("//*[@id='result-stats']/*[not(self::script) and not(self::style)]/*");
         //@class = 'H93uF' - coords
          //@class = 'e8Ck0d SS4zp' //VisualDigest
@@ -188,6 +189,7 @@ class NaturalParser extends AbstractParser
             @id='result-stats' or
             @id='kp-wp-tab-Latest' or
             @id = 'lud-ed' or
+            @jscontroller='h7XEsd' or
             @class = 'H93uF' or
             contains(@class, 'e8Ck0d') or
             video-voyager or

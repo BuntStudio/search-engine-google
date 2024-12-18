@@ -115,6 +115,7 @@ class MobileNaturalParser extends AbstractParser
         // @jsname='MGJTwe'  = recipes
         //@id='oFNiHe' - misspelings
         //@id='lud-ed' directions
+        //@jscontroller='h7XEsd' directions
         //contains(@class, 'e8Ck0d') visual digest
         //contains(@class, 'Enb9pe') - visual digest mobile
         return $googleDom->xpathQuery("//*[@id='iur' or
@@ -155,6 +156,7 @@ class MobileNaturalParser extends AbstractParser
             contains(@class, 'kp-wholepage') or
             @id = 'oFNiHe' or
             @id='lud-ed' or
+            @jscontroller='h7XEsd' or
             video-voyager or
             inline-video or
             @id= 'ofr' or

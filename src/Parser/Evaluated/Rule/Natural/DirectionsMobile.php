@@ -20,6 +20,11 @@ class DirectionsMobile implements \Serps\SearchEngine\Google\Parser\ParsingRuleI
             return self::RULE_MATCH_MATCHED;
         }
 
+        if ($node->getAttribute('jscontroller') == 'h7XEsd'
+        ) {
+            return self::RULE_MATCH_MATCHED;
+        }
+
         return self::RULE_MATCH_NOMATCH;
     }
 
