@@ -21,6 +21,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             return self::RULE_MATCH_MATCHED;
         }
 
+        if ($node->getAttribute('jscontroller') == 'FAhUS' && $this->isWidget($dom, $node)) {
+            return self::RULE_MATCH_MATCHED;
+        }
+
         if ($node->getAttribute('id') =='eKIzJc' && $this->isWidget($dom, $node)) {
             return self::RULE_MATCH_MATCHED;
         }
