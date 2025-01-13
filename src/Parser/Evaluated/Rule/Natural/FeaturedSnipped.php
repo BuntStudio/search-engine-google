@@ -11,7 +11,7 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
 {
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
-    protected $steps = ['version1', 'version2'];
+    protected $steps = ['version1'];
 
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
@@ -90,60 +90,6 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
 
             $results[] = $object;
         }
-
-        if(!empty($results)) {
-            $resultSet->addItem(
-                new BaseResult($this->getType($isMobile), $results, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition)
-            );
-        }
-    }
-
-    public function version2(
-        GoogleDom $googleDOM,
-        \DomElement $node,
-        IndexedResultSet $resultSet,
-        $isMobile = false,
-        array $doNotRemoveSrsltidForDomains = []
-    ) {
-        if (!$isMobile) {
-            return;
-        }
-        $results = [];
-
-        $aTag = $googleDOM->getXpath()->query("descendant::a", $node);
-        $description = $googleDOM->getXpath()->query("descendant::div[@class='LGOjhe']", $node);//description
-
-        foreach ($aTag as $item) {
-            $url = \Utils::removeParamFromUrl(
-                \SM_Rank_Service::getUrlFromGoogleTranslate($item->getAttribute('href')),
-                'srsltid',
-                $doNotRemoveSrsltidForDomains
-            );
-            //if valid url has hostname and is not google
-            if (parse_url($url, PHP_URL_HOST) && strpos(parse_url($url, PHP_URL_HOST), 'google') === false) {
-                $object              = new \StdClass();
-                $object->url         = $url;
-                $object->description = (!empty($description) && !empty($description->item(0)) && !empty($description->item(0)->textContent)) ? $description->item(0)->textContent : '';
-                $object->title       = $item->textContent;
-                $results[] = $object;
-                break;
-            }
-
-        }
-
-//        if (!empty($aTag) && !empty($aTag->item(1))) {
-//            $object              = new \StdClass();
-//            $object->url         = $aTag->item(1)->getAttribute('href');
-//            $object->description = (!empty($description) && !empty($description->item(1)) && !empty($description->item(1)->textContent)) ? $description->item(1)->textContent : '';
-//            $object->title       = $aTag->item(1)->textContent;
-//            $results[] = $object;
-//        } else if (!empty($aTag) && !empty($aTag->item(0))) {
-//            $object              = new \StdClass();
-//            $object->url         = $aTag->item(0)->getAttribute('href');
-//            $object->description = (!empty($description) && !empty($description->item(0)) && !empty($description->item(0)->textContent)) ? $description->item(0)->textContent : '';
-//            $object->title       = $aTag->item(0)->textContent;
-//            $results[] = $object;
-//        }
 
         if(!empty($results)) {
             $resultSet->addItem(
