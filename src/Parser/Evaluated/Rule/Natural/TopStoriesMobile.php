@@ -26,6 +26,11 @@ class TopStoriesMobile extends TopStories
                 return;
             }
 
+            $socialMediaElement = $dom->getXpath()->query('descendant::*[contains(concat(" ", @class, " "), " JJZKK ") and contains(concat(" ", @class, " "), " rsmgO ")]', $node);
+            if ($socialMediaElement->length) {
+                return self::RULE_MATCH_NOMATCH;
+            }
+
             $perspectivesElement = $dom->getXpath()->query("descendant::div[contains(@class, 'lSfe4c Qxqlrc')]", $node);
             $forContextElement = $dom->getXpath()->query("descendant::div[contains(@class, 'gpjNTe')]", $node);
             // for Context is news
