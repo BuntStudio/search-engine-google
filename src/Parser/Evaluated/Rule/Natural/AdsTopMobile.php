@@ -37,6 +37,7 @@ class AdsTopMobile extends AdsTop
 
             $aHrefs = $dom->getXpath()->query("descendant::a[
         contains(concat(' ', normalize-space(@class), ' '), ' C8nzq BmP5tf ') or
+        contains(concat(' ', normalize-space(@class), ' '), ' KO2aMe VNaOAc ') or
         @class='sXtWJb' or
         (
             contains(concat(' ', normalize-space(@class), ' '), ' BmP5tf ') and
@@ -72,10 +73,17 @@ class AdsTopMobile extends AdsTop
                     continue;
                 }
 
+                $hrefAttribute = $href->getAttribute('href');
+
+                if (!empty($href->getAttribute('data-rw'))) {
+                    $dataRw = $href->getAttribute('data-rw');
+                    $hrefAttribute = self::processDataRwUrl($hrefAttribute, $dataRw);
+                }
+
                 if (empty($links) || empty(array_column($links, 'url'))) {
-                    $links[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($href->getAttribute('href'))];
-                } elseif (!in_array($href->getAttribute('href'), array_column($links, 'url'))) {
-                    $links[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($href->getAttribute('href'))];
+                    $links[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($hrefAttribute)];
+                } elseif (!in_array($hrefAttribute, array_column($links, 'url'))) {
+                    $links[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($hrefAttribute)];
                 }
             }
         }
@@ -90,5 +98,33 @@ class AdsTopMobile extends AdsTop
                 $resultSet->addItem(new BaseResult(NaturalResultType::AdsDOWN_MOBILE, $links, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
             }
         }
+    }
+
+    public static function processDataRwUrl($hrefAttribute, $dataRw) {
+        // Add https:// if protocol is missing
+        if (!preg_match("~^(?:f|ht)tps?://~i", $hrefAttribute)) {
+            $hrefAttribute = "https://" . $hrefAttribute;
+        }
+
+        // Parse the URL into components
+        $urlParts = parse_url($hrefAttribute);
+
+        // Check if it's a valid URL and has a host
+        if ($urlParts && isset($urlParts['host'])) {
+            // Check if it's a Google domain
+            if (preg_match("/(?:^|\.)google\.[a-z]{2,}$/i", $urlParts['host'])) {
+                // Build new URL with Google domain but new path
+                $newUrl = $urlParts['scheme'] . "://" . $urlParts['host'];
+
+                // Add the new path, ensuring it starts with /
+                $newPath = ltrim($dataRw, '/');
+                $newUrl .= '/' . $newPath;
+
+                return $newUrl;
+            }
+        }
+
+        // Return original URL (with added protocol if that was missing)
+        return $hrefAttribute;
     }
 }
