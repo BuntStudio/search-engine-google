@@ -30,6 +30,12 @@ class AdsTop implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
             $node->getAttribute('id') == self::ADS_DOWN_CLASS  || // Ads bottom
             $node->getAttribute('id') == 'bottomads' // Ads bottom
         ) {
+            $plaNodes = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' commercial-unit-desktop-top ') or
+        contains(concat(' ', normalize-space(@class), ' '), ' cu-container ')]", $node);
+            if ($plaNodes->length > 0) {
+                return self::RULE_MATCH_NOMATCH;
+            }
+
             return self::RULE_MATCH_MATCHED;
         }
 
