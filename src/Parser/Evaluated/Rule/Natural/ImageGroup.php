@@ -34,14 +34,8 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
         }
 
         if (strpos($node->getAttribute('class'), 'IZE3Td') !== false) {
-            $child = $node;
-            for ($i = 0; $i < 5; $i++) {
-                $child = $child->getChildren()->item(0);
-                if (empty($child)) {
-                    return self::RULE_MATCH_NOMATCH;
-                }
-            }
-            if ($child->getAttribute('data-attrid') == 'images universal') {
+            $images = $dom->getXpath()->query('descendant::div[contains(concat(" ", @data-attrid, " "), " images universal ")]', $node);
+            if ($images->length > 0) {
                 return self::RULE_MATCH_MATCHED;
             }
         }
