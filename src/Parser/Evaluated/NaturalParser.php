@@ -209,7 +209,6 @@ class NaturalParser extends AbstractParser
             @jscontroller='hKbgK' or
             @id='eKIzJc' or
             @jsname='ZLxsqf' or
-            @jscontroller='FAhUS' or
             contains(@class, 'KYLHhb') or
             contains(@class, 'EDblX') or
             @class='Ww4FFb' or
