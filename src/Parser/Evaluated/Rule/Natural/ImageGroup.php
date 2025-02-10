@@ -21,6 +21,16 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
 
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
+        $mapsRule = new Maps();
+        if ($mapsRule->match($dom, $node) === self::RULE_MATCH_MATCHED) {
+            return self::RULE_MATCH_NOMATCH;
+        }
+
+        $mapsRule = new MapsMobile();
+        if ($mapsRule->match($dom, $node) === self::RULE_MATCH_MATCHED) {
+            return self::RULE_MATCH_NOMATCH;
+        }
+
         if ($node->getAttribute('id') == 'iur' &&
             (   // Mobile
                 $node->parentNode->hasAttribute('jsmodel') ||
@@ -50,10 +60,6 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
         foreach ($this->steps as $functionName) {
-
-            if ($resultSet->hasType(NaturalResultType::MAP)) {
-                break 1;
-            }
 
             try {
                 call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile]);
