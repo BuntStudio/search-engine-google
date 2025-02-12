@@ -62,15 +62,20 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             NaturalResultType::SGE_WIDGET_LOADED  => $this->isWidgetLoaded($dom, $node),
             NaturalResultType::SGE_WIDGET_LINKS   => [],
         ];
+        $linkElements0 = $dom->xpathQuery('descendant::div[@data-attrid="SGEAttributionFeedback"]', $node);
 
-        $linkElements = $dom->xpathQuery('descendant::*[@class="BOThhc"]//descendant::*[@class="LLtSOc"]', $node);
+        $linkElements1 = $dom->xpathQuery('descendant::*[@class="BOThhc"]//descendant::*[@class="LLtSOc"]', $node);
 
         $linkElements2 = $dom->xpathQuery('descendant::*[@jscontroller="g4PEk"]//descendant::*[@class="LLtSOc"]', $node);
 
         $urls = [];
 
-        if ($linkElements->length > 0) {
-            $this->processLinkElements($dom, $linkElements, $urls, $data);
+        if ($linkElements0->length > 0) {
+            $this->processLinkElements($dom, $linkElements0, $urls, $data);
+        }
+
+        if ($linkElements1->length > 0) {
+            $this->processLinkElements($dom, $linkElements1, $urls, $data);
         }
 
         if ($linkElements2->length > 0) {
