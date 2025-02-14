@@ -62,30 +62,26 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             NaturalResultType::SGE_WIDGET_LOADED  => $this->isWidgetLoaded($dom, $node),
             NaturalResultType::SGE_WIDGET_LINKS   => [],
         ];
-        $linkElements = $dom->xpathQuery('descendant::div[@data-attrid="SGEAttributionFeedback"]', $node);
-        if ($linkElements->length == 0) {
-            $linkElements = $dom->xpathQuery('descendant::*[@class="BOThhc"]//descendant::*[@class="LLtSOc"]', $node);
+        $linkElements0 = $dom->xpathQuery('descendant::div[@data-attrid="SGEAttributionFeedback"]', $node);
+
+        $linkElements1 = $dom->xpathQuery('descendant::*[@class="BOThhc"]//descendant::*[@class="LLtSOc"]', $node);
+
+        $linkElements2 = $dom->xpathQuery('descendant::*[@jscontroller="g4PEk"]//descendant::*[@class="LLtSOc"]', $node);
+
+        $urls = [];
+
+        if ($linkElements0->length > 0) {
+            $this->processLinkElements($dom, $linkElements0, $urls, $data);
         }
-        if ($linkElements->length > 0) {
-            foreach ($linkElements as $cage) {
-                $link = $dom->xpathQuery('descendant::a', $cage)->item(0);
-                if (empty($link)) {
-                    $link = $cage;
-                }
-                $title = $link->getAttribute('aria-label');
-                if (empty($title)) {
-                    $title = $dom->xpathQuery('descendant::*[@class="mNme1d tNxQIb"]', $cage);
-                    if (!empty($title) && !empty($title->length)) {
-                        $title =  $title->item(0)->textContent;
-                    }
-                }
-                $data[NaturalResultType::SGE_WIDGET_LINKS][] = [
-                    'title' => $link ? $link->getAttribute('aria-label') : '',
-                    'url'   => $link ? \SM_Rank_Service::getUrlFromGoogleTranslate($link->getAttribute('href')) : '',
-                    'html'  => $cage->ownerDocument->saveHTML($cage),
-                ];
-            }
+
+        if ($linkElements1->length > 0) {
+            $this->processLinkElements($dom, $linkElements1, $urls, $data);
         }
+
+        if ($linkElements2->length > 0) {
+            $this->processLinkElements($dom, $linkElements2, $urls, $data);
+        }
+
         return $data;
     }
 
@@ -115,5 +111,35 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         // Return the node
         return $node;
+    }
+
+    private function processLinkElements($dom, $elements, &$urls, &$data) {
+        foreach ($elements as $cage) {
+            $link = $dom->xpathQuery('descendant::a', $cage)->item(0);
+            if (empty($link)) {
+                $link = $cage;
+            }
+            $title = $link->getAttribute('aria-label');
+            if (empty($title)) {
+                $title = $dom->xpathQuery('descendant::*[@class="mNme1d tNxQIb"]', $cage);
+                if (!empty($title) && !empty($title->length)) {
+                    $title = $title->item(0)->textContent;
+                }
+            }
+
+            $url = $link ? \SM_Rank_Service::getUrlFromGoogleTranslate($link->getAttribute('href')) : '';
+
+            if (in_array($url, $urls)) {
+                continue;
+            }
+
+            $urls[] = $url;
+
+            $data[NaturalResultType::SGE_WIDGET_LINKS][] = [
+                'title' => $link ? $link->getAttribute('aria-label') : '',
+                'url' => $url,
+                'html' => $cage->ownerDocument->saveHTML($cage),
+            ];
+        }
     }
 }
