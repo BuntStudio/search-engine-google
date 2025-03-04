@@ -71,8 +71,6 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         $linkElements2 = $dom->xpathQuery('descendant::*[@jscontroller="g4PEk"]//descendant::*[@class="LLtSOc"]', $node);
 
-        $linkElements3 = $dom->xpathQuery('//div[@id="rhs" and not(@data-spe)]//a[@data-ved and h3]', $node);
-
         $urls = [];
 
         if ($linkElements0->length > 0) {
