@@ -54,6 +54,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     protected function extractWidgetData($dom, $node)
     {
+        // Keep a clone of the real DOM; We're transforming the node, so we need to keep the original for later use
+        $originalDom = clone $dom->getDom();
+
         $sgec = $this->transformNode($dom, clone($node));
         $node = $this->transformNode($dom, $node, $this->removeStyles, $this->removeScripts);
         $data = [
@@ -68,6 +71,8 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         $linkElements2 = $dom->xpathQuery('descendant::*[@jscontroller="g4PEk"]//descendant::*[@class="LLtSOc"]', $node);
 
+        $linkElements3 = $dom->xpathQuery('//div[@id="rhs" and not(@data-spe)]//a[@data-ved and h3]', $node);
+
         $urls = [];
 
         if ($linkElements0->length > 0) {
@@ -80,6 +85,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         if ($linkElements2->length > 0) {
             $this->processLinkElements($dom, $linkElements2, $urls, $data);
+        }
+
+        if (!empty($urls)) {
+            $this->processScriptElements($originalDom, $urls, $data);
         }
 
         return $data;
@@ -140,6 +149,38 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 'url' => $url,
                 'html' => $cage->ownerDocument->saveHTML($cage),
             ];
+        }
+    }
+
+    private function processScriptElements($dom, array &$urls, array &$data)
+    {
+        $xpath = new \DOMXPath($dom);
+        $scripts = $xpath->query('//script[contains(., "//' . parse_url($urls[0], PHP_URL_HOST) . '") and contains(.,"AI Overview")]/text()');
+
+        if ($scripts->length > 0) {
+            $scriptContent = $scripts[0]->nodeValue;
+
+            // Find section with AI Overview, with variable spacing around the marker and surrounding quotes
+            $overviewRegex = '/data-fburl="(.*)(?:"|#:~:text=([^"&]*))"/Uis';
+
+            if (preg_match_all($overviewRegex, stripcslashes($scriptContent), $overviewMatches)) {
+                foreach ($overviewMatches[1] as $key => $url) {
+                    if (in_array($url, $urls)) {
+                        continue;
+                    }
+
+                    $urls[] = $url;
+                    $data[NaturalResultType::SGE_WIDGET_LINKS][] = [
+                        'title' => rawurldecode($overviewMatches[2][$key]), // TODO: Maybe detect this, too?
+                        'url' => $url,
+                        'html' => '',
+                    ];
+                }
+            } else {
+                // TODO: Maybe log?
+            }
+        } else {
+            // TODO: Maybe log?
         }
     }
 }
