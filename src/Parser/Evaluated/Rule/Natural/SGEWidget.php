@@ -159,7 +159,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             $scriptContent = $scripts[0]->nodeValue;
 
             // Find section with AI Overview, with variable spacing around the marker and surrounding quotes
-            $overviewRegex = '/data-fburl="([^"#]*)(?:"|(?:#:~:text=([^"&]*)")?)"/Uis';
+            $overviewRegex = '/data-fburl="([^"#]*)(?:#:~:text=([^"&]*))?"/Uis';
 
             if (preg_match_all($overviewRegex, stripcslashes($scriptContent), $overviewMatches)) {
                 foreach ($overviewMatches[1] as $key => $url) {
