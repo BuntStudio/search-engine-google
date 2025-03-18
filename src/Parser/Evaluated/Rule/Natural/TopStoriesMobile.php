@@ -31,6 +31,12 @@ class TopStoriesMobile extends TopStories
                 return self::RULE_MATCH_NOMATCH;
             }
 
+            // New rule for jsname="K9a4Re" with no data-hveid
+            $socialMediaJsnameElement = $dom->getXpath()->query('descendant::*[@jsname="K9a4Re" and not(@data-hveid)]', $node);
+            if ($socialMediaJsnameElement->length) {
+                return self::RULE_MATCH_NOMATCH;
+            }
+
             $perspectivesElement = $dom->getXpath()->query("descendant::div[contains(@class, 'lSfe4c Qxqlrc')]", $node);
             $forContextElement = $dom->getXpath()->query("descendant::div[contains(@class, 'gpjNTe')]", $node);
             // for Context is news
