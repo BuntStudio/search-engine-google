@@ -89,6 +89,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             $this->processScriptElements($originalDom, $urls, $data);
         }
 
+        if (!empty($urls)) {
+            $this->processMagiFeature($originalDom, $urls, $data);
+        }
+
         return $data;
     }
 
@@ -179,6 +183,49 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             }
         } else {
             // TODO: Maybe log?
+        }
+    }
+
+    private function processMagiFeature($originalDom, array &$urls, array &$data)
+    {
+        $scriptContent = $originalDom->saveHTML();
+
+        // This regex looks for array patterns that start with "MAGI_FEATURE"
+        // It handles the specific format of these arrays
+        $magiFeaturePattern = '/\],\"C[a-zA-Z0-9]{5}[^:]*:.*\["MAGI_FEATURE".*\[null,1,(\[[^[]*\])/Uis';
+
+        // Extract all arrays that match our pattern
+        preg_match_all($magiFeaturePattern, $scriptContent, $foundArrays);
+        $magiFeatureArrays = $foundArrays[1] ?? [];
+
+        // Extract URLs from the MAGI_FEATURE arrays
+        $urlPattern = '/(https?:\/\/[^\s"\',]+)/';
+        $extractedUrls = [];
+
+        foreach ($magiFeatureArrays as $json) {
+            $array = json_decode($json, true);
+
+            if (empty($array)) {
+                continue;
+            }
+
+            if (!isset($array[4]) || !isset($array[6])) {
+                continue;
+            }
+
+            $title = $array[4];
+            $url = $array[6];
+
+            if (in_array($url, $urls)) {
+                continue;
+            }
+
+            $urls[] = $url;
+            $data[NaturalResultType::SGE_WIDGET_LINKS][] = [
+                'title' => $title,
+                'url' => $url,
+                'html' => '',
+            ];
         }
     }
 }
