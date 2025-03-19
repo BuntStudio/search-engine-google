@@ -13,15 +13,21 @@ class DesktopV2 implements ParsingRuleByVersionInterface
         if ($organicResultObject->getDescription() === null) {
 
             $descriptionTag = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' yXK7lf ')]", $organicResult);
-
-            if ($descriptionTag->length >0 ) {
+            if ($descriptionTag->length > 0) {
                 $organicResultObject->setDescription($descriptionTag->item(0)->textContent);
-            } else {
-                $descriptionTag = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' xcQxib ')]", $organicResult);
-                if ($descriptionTag->length >0 ) {
-                    $organicResultObject->setDescription($descriptionTag->item(0)->textContent);
-                }
+                return;
+            }
 
+            $descriptionTag = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' xcQxib ')]", $organicResult);
+            if ($descriptionTag->length > 0) {
+                $organicResultObject->setDescription($descriptionTag->item(0)->textContent);
+                return;
+            }
+
+            $descriptionTag = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' ITZIwc ')]", $organicResult);
+            if ($descriptionTag->length > 0) {
+                $organicResultObject->setDescription($descriptionTag->item(0)->textContent);
+                return;
             }
         }
     }
