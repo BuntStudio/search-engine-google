@@ -26,7 +26,8 @@ class ProductGrid implements ParsingRuleInterface
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
         //get all ul li
-        $productGridNodes = $dom->getXpath()->query('.//li', $node);
+        //$productGridNodes = $dom->getXpath()->query('.//li', $node);
+        $productGridNodes = $dom->getXpath()->query('.//li//span[contains(@class, "WJMUdc") and contains(@class, "rw5ecc")]', $node);
         if ($productGridNodes->length > 0 ) {
             $items = [];
             for ($i = 0; $i < $productGridNodes->length; $i++) {
