@@ -49,6 +49,14 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
                 (new SiteLinksBig())->parse($dom, $parentWithSameClass->item(0), $resultSet, false);
             }
         }
+
+        $parentWithClass = $dom->xpathQuery("ancestor::div[@class='BYM4Nd']", $organicResult);
+
+        if($parentWithClass->length > 0) {
+            if( $dom->xpathQuery("descendant::table[contains(@class, 'jmjoTe')]", $parentWithClass->item(0))->length >0) {
+                (new SiteLinksBig())->parse($dom, $parentWithClass->item(0), $resultSet, false);
+            }
+        }
     }
 
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
