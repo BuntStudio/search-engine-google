@@ -33,7 +33,8 @@ class TopStoriesMobile extends TopStories
 
             // New rule for jsname="K9a4Re" with no data-hveid
             $socialMediaJsnameElement = $dom->getXpath()->query('descendant::*[@jsname="K9a4Re" and not(@data-hveid)]', $node);
-            if ($socialMediaJsnameElement->length) {
+            $socialMediaCrustElement = $dom->getXpath()->query('ancestor-or-self::div[@data-crust-trigger="158133"]', $node);
+            if ($socialMediaCrustElement->length) {
                 return self::RULE_MATCH_NOMATCH;
             }
 
