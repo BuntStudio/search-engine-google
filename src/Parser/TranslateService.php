@@ -452,7 +452,23 @@ class TranslateService
         }
 
         if ($item->is(NaturalResultType::PRODUCT_GRID)) {
-            $this->response[NaturalResultType::PRODUCT_GRID] = $item->getData();
+            if (
+                isset($this->response[NaturalResultType::PRODUCT_GRID]) &&
+                !empty($this->response[NaturalResultType::PRODUCT_GRID]) &&
+                is_array($this->response[NaturalResultType::PRODUCT_GRID]) &&
+                is_array($item->getData())
+            ) {
+                $this->response[NaturalResultType::PRODUCT_GRID] = array_values(
+                    array_unique(
+                        array_merge(
+                            $this->response[NaturalResultType::PRODUCT_GRID],
+                            $item->getData()
+                        )
+                    )
+                );
+            } else {
+                $this->response[NaturalResultType::PRODUCT_GRID] = $item->getData();
+            }
         }
 
         if ($item->is(NaturalResultType::PLACES)) {
