@@ -9,7 +9,7 @@ use Serps\SearchEngine\Google\Parser\ParsingRuleInterface;
 
 class VideosMobile implements ParsingRuleInterface
 {
-    protected $steps = ['version1', 'version2', 'version3', 'version4', 'version5', 'version6'];
+    protected $steps = ['version1', 'version2', 'version3', 'version4', 'version5', 'version6', 'version7'];
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
 
@@ -39,14 +39,13 @@ class VideosMobile implements ParsingRuleInterface
             return self::RULE_MATCH_MATCHED;
         }
 
-        //todo implement later - https://app.clickup.com/t/8698fyc6a
-//        if ($node->hasClass('EDblX') && $node->hasClass('HG5ZQb')) {
-//            //this is a general list, search for video children
-//            $videosPlayers = $dom->getXpath()->query('descendant::div[@class="XRVJtc bnmjfe aKByQb"]', $node);
-//            if ($videosPlayers->length > 0) {
-//                return self::RULE_MATCH_MATCHED;
-//            }
-//        }
+        if ($node->hasClass('EDblX') && $node->hasClass('HG5ZQb')) {
+            //this is a general list, search for video children
+            $videosPlayers = $dom->getXpath()->query('descendant::div[@class="oj7Mub eVNxY"]', $node);
+            if ($videosPlayers->length > 0) {
+                return self::RULE_MATCH_MATCHED;
+            }
+        }
 
         return self::RULE_MATCH_NOMATCH;
     }
@@ -184,8 +183,7 @@ class VideosMobile implements ParsingRuleInterface
 
     protected function version7(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
     {
-        //todo implement later - https://app.clickup.com/t/8698fyc6a
-        $videosPlayers = $googleDOM->getXpath()->query('descendant::div[@class="XRVJtc bnmjfe aKByQb"]', $node);
+        $videosPlayers = $googleDOM->getXpath()->query('descendant::div[@class="oj7Mub eVNxY"]', $node);
         if ($videosPlayers->length == 0) {
             return;
         }
