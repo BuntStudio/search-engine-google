@@ -46,8 +46,10 @@ abstract class NaturalResultType
 
 
     const VIDEOS        = 'videos';
+    const VIDEOS_MINE        = 'videos_mine';
     const VIDEOS_LIST        = 'videos_list';
     const VIDEOS_MOBILE = 'videos_mobile';
+    const VIDEOS_MINE_MOBILE = 'videos_mine_mobile';
     const VIDEO_CAROUSEL = 'video_carousel';
     const VIDEO_CAROUSEL_MOBILE = 'video_carousel_mobile';
 
@@ -247,7 +249,7 @@ abstract class NaturalResultType
         self::TOP_STORIES_MOBILE => self::TOP_STORIES_OLD_VERSION,
         self::MAPS_LINKS => self::MAPS_LINKS,
         self::VIDEOS => self::VIDEOS,
-        self::VIDEOS_MOBILE => self::VIDEOS_MOBILE,
+        self::VIDEOS_MOBILE => self::VIDEOS,
         self::VIDEO_CAROUSEL => self::VIDEOS,
         self::VIDEO_CAROUSEL_MOBILE => self::VIDEOS,
         self::MAP => self::MAP,
