@@ -160,6 +160,11 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             return;
         }
 
+        $whatPeopleAreSaying = $googleDOM->getXpath()->query("descendant::div[contains(@class, 'OSrXXb rbYSKb LfVVr esJEyb')]", $node);
+        if ($whatPeopleAreSaying->length > 0) {
+            return;
+        }
+
         $hrefsNodes = $googleDOM->getXpath()->query("descendant::a[contains(@class,'WlydOe')]", $node);
 
         if (!$hrefsNodes instanceof DomNodeList) {
