@@ -114,9 +114,12 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $maxHeightDivs = $dom->xpathQuery('descendant::div[@class="h7Tj7e"]', $node);
         foreach ($maxHeightDivs as $st) $st->removeAttribute('style');
 
-        // Remove the "Show more" button and overlay div
-        $showMoreButton = $dom->xpathQuery('descendant::div[@jsname="rPRdsc"]', $node);
-        foreach ($showMoreButton as $button) $button->parentNode->removeChild($button);
+        // Disabled for now, as requested in #86991adgz
+        // Remove the "Show more" button
+//        $showMoreButton = $dom->xpathQuery('descendant::div[@jsname="rPRdsc"]', $node);
+//        foreach ($showMoreButton as $button) $button->parentNode->removeChild($button);
+
+        // Remove the overlay div
         $overlayDiv = $dom->xpathQuery('.//div[contains(@class, "RDmXvc")]', $node);
         foreach ($overlayDiv as $overlay) $overlay->parentNode->removeChild($overlay);
 
