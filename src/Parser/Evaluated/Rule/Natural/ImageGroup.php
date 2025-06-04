@@ -103,7 +103,8 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
         $item   = [];
         if ($images->length > 0) {
             foreach ($images as $imageNode) {
-                if ($googleDOM->getXpath()->query('descendant::a', $imageNode)->item(0)->getAttribute('href')) {
+                $itemsImg = $googleDOM->getXpath()->query('descendant::a', $imageNode);
+                if ($itemsImg->length == 0 && $itemsImg->item(0) &&  $itemsImg->item(0)->getAttribute('href')) {
                     $item['images'][] = ['url'=> \SM_Rank_Service::getUrlFromGoogleTranslate($googleDOM->getXpath()->query('descendant::a', $imageNode)->item(0)->getAttribute('href'))];
                 } else {
                     $item['images'][] = ['url'=> \SM_Rank_Service::getUrlFromGoogleTranslate($this->parseItem( $imageNode))];
