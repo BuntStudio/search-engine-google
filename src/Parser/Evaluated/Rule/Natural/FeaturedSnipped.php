@@ -11,7 +11,7 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
 {
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
-    protected $steps = ['version1'];
+    protected $steps = ['version1', 'version2'];
 
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
@@ -20,6 +20,10 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         }
 
         if (strpos($node->getAttribute('class'), 'CWesnb') !== false) {
+            return self::RULE_MATCH_MATCHED;
+        }
+
+        if ($dom->getXpath()->query('//div[@class="MjjYud"]/div[@class="pxiwBd GqJbWc M6ON8"]', $node)->length > 0) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -92,6 +96,59 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         }
 
         if(!empty($results)) {
+            $resultSet->addItem(
+                new BaseResult($this->getType($isMobile), $results, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition)
+            );
+        }
+    }
+
+    public function version2(
+        GoogleDom $googleDOM,
+        \DomElement $node,
+        IndexedResultSet $resultSet,
+        $isMobile = false,
+        array $doNotRemoveSrsltidForDomains = []
+    ) {
+        $results = [];
+
+        $object = new \StdClass();
+
+        // Try the primary source URL XPath
+        $sourceUrls = $googleDOM->getXpath()->query('//a[@class="sXtWJb"]/@href', $node);
+
+        // If not found, try the alternative XPath
+        if ($sourceUrls->length == 0) {
+            $sourceUrls = $googleDOM->getXpath()->query('//h3[@class="yuRUbf JtGQ40d MBeuO q8U8x"]//a/@href', $node);
+        }
+
+        // If still not found, let's try a more general approach to find any link
+        if ($sourceUrls->length == 0) {
+            // Try to find standard result links
+            $sourceUrls = $googleDOM->getXpath()->query('//div[contains(@class, "yuRUbf")]//a/@href', $node);
+        }
+
+        // If we found a URL, process it
+        if ($sourceUrls->length > 0) {
+            $object->url = \Utils::removeParamFromUrl(
+                \SM_Rank_Service::getUrlFromGoogleTranslate($sourceUrls->item(0)->getNodeValue()),
+                'srsltid',
+                $doNotRemoveSrsltidForDomains
+            );
+
+            // Try to get title from the combination XPath
+            $titleElements = $googleDOM->getXpath()->query('//a[@class="sXtWJb" and @jsname="UWckNb"]', $node);
+
+            // If not found, try a more general approach
+            if ($titleElements->length == 0) {
+                $titleElements = $googleDOM->getXpath()->query('//h3', $node);
+            }
+
+            $object->title = ($titleElements->length > 0) ? trim($titleElements->item(0)->textContent) : '';
+
+            $results[] = $object;
+        }
+
+        if (!empty($results)) {
             $resultSet->addItem(
                 new BaseResult($this->getType($isMobile), $results, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition)
             );
