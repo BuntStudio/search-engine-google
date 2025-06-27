@@ -69,7 +69,6 @@ class NaturalParser extends AbstractParser
             new AdsTop(),
             new Recipes(),
             new TopStories(),
-            new FeaturedSnipped(),
             new ProductGrid(),
             new ProductListing(),
             new Questions(),
@@ -98,7 +97,8 @@ class NaturalParser extends AbstractParser
             new FlightsSites(),
             new FlightsAirline(),
             new CurrencyAnswer(),
-            new ThingsToKnow()
+            new ThingsToKnow(),
+            new FeaturedSnipped(),
         ];
     }
 

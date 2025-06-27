@@ -58,7 +58,6 @@ class MobileNaturalParser extends AbstractParser
             new KnowledgeGraphMobile(),
             new AdsTopMobile(),
             new AppPackMobile(),
-            new FeaturedSnipped(),
             new Recipes(),
             new Flights(),
             new Jobs(),
@@ -71,7 +70,8 @@ class MobileNaturalParser extends AbstractParser
             new NoMoreResults(),
             new VisualDigestMobile(),
             new SGEButton(),
-            new SGEWidget()
+            new SGEWidget(),
+            new FeaturedSnipped(),
         ];
     }
 
