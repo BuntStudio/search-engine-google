@@ -59,12 +59,17 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         $sgec = $this->transformNode($dom, clone($node));
         $node = $this->transformNode($dom, $node, $this->removeStyles, $this->removeScripts);
+
+        // Enrich the content with data that would normally be loaded on click
+        $this->enrichContentWithDynamicData($dom, $node, $originalDom);
+
         $data = [
             NaturalResultType::SGE_WIDGET_BASE    => $sgec->ownerDocument->saveHTML($sgec),
             NaturalResultType::SGE_WIDGET_CONTENT => $node->ownerDocument->saveHTML($node),
             NaturalResultType::SGE_WIDGET_LOADED  => $this->isWidgetLoaded($dom, $node),
             NaturalResultType::SGE_WIDGET_LINKS   => [],
         ];
+
         $linkElements0 = $dom->xpathQuery('descendant::div[@data-attrid="SGEAttributionFeedback"]', $node);
 
         $linkElements1 = $dom->xpathQuery('descendant::*[@class="BOThhc"]//descendant::*[@class="LLtSOc"]', $node);
@@ -238,6 +243,108 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 'url' => $url,
                 'html' => '',
             ];
+        }
+    }
+
+    /**
+     * Enrich content with data that would normally be loaded on click
+     * by looking for elements with class 'bsmXxe', fetching their 'id' value,
+     * and looking for 'window.jsl.dh()' calls with matching IDs
+     */
+    protected function enrichContentWithDynamicData($dom, $node, $originalDom)
+    {
+        // Find all elements with class 'bsmXxe'
+        $bsmElements = $dom->xpathQuery('descendant::*[contains(concat(" ", normalize-space(@class), " "), " bsmXxe ")]', $node);
+
+        if ($bsmElements->length === 0) {
+            return;
+        }
+
+        // Get the original DOM content as string to search for jsl.dh() calls
+        $originalContent = $originalDom->saveHTML();
+
+        // Extract all jsl.dh() calls from the original content
+        $jslCalls = $this->extractJslDhCalls($originalContent);
+
+        // Process each bsmXxe element
+        foreach ($bsmElements as $element) {
+            $elementId = $element->getAttribute('id');
+
+            if (empty($elementId)) {
+                continue;
+            }
+
+            // Look for matching jsl.dh() call
+            if (isset($jslCalls[$elementId])) {
+                $htmlContent = $jslCalls[$elementId];
+                $this->injectHtmlContent($dom, $element, $htmlContent);
+            }
+        }
+    }
+
+    /**
+     * Extract window.jsl.dh() calls from HTML content
+     * Returns array with ID as key and HTML content as value
+     */
+    protected function extractJslDhCalls($htmlContent)
+    {
+        $jslCalls = [];
+
+        // Regex pattern to match window.jsl.dh('id', 'html') calls
+        // The pattern handles both window.jsl.dh and jsl.dh variants
+        $pattern = '/(?:window\.)?jsl\.dh\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]([^\'"]*(?:\\.[^\'"]*)*)[\'"](?:\s*,[^)]*)??\)/';
+
+        if (preg_match_all($pattern, $htmlContent, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $id = $match[1];
+                $htmlData = $match[2];
+
+                // URL decode and handle escaped characters
+                $decodedHtml = $this->decodeJslHtml($htmlData);
+
+                if (!empty($decodedHtml)) {
+                    $jslCalls[$id] = $decodedHtml;
+                }
+            }
+        }
+
+        return $jslCalls;
+    }
+
+    /**
+     * Decode and clean HTML content from jsl.dh() calls
+     */
+    protected function decodeJslHtml($encodedHtml)
+    {
+        // Handle JavaScript string escaping (e.g., \x3c becomes <)
+        $decoded = preg_replace_callback('/\\\\x([0-9a-fA-F]{2})/', function($matches) {
+            return chr(hexdec($matches[1]));
+        }, $encodedHtml);
+
+        // Handle other common JavaScript escapes
+        $decoded = str_replace(['\\"', "\\'", '\\\\'], ['"', "'", '\\'], $decoded);
+
+        return $decoded;
+    }
+
+    /**
+     * Inject HTML content into an element
+     */
+    protected function injectHtmlContent($dom, $element, $htmlContent)
+    {
+        try {
+            // Create a temporary document to parse the HTML
+            $tempDoc = new \DOMDocument('1.0', 'UTF-8');
+            $tempDoc->loadHTML('<?xml encoding="UTF-8">' . $htmlContent, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NOERROR | LIBXML_NOWARNING);
+
+            // Import and append the nodes to the target element
+            foreach ($tempDoc->documentElement->childNodes as $childNode) {
+                $importedNode = $element->ownerDocument->importNode($childNode, true);
+                $element->appendChild($importedNode);
+            }
+        } catch (\Exception $e) {
+            // If parsing fails, insert as text content to avoid breaking the document
+            $element->textContent = strip_tags($htmlContent);
         }
     }
 }
