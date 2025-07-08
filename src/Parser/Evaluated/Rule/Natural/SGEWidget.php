@@ -102,9 +102,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             $this->processLinkElements($dom, $linkElements3, $urls, $data);
         }
 
-        if (!empty($urls)) {
-            $this->processScriptElements($originalDom, $urls, $data);
-        }
+//        if (!empty($urls)) {
+//            $this->processScriptElements($originalDom, $urls, $data);
+//        }
 
         if (!empty($urls)) {
             $this->processMagiFeature($originalDom, $urls, $data);
@@ -171,6 +171,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 }
 
                 $url = \SM_Rank_Service::getUrlFromGoogleTranslate($link->getAttribute('href'));
+                
+                // Clean URL hash to improve unique page identification
+                $url = $this->cleanUrlHash($url);
 
                 if (in_array($url, $urls)) {
                     continue;
@@ -251,6 +254,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
             $title = $array[4];
             $url = $array[6];
+            
+            // Clean URL hash to improve unique page identification
+            $url = $this->cleanUrlHash($url);
 
             if (in_array($url, $urls)) {
                 continue;
@@ -473,6 +479,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         foreach ($aioLinks as $aioLink) {
             $url = $aioLink['url'];
             $title = $aioLink['title'];
+            
+            // Clean URL hash to improve unique page identification
+            $url = $this->cleanUrlHash($url);
 
             // Skip if URL is empty or already processed
             if (empty($url) || in_array($url, $urls)) {
@@ -517,6 +526,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
                 // Process the URL through Google's translation service
                 $url = \SM_Rank_Service::getUrlFromGoogleTranslate($href);
+                
+                // Clean URL hash to improve unique page identification
+                $url = $this->cleanUrlHash($url);
 
                 // Skip invalid URLs
                 if (empty($url) || $url === '#' || strpos($url, 'javascript:') === 0) {
@@ -556,6 +568,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
                 // Process the URL through Google's translation service
                 $url = \SM_Rank_Service::getUrlFromGoogleTranslate($href);
+                
+                // Clean URL hash to improve unique page identification
+                $url = $this->cleanUrlHash($url);
 
                 // Skip invalid URLs
                 if (empty($url) || $url === '#' || strpos($url, 'javascript:') === 0) {
@@ -729,6 +744,16 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             // If DOM processing fails, return original content
             return $htmlContent;
         }
+    }
+
+    /**
+     * Remove text fragment hash from URL to improve unique page identification
+     * Removes #:~:text=... patterns from URLs
+     */
+    protected function cleanUrlHash($url)
+    {
+        // Remove text fragment identifiers (#:~:text=...)
+        return preg_replace('/#:~:text=.*$/', '', $url);
     }
 
     /**
