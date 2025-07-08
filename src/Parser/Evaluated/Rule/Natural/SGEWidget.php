@@ -131,10 +131,13 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $maxHeightDivs = $dom->xpathQuery('descendant::div[@class="h7Tj7e"]', $node);
         foreach ($maxHeightDivs as $st) $st->removeAttribute('style');
 
-        // Disabled for now, as requested in #86991adgz
-        // Remove the "Show more" button
-//        $showMoreButton = $dom->xpathQuery('descendant::div[@jsname="rPRdsc"]', $node);
-//        foreach ($showMoreButton as $button) $button->parentNode->removeChild($button);
+        // Remove the "Show more" button (Afișează mai multe)
+        $showMoreButton = $dom->xpathQuery('descendant::div[@jsname="rPRdsc"]', $node);
+        foreach ($showMoreButton as $button) $button->parentNode->removeChild($button);
+
+        // Remove the privacy notice text (Află mai multe, inclusiv detalii despre date și confidențialitate)
+        $privacyNotice = $dom->xpathQuery('descendant::span[@jsname="q9irQd"]', $node);
+        foreach ($privacyNotice as $notice) $notice->parentNode->removeChild($notice);
 
         // Remove the overlay div
         $overlayDiv = $dom->xpathQuery('//div[contains(@class, "RDmXvc")]', $node);
@@ -349,6 +352,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     protected function injectHtmlContent($dom, $element, $htmlContent)
     {
         try {
+            // Convert bsmXxe div element to li element with K3KsMc class if needed
+            $element = $this->convertBsmXxeElementToLi($element);
+
             // Remove display:none styles before injecting
             $htmlContent = $this->removeDisplayNoneStyles($htmlContent);
 
@@ -691,5 +697,45 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         }
     }
 
+    /**
+     * Convert bsmXxe div element to li element with K3KsMc class
+     */
+    protected function convertBsmXxeElementToLi($element)
+    {
+        try {
+            // Check if this element has the bsmXxe class and is a div
+            if ($element->nodeName === 'div' && $element->hasAttribute('class')) {
+                $classes = explode(' ', $element->getAttribute('class'));
+                if (in_array('bsmXxe', $classes)) {
+                    // Create a new li element
+                    $li = $element->ownerDocument->createElement('li');
+                    $li->setAttribute('class', 'K3KsMc');
+
+                    // Copy all child nodes from div to li
+                    while ($element->firstChild) {
+                        $li->appendChild($element->firstChild);
+                    }
+
+                    // Copy all attributes from div to li (except class which we're replacing)
+                    if ($element->hasAttributes()) {
+                        foreach ($element->attributes as $attr) {
+                            if ($attr->nodeName !== 'class') {
+                                $li->setAttribute($attr->nodeName, $attr->nodeValue);
+                            }
+                        }
+                    }
+
+                    // Replace the div with the li
+                    $element->parentNode->replaceChild($li, $element);
+                    return $li;
+                }
+            }
+
+            return $element;
+        } catch (\Exception $e) {
+            // If conversion fails, return original element
+            return $element;
+        }
+    }
 
 }
