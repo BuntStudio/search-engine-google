@@ -340,8 +340,42 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             return chr(hexdec($matches[1]));
         }, $encodedHtml);
 
+        // Handle Unicode escapes (e.g., \u021b becomes ț)
+        $decoded = preg_replace_callback('/\\\\u([0-9a-fA-F]{4})/', function($matches) {
+            $codepoint = hexdec($matches[1]);
+            return mb_chr($codepoint, 'UTF-8');
+        }, $decoded);
+
         // Handle other common JavaScript escapes
         $decoded = str_replace(['\\"', "\\'", '\\\\'], ['"', "'", '\\'], $decoded);
+
+        // Handle URL-encoded characters (e.g., %C8%9B becomes ț, %C3%AE becomes î)
+        $decoded = urldecode($decoded);
+
+        // Handle potential double-encoding or HTML entity issues
+        $decoded = html_entity_decode($decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // Fix common Romanian diacritic encoding issues
+        $decoded = str_replace([
+            'Ã¢', 'Ã¡', 'Ã ', 'Ã£', 'Ã¤', 'Ã¦', 'Ã§', 'Ã¨', 'Ã©', 'Ã«', 'Ã¬', 'Ã­', 'Ã¯',
+            'Ã±', 'Ã²', 'Ã³', 'Ã´', 'Ã¶', 'Ã¸', 'Ã¹', 'Ã»', 'Ã¼', 'Ã½', 'Ã¿',
+            'Ã€', 'Ã‚', 'Ãƒ', 'Ã„', 'Ã…', 'Ã†', 'Ã‡', 'Ãˆ', 'Ã‰', 'ÃŠ', 'Ã‹', 'ÃŒ', 'ÃŽ',
+            'Ã\'', 'Ã\'', 'Ã"', 'Ã"', 'Ã•', 'Ã–', 'Ã˜', 'Ã™', 'Ãš', 'Ã›', 'Ãœ', 'Ãž'
+        ], [
+            'â', 'á', 'à', 'ã', 'ä', 'æ', 'ç', 'è', 'é', 'ë', 'ì', 'í', 'ï',
+            'ñ', 'ò', 'ó', 'ô', 'ö', 'ø', 'ù', 'û', 'ü', 'ý', 'ÿ',
+            'À', 'Â', 'Ã', 'Ä', 'Å', 'Æ', 'Ç', 'È', 'É', 'Ê', 'Ë', 'Ì', 'Î',
+            'Ñ', 'Ò', 'Ó', 'Ô', 'Õ', 'Ö', 'Ø', 'Ù', 'Ú', 'Û', 'Ü', 'Þ'
+        ], $decoded);
+
+        // Specific fixes for Romanian diacritics
+        $decoded = str_replace([
+            'Ã¢', 'Ã¤', 'Ã¢', 'Ã®', 'Ã¯', 'Ã¡', 'Ã ', 'Ã£',
+            'Ã‚', 'Ã„', 'Ã‚', 'ÃŽ', 'Ã', 'Ã\'', 'Ã€', 'Ãƒ'
+        ], [
+            'â', 'ă', 'â', 'î', 'ï', 'á', 'à', 'ã',
+            'Â', 'Ă', 'Â', 'Î', 'Í', 'Ó', 'À', 'Ã'
+        ], $decoded);
 
         return $decoded;
     }
