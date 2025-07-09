@@ -57,24 +57,26 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         // Keep a clone of the real DOM; We're transforming the node, so we need to keep the original for later use
         $originalDom = clone $dom->getDom();
 
-        $sgec = $this->transformNode($dom, clone($node));
-        $node = $this->transformNode($dom, $node, $this->removeStyles, $this->removeScripts);
-
-        // Enrich the content with data that would normally be loaded on click
-        $this->enrichContentWithDynamicData($dom, $node, $originalDom);
-
+        $urls = [];
         $data = [
-            NaturalResultType::SGE_WIDGET_BASE    => $sgec->ownerDocument->saveHTML($sgec),
             NaturalResultType::SGE_WIDGET_LOADED  => $this->isWidgetLoaded($dom, $node),
             NaturalResultType::SGE_WIDGET_LINKS   => [],
         ];
 
-        $urls = [];
+        // First, enrich the content with all dynamic data
+        $this->enrichContentWithDynamicData($dom, $node, $originalDom);
 
         // Process AIO links from window.jsl.dh() calls
         $this->enrichAioLinksFromDynamicData($dom, $node, $originalDom, $urls, $data);
 
-        // Update SGE_WIDGET_CONTENT after AIO injection
+        // Now save the base content with all enrichments but before style/script removal
+        $baseNode = $this->transformNode($dom, clone($node));
+        $data[NaturalResultType::SGE_WIDGET_BASE] = $baseNode->ownerDocument->saveHTML($baseNode);
+
+        // Now remove styles and scripts for the processed content
+        $node = $this->transformNode($dom, $node, $this->removeStyles, $this->removeScripts);
+
+        // Save the processed content after style/script removal
         $data[NaturalResultType::SGE_WIDGET_CONTENT] = $node->ownerDocument->saveHTML($node);
 
         // Collect link elements AFTER AIO enrichment and node removal
@@ -171,7 +173,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 }
 
                 $url = \SM_Rank_Service::getUrlFromGoogleTranslate($link->getAttribute('href'));
-                
+
                 // Clean URL hash to improve unique page identification
                 $url = $this->cleanUrlHash($url);
 
@@ -254,7 +256,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
             $title = $array[4];
             $url = $array[6];
-            
+
             // Clean URL hash to improve unique page identification
             $url = $this->cleanUrlHash($url);
 
@@ -479,7 +481,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         foreach ($aioLinks as $aioLink) {
             $url = $aioLink['url'];
             $title = $aioLink['title'];
-            
+
             // Clean URL hash to improve unique page identification
             $url = $this->cleanUrlHash($url);
 
@@ -526,7 +528,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
                 // Process the URL through Google's translation service
                 $url = \SM_Rank_Service::getUrlFromGoogleTranslate($href);
-                
+
                 // Clean URL hash to improve unique page identification
                 $url = $this->cleanUrlHash($url);
 
@@ -568,7 +570,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
                 // Process the URL through Google's translation service
                 $url = \SM_Rank_Service::getUrlFromGoogleTranslate($href);
-                
+
                 // Clean URL hash to improve unique page identification
                 $url = $this->cleanUrlHash($url);
 
