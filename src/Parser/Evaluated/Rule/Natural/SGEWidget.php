@@ -277,8 +277,28 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
      * Enrich content with data that would normally be loaded on click
      * by looking for elements with class 'bsmXxe', fetching their 'id' value,
      * and looking for 'window.jsl.dh()' calls with matching IDs
+     * Recursively processes newly added content for additional bsmXxe elements
      */
     protected function enrichContentWithDynamicData($dom, $node, $originalDom)
+    {
+        // Get the original DOM content as string to search for jsl.dh() calls
+        $originalContent = $originalDom->saveHTML();
+
+        // Extract all jsl.dh() calls from the original content
+        $jslCalls = $this->extractJslDhCalls($originalContent);
+
+        // Process bsmXxe elements recursively
+        $this->processBsmXxeElementsRecursively($dom, $node, $jslCalls, []);
+    }
+
+    /**
+     * Recursively process elements with class 'bsmXxe' and inject their dynamic data
+     * @param GoogleDom $dom
+     * @param \DomElement $node
+     * @param array $jslCalls All available jsl.dh calls
+     * @param array $processedIds Track processed IDs to avoid infinite loops
+     */
+    protected function processBsmXxeElementsRecursively($dom, $node, $jslCalls, $processedIds)
     {
         // Find all elements with class 'bsmXxe'
         $bsmElements = $dom->xpathQuery('descendant::*[contains(concat(" ", normalize-space(@class), " "), " bsmXxe ")]', $node);
@@ -287,17 +307,13 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             return;
         }
 
-        // Get the original DOM content as string to search for jsl.dh() calls
-        $originalContent = $originalDom->saveHTML();
-
-        // Extract all jsl.dh() calls from the original content
-        $jslCalls = $this->extractJslDhCalls($originalContent);
+        $newlyProcessedIds = [];
 
         // Process each bsmXxe element
         foreach ($bsmElements as $element) {
             $elementId = $element->getAttribute('id');
 
-            if (empty($elementId)) {
+            if (empty($elementId) || in_array($elementId, $processedIds)) {
                 continue;
             }
 
@@ -305,7 +321,14 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             if (isset($jslCalls[$elementId])) {
                 $htmlContent = $jslCalls[$elementId];
                 $this->injectHtmlContent($dom, $element, $htmlContent);
+                $newlyProcessedIds[] = $elementId;
             }
+        }
+
+        // If we processed any new IDs, recursively check for more bsmXxe elements
+        if (!empty($newlyProcessedIds)) {
+            $updatedProcessedIds = array_merge($processedIds, $newlyProcessedIds);
+            $this->processBsmXxeElementsRecursively($dom, $node, $jslCalls, $updatedProcessedIds);
         }
     }
 
@@ -395,7 +418,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     {
         try {
             // Convert bsmXxe div element to li element with K3KsMc class if needed
-            $element = $this->convertBsmXxeElementToLi($element);
+//            $element = $this->convertBsmXxeElementToLi($element);
 
             // Remove display:none styles before injecting
             $htmlContent = $this->removeDisplayNoneStyles($htmlContent);
@@ -405,12 +428,19 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
             // Create a temporary document to parse the HTML
             $tempDoc = new \DOMDocument('1.0', 'UTF-8');
-            $tempDoc->loadHTML('<?xml encoding="UTF-8">' . $htmlContent, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NOERROR | LIBXML_NOWARNING);
 
-            // Import and append the nodes to the target element
-            foreach ($tempDoc->documentElement->childNodes as $childNode) {
-                $importedNode = $element->ownerDocument->importNode($childNode, true);
-                $element->appendChild($importedNode);
+            // Wrap content in a div to ensure proper parsing
+            $wrappedContent = '<div>' . $htmlContent . '</div>';
+            $tempDoc->loadHTML('<?xml encoding="UTF-8">' . $wrappedContent, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NOERROR | LIBXML_NOWARNING);
+
+            // Get the wrapper div and process its children
+            $wrapperDiv = $tempDoc->documentElement;
+            if ($wrapperDiv && $wrapperDiv->hasChildNodes()) {
+                // Import and append the nodes to the target element
+                foreach ($wrapperDiv->childNodes as $childNode) {
+                    $importedNode = $element->ownerDocument->importNode($childNode, true);
+                    $element->appendChild($importedNode);
+                }
             }
         } catch (\Exception $e) {
             // If parsing fails, insert as text content to avoid breaking the document
