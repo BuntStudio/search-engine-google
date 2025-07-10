@@ -66,6 +66,12 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         // First, enrich the content with all dynamic data
         $this->enrichContentWithDynamicData($dom, $node, $originalDom);
 
+        // Remove display:none styles from all elements in the node
+//        $this->removeDisplayNoneFromAllElements($dom, $node);
+
+        // Hide specific element with ID folsrch-sqf-1 if it exists
+        $this->hideElementById($dom, $node, 'folsrch-sqf-1');
+
         // Process AIO links from window.jsl.dh() calls
         $this->enrichAioLinksFromDynamicData($dom, $node, $originalDom, $urls, $data);
 
@@ -292,7 +298,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     }
 
     /**
-     * Recursively process elements with class 'bsmXxe' and inject their dynamic data
+     * Recursively process all elements with IDs that have matching jsl.dh calls within the node
      * @param GoogleDom $dom
      * @param \DomElement $node
      * @param array $jslCalls All available jsl.dh calls
@@ -300,17 +306,17 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
      */
     protected function processBsmXxeElementsRecursively($dom, $node, $jslCalls, $processedIds)
     {
-        // Find all elements with class 'bsmXxe'
-        $bsmElements = $dom->xpathQuery('descendant::*[contains(concat(" ", normalize-space(@class), " "), " bsmXxe ")]', $node);
+        // Find all elements with IDs within the node
+        $elementsWithIds = $dom->xpathQuery('descendant::*[@id]', $node);
 
-        if ($bsmElements->length === 0) {
+        if ($elementsWithIds->length === 0) {
             return;
         }
 
         $newlyProcessedIds = [];
 
-        // Process each bsmXxe element
-        foreach ($bsmElements as $element) {
+        // Process each element with an ID
+        foreach ($elementsWithIds as $element) {
             $elementId = $element->getAttribute('id');
 
             if (empty($elementId) || in_array($elementId, $processedIds)) {
@@ -325,7 +331,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             }
         }
 
-        // If we processed any new IDs, recursively check for more bsmXxe elements
+        // If we processed any new IDs, recursively check for more elements with IDs
         if (!empty($newlyProcessedIds)) {
             $updatedProcessedIds = array_merge($processedIds, $newlyProcessedIds);
             $this->processBsmXxeElementsRecursively($dom, $node, $jslCalls, $updatedProcessedIds);
@@ -419,6 +425,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         try {
             // Convert bsmXxe div element to li element with K3KsMc class if needed
 //            $element = $this->convertBsmXxeElementToLi($element);
+
+            // Remove display:none style from the target element
+            //$this->removeDisplayNoneFromElement($element);
 
             // Remove display:none styles before injecting
             $htmlContent = $this->removeDisplayNoneStyles($htmlContent);
@@ -728,6 +737,60 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     }
 
     /**
+     * Remove display:none style from a DOM element
+     */
+    protected function removeDisplayNoneFromElement($element)
+    {
+        if ($element->hasAttribute('style')) {
+            $style = $element->getAttribute('style');
+            $newStyle = preg_replace('/display\s*:\s*none\s*;?/i', '', $style);
+            $newStyle = trim($newStyle);
+
+            if (empty($newStyle)) {
+                $element->removeAttribute('style');
+            } else {
+                $element->setAttribute('style', $newStyle);
+            }
+        }
+    }
+
+    /**
+     * Remove display:none styles from all elements within the given node
+     */
+    protected function removeDisplayNoneFromAllElements($dom, $node)
+    {
+        // Find all elements with style attributes within the node
+        $elementsWithStyles = $dom->xpathQuery('descendant::*[@style]', $node);
+
+        foreach ($elementsWithStyles as $element) {
+            $this->removeDisplayNoneFromElement($element);
+        }
+    }
+
+    /**
+     * Hide a specific element by ID if it exists
+     */
+    protected function hideElementById($dom, $node, $elementId)
+    {
+        // Find element with the specific ID within the node
+        $elements = $dom->xpathQuery('descendant::*[@id="' . $elementId . '"]', $node);
+        
+        if ($elements->length > 0) {
+            $element = $elements->item(0);
+            $existingStyle = $element->getAttribute('style');
+            $hideStyle = 'display:none !important;';
+            
+            if (!empty($existingStyle)) {
+                // If there's existing style, append display:none
+                $element->setAttribute('style', $existingStyle . ' ' . $hideStyle);
+            } else {
+                // If no existing style, just add display:none
+                $element->setAttribute('style', $hideStyle);
+            }
+        }
+    }
+
+    /**
      * Process HTML content for injection - add required div and classes
      */
     protected function processHtmlForInjection($htmlContent)
@@ -738,6 +801,21 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             @$tempDoc->loadHTML('<?xml encoding="UTF-8"><div>' . $htmlContent . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NOERROR | LIBXML_NOWARNING);
 
             $xpath = new \DOMXPath($tempDoc);
+
+            // Add display:block style to elements with OS7YA class to override any display:none from CSS
+            $os7yaElements = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " OS7YA ")]');
+            foreach ($os7yaElements as $elem) {
+                $existingStyle = $elem->getAttribute('style');
+                $displayBlockStyle = 'display:block !important;';
+
+                if (!empty($existingStyle)) {
+                    // If there's existing style, append display:block
+                    $elem->setAttribute('style', $existingStyle . ' ' . $displayBlockStyle);
+                } else {
+                    // If no existing style, just add display:block
+                    $elem->setAttribute('style', $displayBlockStyle);
+                }
+            }
 
             // Find all ul elements
             $ulElements = $xpath->query('//ul');
