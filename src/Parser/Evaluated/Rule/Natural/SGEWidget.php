@@ -35,8 +35,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
+        $localNode = clone $node;
+
         if (!empty($resultSet->getResultsByType($this->getType($isMobile))->getItems())) { return; }
-        $resultSet->addItem(new BaseResult($this->getType($isMobile), $this->extractWidgetData($dom, $node), $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
+        $resultSet->addItem(new BaseResult($this->getType($isMobile), $this->extractWidgetData($dom, $localNode), $localNode, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }
 
     protected function isWidget(GoogleDom $dom, $node)
@@ -774,12 +776,12 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     {
         // Find element with the specific ID within the node
         $elements = $dom->xpathQuery('descendant::*[@id="' . $elementId . '"]', $node);
-        
+
         if ($elements->length > 0) {
             $element = $elements->item(0);
             $existingStyle = $element->getAttribute('style');
             $hideStyle = 'display:none !important;';
-            
+
             if (!empty($existingStyle)) {
                 // If there's existing style, append display:none
                 $element->setAttribute('style', $existingStyle . ' ' . $hideStyle);
