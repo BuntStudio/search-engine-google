@@ -77,6 +77,12 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         // Process AIO links from window.jsl.dh() calls
         $this->enrichAioLinksFromDynamicData($dom, $node, $originalDom, $urls, $data);
 
+        // Add display:block to OS7YA elements after everything is extracted
+        $this->addDisplayBlockToOS7YA($dom, $node);
+
+        // Remove specific classes from all elements
+        $this->removeSpecificClasses($dom, $node);
+
         // Now save the base content with all enrichments but before style/script removal
         $baseNode = $this->transformNode($dom, clone($node));
         $data[NaturalResultType::SGE_WIDGET_BASE] = $baseNode->ownerDocument->saveHTML($baseNode);
@@ -788,6 +794,64 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             } else {
                 // If no existing style, just add display:none
                 $element->setAttribute('style', $hideStyle);
+            }
+        }
+    }
+
+    /**
+     * Add display:block style to elements with OS7YA class after everything is extracted
+     */
+    protected function addDisplayBlockToOS7YA($dom, $node)
+    {
+        // Find all elements with OS7YA class within the node
+        $os7yaElements = $dom->xpathQuery('descendant::*[contains(concat(" ", normalize-space(@class), " "), " OS7YA ")]', $node);
+
+        foreach ($os7yaElements as $element) {
+            $existingStyle = $element->getAttribute('style');
+            $displayBlockStyle = 'display:block !important;';
+
+            if (!empty($existingStyle)) {
+                // If there's existing style, append display:block
+                $element->setAttribute('style', $existingStyle . ' ' . $displayBlockStyle);
+            } else {
+                // If no existing style, just add display:block
+                $element->setAttribute('style', $displayBlockStyle);
+            }
+        }
+    }
+
+    /**
+     * Remove specific classes (dSKvsb and RDmXvc) from all elements
+     */
+    protected function removeSpecificClasses($dom, $node)
+    {
+        $classesToRemove = ['dSKvsb', 'RDmXvc'];
+
+        foreach ($classesToRemove as $className) {
+            // Find all elements with the specific class within the node
+            $elements = $dom->xpathQuery('descendant::*[contains(concat(" ", normalize-space(@class), " "), " ' . $className . ' ")]', $node);
+
+            foreach ($elements as $element) {
+                $classAttr = $element->getAttribute('class');
+
+                if (!empty($classAttr)) {
+                    // Remove the specific class from the class attribute
+                    $classes = explode(' ', $classAttr);
+                    $filteredClasses = array_filter($classes, function($class) use ($className) {
+                        return trim($class) !== $className;
+                    });
+
+                    $newClassAttr = implode(' ', $filteredClasses);
+                    $newClassAttr = trim($newClassAttr);
+
+                    if (empty($newClassAttr)) {
+                        // Remove the class attribute entirely if no classes remain
+                        $element->removeAttribute('class');
+                    } else {
+                        // Update the class attribute with the filtered classes
+                        $element->setAttribute('class', $newClassAttr);
+                    }
+                }
             }
         }
     }
