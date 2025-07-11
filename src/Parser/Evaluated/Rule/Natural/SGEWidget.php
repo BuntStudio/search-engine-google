@@ -77,6 +77,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         // Process AIO links from window.jsl.dh() calls
         $this->enrichAioLinksFromDynamicData($dom, $node, $originalDom, $urls, $data);
 
+        // Remove all button and svg elements
+        $this->removeElements($dom, $node);
+        $this->removeSvgElements($dom, $node);
+
         // Add display:block to OS7YA elements after everything is extracted
         $this->addDisplayBlockToOS7YA($dom, $node);
 
@@ -821,11 +825,49 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     }
 
     /**
+     * Remove all elements from the node
+     */
+    protected function removeElements($dom, $node)
+    {
+        $elementTypes = [
+            'button',
+            'g-scrolling-carousel',
+            'omnient-visibility-control',
+        ];
+
+        foreach ($elementTypes as $elementType) {
+            // Find all button elements within the node
+            $elements = $dom->xpathQuery('descendant::' . $elementType, $node);
+            foreach ($elements as $element) {
+                if ($element->parentNode) {
+                    $element->parentNode->removeChild($element);
+                }
+            }
+        }
+    }
+
+    /**
+     * Remove svg elements from the node, except those under specific classes
+     */
+    protected function removeSvgElements($dom, $node)
+    {
+        // Find all svg elements within the node that are NOT under the specified classes
+        // Exclude SVGs that have ancestors with classes: BMebGe, iPjmzb, or Sb7k4e
+        $svgElements = $dom->xpathQuery('descendant::svg[not(ancestor::*[contains(concat(" ", normalize-space(@class), " "), " BMebGe ")] or ancestor::*[contains(concat(" ", normalize-space(@class), " "), " iPjmzb ")] or ancestor::*[contains(concat(" ", normalize-space(@class), " "), " nk9vdc ")] or ancestor::*[contains(concat(" ", normalize-space(@class), " "), " Sb7k4e ")])]', $node);
+
+        foreach ($svgElements as $svg) {
+            if ($svg->parentNode) {
+                $svg->parentNode->removeChild($svg);
+            }
+        }
+    }
+
+    /**
      * Remove specific classes (dSKvsb and RDmXvc) from all elements
      */
     protected function removeSpecificClasses($dom, $node)
     {
-        $classesToRemove = ['dSKvsb', 'RDmXvc'];
+        $classesToRemove = ['dSKvsb', 'RDmXvc', 'Hw7y8e'];
 
         foreach ($classesToRemove as $className) {
             // Find all elements with the specific class within the node
