@@ -867,7 +867,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
      */
     protected function removeSpecificClasses($dom, $node)
     {
-        $classesToRemove = ['dSKvsb', 'RDmXvc', 'Hw7y8e'];
+        $classesToRemove = ['dSKvsb', 'RDmXvc', 'Hw7y8e', 'okxdqe'];
 
         foreach ($classesToRemove as $className) {
             // Find all elements with the specific class within the node
