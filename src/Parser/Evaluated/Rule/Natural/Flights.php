@@ -32,9 +32,9 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
             return self::RULE_MATCH_MATCHED;
         }
 
-        if ($node->getAttribute('class') == 'IuoSj') {
+/*        if ($node->getAttribute('class') == 'IuoSj') {
             return self::RULE_MATCH_MATCHED;
-        }
+        }*/
 
         return self::RULE_MATCH_NOMATCH;
     }
