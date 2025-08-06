@@ -23,8 +23,12 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
         $class = $node->getAttribute('class');
+        
         if (!empty($class) && strpos($class, 'LQQ1Bd') !== false && $node->getChildren()->count() != 0) {
-            return self::RULE_MATCH_MATCHED;
+            if ($this->isFlightContent($dom, $node)) {
+                return self::RULE_MATCH_MATCHED;
+            }
+            return self::RULE_MATCH_NOMATCH;
         }
 
         if (!empty($class) && strpos($class, 'BNeawe DwrKqd') !== false) {
@@ -39,6 +43,49 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
+    protected function isFlightContent(GoogleDom $dom, $node)
+    {
+        // Exclude non-flight contexts first
+        if ($dom->xpathQuery("ancestor::g-accordion-expander", $node)->length > 0) {
+            return false;
+        }
+        
+        if ($dom->xpathQuery("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' bCOlv ')]", $node)->length > 0) {
+            return false;
+        }
+        
+        // Check for flight-specific HTML structure patterns
+        
+        // 1. Look for flight widget containers
+        $flightWidgets = $dom->xpathQuery(".//div[contains(@class, 'guN1z') or contains(@class, 'G6oEie')]", $node);
+        if ($flightWidgets->length > 0) {
+            return true;
+        }
+        
+        // 2. Look for price elements specific to flights
+        $priceElements = $dom->xpathQuery(".//div[contains(@class, 'n22NNe') or contains(@class, 'gCNaVb')]", $node);
+        if ($priceElements->length > 0) {
+            return true;
+        }
+        
+        // 3. Check for Google Flights URLs
+        $flightUrls = $dom->xpathQuery(".//a[contains(@href, 'google.com/travel/flights')]", $node);
+        if ($flightUrls->length > 0) {
+            return true;
+        }
+        
+        // 4. Look for mobile flight indicators
+        $mobileFlightData = $dom->xpathQuery(".//*[@data-is-mobile='true']", $node);
+        if ($mobileFlightData->length > 0) {
+            // Verify it's actually flight content by checking for accompanying flight elements
+            $hasFlightElements = $dom->xpathQuery(".//div[contains(@class, 'guN1z') or contains(@class, 'G6oEie')]", $mobileFlightData->item(0));
+            if ($hasFlightElements->length > 0) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
 
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
@@ -52,17 +99,7 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
                 }
             }
         } else {
-            if ($dom->xpathQuery("ancestor::g-accordion-expander", $node)->length > 0) {
-                return false;
-            }
-
-            //bCOlv - this is a kowledge used in things to know/people also ask. these are not flights results
-            if (
-                $dom->xpathQuery("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' bCOlv ')]", $node)->length > 0
-            ) {
-                return false;
-            }
-
+            // For LQQ1Bd elements, we've already validated they contain flight content in match()
             $urls = $dom->getXpath()->query('descendant::a', $node->firstChild);
             $item = [];
 
@@ -73,5 +110,6 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
             }
         }
 
-        $resultSet->addItem(new BaseResult(NaturalResultType::FLIGHTS, $item, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));    }
+        $resultSet->addItem(new BaseResult(NaturalResultType::FLIGHTS, $item, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
+    }
 }
