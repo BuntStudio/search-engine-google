@@ -97,6 +97,7 @@ class MobileNaturalParser extends AbstractParser
         //  @class='YJpHnb mnr-c' = videos (short)
         // [contains(@class, 'commercial-unit-mobile-top')]  = product listing
         // [contains(@class, 'commercial-unit-mobile-bottom')]  = product listing
+        // [@data-enable-product-traversal]  = product listing
         // [contains(@class, 'osrp-blk')]  =  knowledge graph
         // [@id='tads']  = ads top
         // [@id='tadsb']  = ads bottom
@@ -132,6 +133,7 @@ class MobileNaturalParser extends AbstractParser
             contains(@class, 'xxAJT') or
             contains(@class, 'commercial-unit-mobile-top') or
             contains(@class, 'commercial-unit-mobile-bottom') or
+            @data-enable-product-traversal or
             product-viewer-group or
             contains(@class, 'osrp-blk') or
             contains(@class, 'qs-io') or
