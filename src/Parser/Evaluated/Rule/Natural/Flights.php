@@ -33,31 +33,8 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
             }
         }
         
-        // LQQ1Bd is a generic "show more" class - we need to check if this is actually flights
-        // by looking for flight-specific content or attributes
-        if (!empty($class) && strpos($class, 'LQQ1Bd') !== false && $node->getChildren()->count() != 0) {
-            // Get text content
-            $textContent = $node->textContent;
-            
-            // Collect URLs from links
-            $urls = [];
-            $links = $dom->getXpath()->query('descendant::a', $node);
-            if ($links->length > 0) {
-                foreach ($links as $link) {
-                    $urls[] = $link->getAttribute('href');
-                    // Also check link text as part of the content
-                    $textContent .= ' ' . $link->textContent;
-                }
-            }
-            
-            // Use FlightDetector to check if this is flight-related content
-            if (FlightDetector::isFlightContent($textContent, $urls)) {
-                return self::RULE_MATCH_MATCHED;
-            }
-            
-            // If no flight-specific content found, this is likely a different "show more" element
-            return self::RULE_MATCH_NOMATCH;
-        }
+        // LQQ1Bd is a generic "show more" class - not specific to flights
+        // Skip it to avoid false positives
 
         if (!empty($class) && strpos($class, 'BNeawe DwrKqd') !== false) {
             $this->isNewFlight = true;
