@@ -358,16 +358,30 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     {
         $jslCalls = [];
 
-        // Regex pattern to match window.jsl.dh('id', 'html') calls
-        // The pattern handles both window.jsl.dh and jsl.dh variants
-        $pattern = '/(?:window\.)?jsl\.dh\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]([^\'"]*(?:\\.[^\'"]*)*)[\'"](?:\s*,[^)]*)??\)/';
+        // Pattern 1: Handle jsl.dh('direct-id', 'html') calls
+        $directPattern = '/(?:window\.)?jsl\.dh\s*\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]([^\'"]*(?:\\.[^\'"]*)*)[\'"](?:\s*,[^)]*)?\s*\)/s';
 
-        if (preg_match_all($pattern, $htmlContent, $matches, PREG_SET_ORDER)) {
+        if (preg_match_all($directPattern, $htmlContent, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
                 $id = $match[1];
                 $htmlData = $match[2];
 
-                // URL decode and handle escaped characters
+                $decodedHtml = $this->decodeJslHtml($htmlData);
+
+                if (!empty($decodedHtml)) {
+                    $jslCalls[$id] = $decodedHtml;
+                }
+            }
+        }
+
+        // Pattern 2: Handle {id:'value'},function(){jsl.dh(this.id,'html')} structure
+        $contextPattern = '/\{id:\s*[\'"]([^\'"]+)[\'"]\s*\}\s*,\s*function\(\)\s*\{[^}]*jsl\.dh\s*\(\s*this\.id\s*,\s*[\'"]([^\'"]*(?:\\.[^\'"]*)*)[\'"](?:[^}]*)?\}/s';
+
+        if (preg_match_all($contextPattern, $htmlContent, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $id = $match[1];
+                $htmlData = $match[2];
+
                 $decodedHtml = $this->decodeJslHtml($htmlData);
 
                 if (!empty($decodedHtml)) {
@@ -671,12 +685,31 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     /**
      * Check if a specific ID corresponds to an AIO jsl.dh() call
      */
+    /**
+     * Check if a specific ID corresponds to an AIO jsl.dh() call
+     */
     protected function isAioJslId($originalContent, $id)
     {
-        // Look for jsl.dh() call with this ID
-        if (preg_match('/(?:window\.)?jsl\.dh\(\s*[\'"]' . preg_quote($id, '/') . '[\'"]\s*,\s*[\'"]([^\'"]*(?:\\.[^\'"]*)*)[\'"]/', $originalContent, $match)) {
-            $content = $match[1];
+        $content = null;
 
+        // Pattern 1: Direct jsl.dh() call with quoted ID - jsl.dh('id', 'content')
+        $directPattern = '/(?:window\.)?jsl\.dh\(\s*[\'"]' . preg_quote($id, '/') . '[\'"]\s*,\s*[\'"]([^\'"]*(?:\\.[^\'"]*)*)[\'"](?:\s*,[^)]*)?\s*\)/s';
+
+        if (preg_match($directPattern, $originalContent, $match)) {
+            $content = $match[1];
+        }
+
+        // Pattern 2: Context call - [{id: 'specific_id'}, function(){ jsl.dh(this.id, 'content') }]
+        if ($content === null) {
+            $contextPattern = '/\[\s*\{\s*id:\s*[\'"]' . preg_quote($id, '/') . '[\'"]\s*\}\s*,\s*function\s*\(\s*\)\s*\{\s*[^}]*jsl\.dh\s*\(\s*this\.id\s*,\s*[\'"]([^\'"]*(?:\\.[^\'"]*)*)[\'"](?:[^}]*)?\}/s';
+
+            if (preg_match($contextPattern, $originalContent, $match)) {
+                $content = $match[1];
+            }
+        }
+
+        // If we found content in either pattern, check for AIO indicators
+        if ($content !== null) {
             // Decode the content to check for AIO indicators
             $decodedContent = $this->decodeJslHtml($content);
 
