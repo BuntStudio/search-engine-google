@@ -27,7 +27,7 @@ class GoogleSerp extends GoogleDom
 
     public function __construct($domString, GoogleUrlInterface $url, Logger $logger = null)
     {
-        if (strpos($domString, 'search?q=') === false) {
+        if (strpos($domString, 'search?') === false) {
             throw new InvalidDOMException('Invalid page. No search link.');
         }
 
