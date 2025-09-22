@@ -49,9 +49,54 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     protected function isWidgetLoaded(GoogleDom $dom, $node)
     {
+        // Check if there's a visible progressbar div indicating the widget is still loading
+        $progressBar = $dom->xpathQuery('descendant::div[@role="progressbar"]', $node);
+        if ($progressBar->length > 0) {
+            // Check if any progressbar is actually visible (not hidden by CSS)
+            foreach ($progressBar as $bar) {
+                if ($this->isElementVisible($bar)) {
+                    return false;
+                }
+            }
+        }
+
         $widgetContent = $dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@id), ' '), 'folsrch-')]", $node);
 
         return $widgetContent->length > 0;
+    }
+
+    protected function isElementVisible($element)
+    {
+        // Check if element has style attribute with display:none or visibility:hidden
+        if ($element->hasAttribute('style')) {
+            $style = $element->getAttribute('style');
+
+            // Check for display:none
+            if (preg_match('/display\s*:\s*none/i', $style)) {
+                return false;
+            }
+
+            // Check for visibility:hidden
+            if (preg_match('/visibility\s*:\s*hidden/i', $style)) {
+                return false;
+            }
+        }
+
+        // Check if element has a class that might indicate it's hidden
+        if ($element->hasAttribute('class')) {
+            $classes = $element->getAttribute('class');
+
+            // Common hidden classes in Google's UI
+            $hiddenClasses = ['hidden', 'invisible', 'hide'];
+            foreach ($hiddenClasses as $hiddenClass) {
+                if (strpos($classes, $hiddenClass) !== false) {
+                    return false;
+                }
+            }
+        }
+
+        // If no obvious hiding styles/classes found, consider it visible
+        return true;
     }
 
     protected function extractWidgetData($dom, $node)
@@ -61,12 +106,22 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         $urls = [];
         $data = [
-            NaturalResultType::SGE_WIDGET_LOADED  => $this->isWidgetLoaded($dom, $node),
+            NaturalResultType::SGE_WIDGET_LOADED  => false,
             NaturalResultType::SGE_WIDGET_LINKS   => [],
+            NaturalResultType::SGE_WIDGET_BASE    => '',
+            NaturalResultType::SGE_WIDGET_CONTENT => '',
         ];
 
         // First, enrich the content with all dynamic data
         $this->enrichContentWithDynamicData($dom, $node, $originalDom);
+
+        // Check again if widget is loaded after enrichment (progressbar might be visible after enrichment)
+        $data[NaturalResultType::SGE_WIDGET_LOADED] = $this->isWidgetLoaded($dom, $node);
+
+        // If widget is not loaded (progressbar visible), don't extract content
+        if (!$data[NaturalResultType::SGE_WIDGET_LOADED]) {
+            return $data;
+        }
 
         // Remove display:none styles from all elements in the node
 //        $this->removeDisplayNoneFromAllElements($dom, $node);
@@ -79,6 +134,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         // Remove all button and svg elements
         $this->removeElements($dom, $node);
+
         $this->removeSvgElements($dom, $node);
 
         // Add display:block to OS7YA elements after everything is extracted
