@@ -18,6 +18,10 @@ class Recipes implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
             return self::RULE_MATCH_MATCHED;
         }
 
+        if ($node->getAttribute('data-attrid') === 'SupercatRecipeClusterTitle') {
+            return self::RULE_MATCH_MATCHED;
+        }
+
         return self::RULE_MATCH_NOMATCH;
     }
 
@@ -27,6 +31,14 @@ class Recipes implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
         $item = [];
 
         $urlOnAttribute  = false;
+
+        // If this is a SupercatRecipeClusterTitle, look for g-link in the next sibling of the parent
+        if ($urls->length == 0 && $node->getAttribute('data-attrid') === 'SupercatRecipeClusterTitle') {
+            $parent = $node->parentNode;
+            if ($parent && $parent->nextSibling) {
+                $urls = $dom->getXpath()->query('descendant::g-link', $parent->nextSibling);
+            }
+        }
 
         if ($urls->length == 0) {
             $urlOnAttribute =  true;

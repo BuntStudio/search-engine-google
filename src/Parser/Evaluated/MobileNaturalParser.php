@@ -155,7 +155,8 @@ class MobileNaturalParser extends AbstractParser
             contains(@class, 'EDblX HG5ZQb') or
             contains(@class, 'hNKF2b') or
             contains(@class, 'lr_container wDYxhc yc7KLc') or
-            @jsname='MGJTwe'  or
+            @jsname='MGJTwe' or
+            @data-attrid='SupercatRecipeClusterTitle' or
             contains(@class, 'kp-wholepage') or
             @id = 'oFNiHe' or
             @id='lud-ed' or

@@ -165,6 +165,7 @@ class NaturalParser extends AbstractParser
             @id='tvcap' or
             @id='extabar' or
             @jsname='MGJTwe' or
+            @data-attrid='SupercatRecipeClusterTitle' or
             @class='C7r6Ue' or
             @id='Odp5De' or
             @class='e4xoPb' or
