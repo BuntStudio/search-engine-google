@@ -414,11 +414,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     {
         $jslCalls = [];
 
-        // Regex pattern to match window.jsl.dh('id', 'html') calls
-        // The pattern handles both window.jsl.dh and jsl.dh variants
-        $pattern = '/(?:window\.)?jsl\.dh\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]([^\'"]*(?:\\.[^\'"]*)*)[\'"](?:\s*,[^)]*)??\)/';
+        // Pattern 1: Direct jsl.dh('id', 'html') calls
+        $pattern1 = '/(?:window\.)?jsl\.dh\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]([^\'"]*(?:\\.[^\'"]*)*)[\'"](?:\s*,[^)]*)??\)/';
 
-        if (preg_match_all($pattern, $htmlContent, $matches, PREG_SET_ORDER)) {
+        if (preg_match_all($pattern1, $htmlContent, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
                 $id = $match[1];
                 $htmlData = $match[2];
@@ -432,7 +431,24 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             }
         }
 
-        return $jslCalls;
+        // Pattern 2: [{id:'__ID__'},function(){jsl.dh(this.id, '__CONTENT__')}] calls
+        $pattern2 = '/\[{id:[\'"]([^\'"]+)[\'"]},function\(\){(?:window\.)?jsl\.dh\(this\.id,[\'"]([^\']*)[\'"]\)/';
+
+        if (preg_match_all($pattern2, $htmlContent, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $id = $match[1];
+                $htmlData = $match[2];
+
+                // URL decode and handle escaped characters
+                $decodedHtml = $this->decodeJslHtml($htmlData);
+
+                if (!empty($decodedHtml)) {
+                    $jslCalls[$id] = $decodedHtml;
+                }
+            }
+        }
+
+            return $jslCalls;
     }
 
     /**
