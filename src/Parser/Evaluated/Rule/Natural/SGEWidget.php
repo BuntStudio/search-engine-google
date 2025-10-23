@@ -162,6 +162,8 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         $linkElements3 = $dom->xpathQuery('descendant::*[@class="uVhVib"]', $node);
 
+        $linkElements4 = $dom->xpathQuery('descendant::*[@class="FqfzXd"]', $node);
+
         if ($linkElements0->length > 0) {
             $this->processLinkElements($dom, $linkElements0, $urls, $data);
         }
@@ -176,6 +178,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         if ($linkElements3->length > 0) {
             $this->processLinkElements($dom, $linkElements3, $urls, $data);
+        }
+
+        if ($linkElements4->length > 0) {
+            $this->processLinkElements($dom, $linkElements4, $urls, $data);
         }
 
 //        if (!empty($urls)) {
