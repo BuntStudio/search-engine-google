@@ -29,6 +29,10 @@ class VideoCarousel implements \Serps\SearchEngine\Google\Parser\ParsingRuleInte
             return self::RULE_MATCH_NOMATCH;
         }
 
+        if ($node->hasClass('vtSz8d')) {
+            return self::RULE_MATCH_MATCHED;
+        }
+
         if(!property_exists($firstChild, 'tagName')){
             return self::RULE_MATCH_NOMATCH;
         }
@@ -45,7 +49,7 @@ class VideoCarousel implements \Serps\SearchEngine\Google\Parser\ParsingRuleInte
 
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
-        $aHrefs = $dom->getXpath()->query('descendant::a[@class="X5OiLe"]', $node);
+        $aHrefs = $dom->getXpath()->query('descendant::a[contains(concat(" ", normalize-space(@class), " "), " X5OiLe ") or contains(concat(" ", normalize-space(@class), " "), " rIRoqf ")]', $node);
 
         if ($aHrefs->length == 0) {
             return;

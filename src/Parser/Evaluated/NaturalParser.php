@@ -118,6 +118,8 @@ class NaturalParser extends AbstractParser
         // [@id='Odp5De'] - maps
         // [@class='xpdopen']  = features snipped/position zero
         // [@class='e4xoPb']  = videos
+        // video-voyager = video carousel
+        // contains(@class, 'vtSz8d') = video carousel
         // [contains(@class, 'commercial-unit-desktop-top')]  = product listing
         // [contains(@class, 'cu-container')]  = product listing on right, like ads
         // [contains(@class, 'related-question-pair')]  = questions
@@ -194,6 +196,7 @@ class NaturalParser extends AbstractParser
             @class = 'H93uF' or
             contains(@class, 'e8Ck0d') or
             video-voyager or
+            contains(@class, 'vtSz8d') or
             @id= 'ofr' or
             @class = 'vqkKIe wHYlTd' or
             @id= 'bres' or

@@ -415,7 +415,10 @@ class TranslateService
         }
 
         if (
-            !isset($this->response[NaturalResultType::VIDEOS]) &&
+            (
+                !isset($this->response[NaturalResultType::VIDEOS]) ||
+                empty($this->response[NaturalResultType::VIDEOS])
+            ) &&
             ($item->is(NaturalResultType::VIDEO_CAROUSEL) || $item->is(NaturalResultType::VIDEO_CAROUSEL_MOBILE))
         ) {
             $this->response[NaturalResultType::VIDEOS][] = $item->getData()[0];
