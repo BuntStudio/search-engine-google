@@ -26,9 +26,11 @@ class AdsTop implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
             return self::RULE_MATCH_NOMATCH;
         }
 
-        if ($node->getAttribute('id') == self::ADS_TOP_CLASS || // Ads top
+        if (
+            $node->getAttribute('id') == self::ADS_TOP_CLASS || // Ads top
             $node->getAttribute('id') == self::ADS_DOWN_CLASS  || // Ads bottom
-            $node->getAttribute('id') == 'bottomads' // Ads bottom
+            $node->getAttribute('id') == 'bottomads' || // Ads bottom
+            $node->getAttribute('class') == 'IuoSj' // sponsored result top
         ) {
             $plaNodes = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' commercial-unit-desktop-top ') or
         contains(concat(' ', normalize-space(@class), ' '), ' cu-container ')]", $node);

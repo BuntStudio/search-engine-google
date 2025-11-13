@@ -50,7 +50,24 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
 
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
-        $naturalResults = $dom->xpathQuery("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ') or contains(concat(' ', normalize-space(@class), ' '), ' xpd EtOod ') or contains(concat(' ', normalize-space(@class), ' '), ' svwwZ ') or contains(concat(' ', normalize-space(@class), ' '), 'UDZeY fAgajc') or (contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage') and contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage-osrp'))] | //a[contains(concat(' ', normalize-space(@class), ' '), 'zwqzjb')]", $node);
+        $naturalResults = $dom->xpathQuery(
+            "descendant::
+                    div[
+                        contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ') or
+                        contains(concat(' ', normalize-space(@class), ' '), ' xpd EtOod ') or
+                        contains(concat(' ', normalize-space(@class), ' '), ' svwwZ ') or
+                        contains(concat(' ', normalize-space(@class), ' '), 'UDZeY fAgajc') or
+                        (
+                            contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage') and
+                            contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage-osrp')
+                        )
+                        ] |
+                    //a[
+                        contains(concat(' ', normalize-space(@class), ' '), 'zwqzjb')
+                    ]"
+            , $node
+        );
+
         if ($naturalResults->length == 0) {
             $resultSet->addItem(new BaseResult(NaturalResultType::EXCEPTIONS, [], $node));
             $this->monolog->error('Cannot identify results in html page', ['class' => self::class]);
@@ -107,6 +124,18 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         if($dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' zwqzjb ')]", $organicResult)->length > 0) {
             return true;
         }
+
+        if($dom->xpathQuery("ancestor::div[@id='HbKV2c']", $organicResult)->length > 0) {
+            //id related to ads
+            return true;
+        }
+
+        if($dom->xpathQuery("ancestor::div[@data-text-ad]", $organicResult)->length > 0) {
+            //ad result
+            return true;
+        }
+
+
 
         if($dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' zwqzjb ')]", $organicResult)->length > 0) {
             return true;

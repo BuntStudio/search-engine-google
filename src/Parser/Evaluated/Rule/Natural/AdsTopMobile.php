@@ -90,7 +90,13 @@ class AdsTopMobile extends AdsTop
 
         if (!empty($links)) {
 
-            if ($node->getAttribute('id') == self::ADS_TOP_CLASS) {
+            if (
+                $node->getAttribute('id') == self::ADS_TOP_CLASS ||
+                (
+                    $node->getAttribute('class') == 'IuoSj' &&
+                    ($dom->getXpath()->query("ancestor::div[contains(concat(' ', normalize-space(@id), ' '), ' tadsb ')]",$node))->length == 0
+                )
+            ) {
                 $resultSet->addItem(new BaseResult(NaturalResultType::AdsTOP_MOBILE, $links, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
             }
 
