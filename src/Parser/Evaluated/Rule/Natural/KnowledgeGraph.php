@@ -20,6 +20,16 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
             return self::RULE_MATCH_MATCHED;
         }
 
+        // Check for data-kpid attribute starting with "vise:"
+        $dataKpid = $node->getAttribute('data-kpid');
+        if (
+            $dataKpid &&
+            str_starts_with($dataKpid, 'vise:') &&
+            ($dom->getXpath()->query("//div[@id='knowledge-finance-wholepage__entity-summary']"))->length == 0
+        ) {
+            return self::RULE_MATCH_MATCHED;
+        }
+
         return self::RULE_MATCH_NOMATCH;
     }
 

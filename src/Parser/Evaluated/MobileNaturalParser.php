@@ -169,7 +169,8 @@ class MobileNaturalParser extends AbstractParser
             @jsname='ZLxsqf' or
             @class='pxiwBd' or
             @jscontroller='wuEeed' or
-            contains(@class, 'Enb9pe')
+            contains(@class, 'Enb9pe') or
+            starts-with(@data-kpid, 'vise:')
         ][not(self::script) and not(self::style)]");
     }
 }

@@ -314,8 +314,19 @@ class TranslateService
         }
 
         if ($item->is(NaturalResultType::KNOWLEDGE_GRAPH) || $item->is(NaturalResultType::KNOWLEDGE_GRAPH_MOBILE)) {
-            $this->response[NaturalResultType::KNOWLEDGE_GRAPH] = $item->getData()['title']??'';
-            $this->response[NaturalResultType::KNOWLEDGE_GRAPH_LINK] = $item->getData()['link']??'';
+            if (
+                empty($this->response[NaturalResultType::KNOWLEDGE_GRAPH]) &&
+                !empty($item->getData()['title'])
+            ) {
+                $this->response[NaturalResultType::KNOWLEDGE_GRAPH] = $item->getData()['title']??'';
+            }
+
+            if (
+                empty($this->response[NaturalResultType::KNOWLEDGE_GRAPH_LINK]) &&
+                !empty($item->getData()['link'])
+            ) {
+                $this->response[NaturalResultType::KNOWLEDGE_GRAPH_LINK] = $item->getData()['link']??'';
+            }
         }
 
         if ($item->is(NaturalResultType::RECIPES_GROUP)) {
