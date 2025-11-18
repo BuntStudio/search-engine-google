@@ -22,7 +22,7 @@ class MobileV3 implements ParsingRuleByVersionInterface
 
         if (empty($aTag->length)) {
             $aTag = $dom->xpathQuery("descendant::a[
-            contains(concat(' ', normalize-space(@class), ' '), ' rTyHce jgWGIe ')
+            contains(concat(' ', normalize-space(@class), ' '), 'rTyHce')
          ]", $organicResult);
         }
 
