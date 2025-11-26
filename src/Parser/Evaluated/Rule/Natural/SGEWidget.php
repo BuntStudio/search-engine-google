@@ -165,6 +165,8 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $linkElements4 = $dom->xpathQuery('descendant::*[@class="FqfzXd"]', $node);
 
         $linkElements5 = $dom->xpathQuery('descendant::*[@class="NDNGvf"]', $node);
+        $linkElements6 = $dom->xpathQuery('descendant::*[@class="ZZh6Vb"]', $node);
+
         if ($linkElements0->length > 0) {
             $this->processLinkElements($dom, $linkElements0, $urls, $data);
         }
@@ -187,6 +189,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         if ($linkElements5->length > 0) {
             $this->processLinkElements($dom, $linkElements5, $urls, $data);
+        }
+
+        if ($linkElements6->length > 0) {
+            $this->processLinkElements($dom, $linkElements6, $urls, $data);
         }
 
 //        if (!empty($urls)) {
@@ -426,7 +432,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $jslCalls = [];
 
         // Pattern 1: Direct jsl.dh('id', 'html') calls
-        $pattern1 = '/(?:window\.)?jsl\.dh\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]([^\'"]*(?:\\.[^\'"]*)*)[\'"](?:\s*,[^)]*)??\)/';
+        $pattern1 = '/jsl\.dh\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"](.*)\);}\)\(\);/U';
 
         if (preg_match_all($pattern1, $htmlContent, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
@@ -727,7 +733,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     protected function findFirstIdBeforeMsc($originalContent)
     {
         // Find the position of data-subtree="msc"
-        if (preg_match('/data-subtree="msc"/', $originalContent, $matches, PREG_OFFSET_CAPTURE)) {
+        if (preg_match('/data-subtree="mfc"/', $originalContent, $matches, PREG_OFFSET_CAPTURE)) {
             $mscPosition = $matches[0][1];
 
             // Look backwards from the msc position to find the first ID pattern
@@ -757,7 +763,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     protected function isAioJslId($originalContent, $id)
     {
         // Look for jsl.dh() call with this ID
-        if (preg_match('/(?:window\.)?jsl\.dh\(\s*[\'"]' . preg_quote($id, '/') . '[\'"]\s*,\s*[\'"]([^\'"]*(?:\\.[^\'"]*)*)[\'"]/', $originalContent, $match)) {
+        if (preg_match('/jsl\.dh\(\s*[\'"]' . preg_quote($id, '/') . '[\'"]\s*,\s*[\'"](.*)\);}\)\(\);/U', $originalContent, $match)) {
             $content = $match[1];
 
             // Decode the content to check for AIO indicators
