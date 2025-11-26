@@ -432,7 +432,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $jslCalls = [];
 
         // Pattern 1: Direct jsl.dh('id', 'html') calls
-        $pattern1 = '/jsl\.dh\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"](.*)\);}\)\(\);/U';
+        $pattern1 = '/jsl\.dh\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"](.*)[\'"]\);}\)\(\);/U';
 
         if (preg_match_all($pattern1, $htmlContent, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
@@ -732,25 +732,33 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
      */
     protected function findFirstIdBeforeMsc($originalContent)
     {
+        preg_match('/data-subtree="msc"/', $originalContent, $matches, PREG_OFFSET_CAPTURE);
+
+        if (empty($matches)) {
+            preg_match('/data-subtree="mfc"/', $originalContent, $matches, PREG_OFFSET_CAPTURE);
+        }
+
         // Find the position of data-subtree="msc"
-        if (preg_match('/data-subtree="mfc"/', $originalContent, $matches, PREG_OFFSET_CAPTURE)) {
-            $mscPosition = $matches[0][1];
+        if (empty($matches)) {
+            return null;
+        }
 
-            // Look backwards from the msc position to find the first ID pattern
-            // Search in a reasonable area before the msc marker (e.g., 10,000 characters)
-            $searchStart = max(0, $mscPosition - 10000);
-            $searchArea = substr($originalContent, $searchStart, $mscPosition - $searchStart);
+        $mscPosition = $matches[0][1];
 
-            // Find all ID patterns in the search area, working backwards
-            if (preg_match_all('/_[a-zA-Z0-9_-]+_\d+/', $searchArea, $idMatches, PREG_OFFSET_CAPTURE)) {
-                // Get the last match (closest to msc position)
-                $lastMatch = end($idMatches[0]);
-                $potentialId = $lastMatch[0];
+        // Look backwards from the msc position to find the first ID pattern
+        // Search in a reasonable area before the msc marker (e.g., 10,000 characters)
+        $searchStart = max(0, $mscPosition - 10000);
+        $searchArea = substr($originalContent, $searchStart, $mscPosition - $searchStart);
 
-                // Verify this ID has a corresponding jsl.dh() call with AIO content
-                if ($this->isAioJslId($originalContent, $potentialId)) {
-                    return $potentialId;
-                }
+        // Find all ID patterns in the search area, working backwards
+        if (preg_match_all('/_[a-zA-Z0-9_-]+_\d+/', $searchArea, $idMatches, PREG_OFFSET_CAPTURE)) {
+            // Get the last match (closest to msc position)
+            $lastMatch = end($idMatches[0]);
+            $potentialId = $lastMatch[0];
+
+            // Verify this ID has a corresponding jsl.dh() call with AIO content
+            if ($this->isAioJslId($originalContent, $potentialId)) {
+                return $potentialId;
             }
         }
 
@@ -763,7 +771,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     protected function isAioJslId($originalContent, $id)
     {
         // Look for jsl.dh() call with this ID
-        if (preg_match('/jsl\.dh\(\s*[\'"]' . preg_quote($id, '/') . '[\'"]\s*,\s*[\'"](.*)\);}\)\(\);/U', $originalContent, $match)) {
+        if (preg_match('/jsl\.dh\(\s*[\'"]' . preg_quote($id, '/') . '[\'"]\s*,\s*[\'"](.*)[\'"]\);}\)\(\);/U', $originalContent, $match)) {
             $content = $match[1];
 
             // Decode the content to check for AIO indicators
