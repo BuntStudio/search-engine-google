@@ -33,7 +33,7 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         $organicResultObject = $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
 
         if ($organicResultObject !== null && $organicResultObject->hasUsedGotoDomainLink() && !$this->loggedGotoDomainLink) {
-            $this->monolog->info('Google goto link detected - using base domain link', [
+            $this->monolog->notice('Google goto link detected - using base domain link', [
                 'class' => self::class,
                 'url' => $organicResultObject->getLink(),
                 'position' => $k,
