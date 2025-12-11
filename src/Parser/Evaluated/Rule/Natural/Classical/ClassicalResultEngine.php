@@ -25,6 +25,9 @@ class ClassicalResultEngine
 
     protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, array $doNotRemoveSrsltidForDomains = []) {}
 
+    /**
+     * @return OrganicResultObject|null Returns the parsed object or null if parsing failed
+     */
     protected function parseNodeWithRules(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, array $doNotRemoveSrsltidForDomains = [])
     {
         $organicResultObject = new OrganicResultObject();
@@ -44,11 +47,11 @@ class ClassicalResultEngine
             $resultSet->addItem(new BaseResult(NaturalResultType::EXCEPTIONS, [], $organicResult));
             //$this->monolog->error('Cannot identify natural result', ['class' => self::class]);
 
-            return;
+            return null;
         }
 
         if (strpos($organicResultObject->getLink(), 'google.') !== false && strpos($organicResultObject->getLink(), '/search') !== false ) {
-            return;
+            return null;
         }
         $imbricatorParent = $dom->xpathQuery("ancestor::*[@class='FxLDp']", $organicResult);
 
@@ -80,5 +83,7 @@ class ClassicalResultEngine
             ],
             $organicResult
         ));
+
+        return $organicResultObject;
     }
 }

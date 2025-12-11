@@ -17,6 +17,7 @@ use Serps\SearchEngine\Google\NaturalResultType;
 class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInterface
 {
     protected $resultType = NaturalResultType::CLASSICAL_MOBILE;
+    protected $loggedGotoDomainLink = false;
 
     public function match(GoogleDom $dom, DomElement $node)
     {
@@ -29,7 +30,17 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
 
     protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, array $doNotRemoveSrsltidForDomains = [])
     {
-        $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
+        $organicResultObject = $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
+
+        if ($organicResultObject !== null && $organicResultObject->hasUsedGotoDomainLink() && !$this->loggedGotoDomainLink) {
+            $this->monolog->info('Google goto link detected - using base domain link', [
+                'class' => self::class,
+                'url' => $organicResultObject->getLink(),
+                'position' => $k,
+            ]);
+
+            $this->loggedGotoDomainLink = true;
+        }
 
         if ($dom->xpathQuery("descendant::div[@class='MUxGbd v0nnCb lyLwlc']",
                 $organicResult->parentNode->parentNode)->length > 0) {
@@ -50,6 +61,8 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
 
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
+        $this->loggedGotoDomainLink = false;
+
         $naturalResults = $dom->xpathQuery(
             "descendant::
                     div[

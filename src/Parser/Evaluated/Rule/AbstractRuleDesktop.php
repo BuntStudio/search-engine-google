@@ -6,6 +6,7 @@ use Serps\SearchEngine\Google\NaturalResultType;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\ClassicalResultEngine;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\Versions\Desktop\DesktopV1;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\Versions\Desktop\DesktopV2;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\Versions\Desktop\DesktopV3Goto;
 
 class AbstractRuleDesktop extends ClassicalResultEngine
 {
@@ -16,6 +17,7 @@ class AbstractRuleDesktop extends ClassicalResultEngine
         return [
             new DesktopV1(),
             new DesktopV2(),
+            new DesktopV3Goto(),
         ];
     }
 

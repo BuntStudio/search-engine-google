@@ -7,6 +7,7 @@ class OrganicResultObject
     protected $title       = null;
     protected $description = null;
     protected $link        = null;
+    protected $usedGotoDomainLink = false;
 
     /**
      * @return null
@@ -54,6 +55,22 @@ class OrganicResultObject
     public function setLink($link)
     {
         $this->link = $link;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasUsedGotoDomainLink()
+    {
+        return $this->usedGotoDomainLink;
+    }
+
+    /**
+     * @param bool $usedGotoDomainLink
+     */
+    public function setUsedGotoDomainLink($usedGotoDomainLink)
+    {
+        $this->usedGotoDomainLink = $usedGotoDomainLink;
     }
 
 }

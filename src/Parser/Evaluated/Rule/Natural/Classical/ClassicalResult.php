@@ -14,6 +14,8 @@ use Serps\SearchEngine\Google\NaturalResultType;
 
 class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterface
 {
+    protected $loggedGotoDomainLink = false;
+
     public function match(GoogleDom $dom, DomElement $node)
     {
         if ($node->getAttribute('id') == 'rso' || $node->getAttribute('id') == 'botstuff') {
@@ -25,7 +27,17 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
 
     protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, array $doNotRemoveSrsltidForDomains = [])
     {
-        $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
+        $organicResultObject = $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
+
+        if ($organicResultObject !== null && $organicResultObject->hasUsedGotoDomainLink() && !$this->loggedGotoDomainLink) {
+            $this->monolog->info('Google goto link detected - using base domain link', [
+                'class' => self::class,
+                'url' => $organicResultObject->getLink(),
+                'position' => $k,
+            ]);
+
+            $this->loggedGotoDomainLink = true;
+        }
 
         if( $dom->xpathQuery("descendant::table[@class='jmjoTe']", $organicResult)->length >0) {
             (new SiteLinksBig())->parse($dom, $organicResult, $resultSet, false);
@@ -69,6 +81,8 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
 
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
+        $this->loggedGotoDomainLink = false;
+
         $naturalResults = $dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' g ') or ((contains(concat(' ', normalize-space(@class), ' '), ' wHYlTd ') or contains(concat(' ', normalize-space(@class), ' '), ' vt6azd Ww4FFb ') or contains(concat(' ', normalize-space(@class), ' '), ' Ww4FFb vt6azd ')) and not(contains(concat(' ', normalize-space(@class), ' '), ' k6t1jb ')) and not(contains(concat(' ', normalize-space(@class), ' '), ' jmjoTe '))) or contains(concat(' ', normalize-space(@class), ' '), ' MYVUIe ')]", $node);
 
         if ($naturalResults->length == 0) {
