@@ -14,7 +14,7 @@ use Serps\SearchEngine\Google\NaturalResultType;
 
 class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterface
 {
-    protected $loggedGotoDomainLink = false;
+    protected $gotoDomainLinkCount = 0;
 
     public function match(GoogleDom $dom, DomElement $node)
     {
@@ -29,14 +29,8 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
     {
         $organicResultObject = $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
 
-        if ($organicResultObject !== null && $organicResultObject->hasUsedGotoDomainLink() && !$this->loggedGotoDomainLink) {
-            $this->monolog->notice('Google goto link detected - using base domain link', [
-                'class' => self::class,
-                'url' => $organicResultObject->getLink(),
-                'position' => $k,
-            ]);
-
-            $this->loggedGotoDomainLink = true;
+        if ($organicResultObject !== null && $organicResultObject->hasUsedGotoDomainLink()) {
+            $this->gotoDomainLinkCount++;
         }
 
         if( $dom->xpathQuery("descendant::table[@class='jmjoTe']", $organicResult)->length >0) {
@@ -81,7 +75,7 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
 
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
-        $this->loggedGotoDomainLink = false;
+        $this->gotoDomainLinkCount = 0;
 
         $naturalResults = $dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' g ') or ((contains(concat(' ', normalize-space(@class), ' '), ' wHYlTd ') or contains(concat(' ', normalize-space(@class), ' '), ' vt6azd Ww4FFb ') or contains(concat(' ', normalize-space(@class), ' '), ' Ww4FFb vt6azd ')) and not(contains(concat(' ', normalize-space(@class), ' '), ' k6t1jb ')) and not(contains(concat(' ', normalize-space(@class), ' '), ' jmjoTe '))) or contains(concat(' ', normalize-space(@class), ' '), ' MYVUIe ')]", $node);
 
@@ -105,6 +99,12 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
             $this->parseNode($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
         }
 
+        if ($this->gotoDomainLinkCount > 0) {
+            $this->monolog->notice('Google goto link detected - using base domain link', [
+                'device' => 'desktop',
+                'count' => $this->gotoDomainLinkCount,
+            ]);
+        }
     }
 
     protected function skiResult(GoogleDom $googleDOM, DomElement $organicResult)

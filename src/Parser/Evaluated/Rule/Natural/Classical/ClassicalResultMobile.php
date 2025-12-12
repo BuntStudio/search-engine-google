@@ -17,7 +17,7 @@ use Serps\SearchEngine\Google\NaturalResultType;
 class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInterface
 {
     protected $resultType = NaturalResultType::CLASSICAL_MOBILE;
-    protected $loggedGotoDomainLink = false;
+    protected $gotoDomainLinkCount = 0;
 
     public function match(GoogleDom $dom, DomElement $node)
     {
@@ -32,14 +32,8 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
     {
         $organicResultObject = $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
 
-        if ($organicResultObject !== null && $organicResultObject->hasUsedGotoDomainLink() && !$this->loggedGotoDomainLink) {
-            $this->monolog->notice('Google goto link detected - using base domain link', [
-                'class' => self::class,
-                'url' => $organicResultObject->getLink(),
-                'position' => $k,
-            ]);
-
-            $this->loggedGotoDomainLink = true;
+        if ($organicResultObject !== null && $organicResultObject->hasUsedGotoDomainLink()) {
+            $this->gotoDomainLinkCount++;
         }
 
         if ($dom->xpathQuery("descendant::div[@class='MUxGbd v0nnCb lyLwlc']",
@@ -61,7 +55,7 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
 
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
     {
-        $this->loggedGotoDomainLink = false;
+        $this->gotoDomainLinkCount = 0;
 
         $naturalResults = $dom->xpathQuery(
             "descendant::
@@ -110,6 +104,12 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
             }
         }
 
+        if ($this->gotoDomainLinkCount > 0) {
+            $this->monolog->notice('Google goto link detected - using base domain link', [
+                'device' => 'mobile',
+                'count' => $this->gotoDomainLinkCount,
+            ]);
+        }
     }
 
     protected function skiResult(GoogleDom $dom, DomElement $organicResult)
