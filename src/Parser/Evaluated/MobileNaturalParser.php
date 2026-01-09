@@ -118,6 +118,8 @@ class MobileNaturalParser extends AbstractParser
         //@jscontroller='h7XEsd' directions
         //contains(@class, 'e8Ck0d') visual digest
         //contains(@class, 'Enb9pe') - visual digest mobile
+        //@id='rso' or - desktop organic
+        //@id='botstuff' - possibly desktop organic
         return $googleDom->xpathQuery("//*[@id='iur' or
             (contains(@class, 'IZE3Td') and .//div[@data-attrid='images universal']) or
             @id='sports-app' or
@@ -170,7 +172,10 @@ class MobileNaturalParser extends AbstractParser
             @class='pxiwBd' or
             @jscontroller='wuEeed' or
             contains(@class, 'Enb9pe') or
-            starts-with(@data-kpid, 'vise:')
+            starts-with(@data-kpid, 'vise:') or
+
+            @id='rso' or
+            @id='botstuff'
         ][not(self::script) and not(self::style)]");
     }
 }

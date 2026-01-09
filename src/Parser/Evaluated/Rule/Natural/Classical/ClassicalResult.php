@@ -77,7 +77,14 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
     {
         $this->gotoDomainLinkCount = 0;
 
-        $naturalResults = $dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' g ') or ((contains(concat(' ', normalize-space(@class), ' '), ' wHYlTd ') or contains(concat(' ', normalize-space(@class), ' '), ' vt6azd Ww4FFb ') or contains(concat(' ', normalize-space(@class), ' '), ' Ww4FFb vt6azd ')) and not(contains(concat(' ', normalize-space(@class), ' '), ' k6t1jb ')) and not(contains(concat(' ', normalize-space(@class), ' '), ' jmjoTe '))) or contains(concat(' ', normalize-space(@class), ' '), ' MYVUIe ')]", $node);
+        $naturalResults = $dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' g ') or
+        (
+            (contains(concat(' ', normalize-space(@class), ' '), ' wHYlTd ') or
+            contains(concat(' ', normalize-space(@class), ' '), ' vt6azd Ww4FFb ') or
+            contains(concat(' ', normalize-space(@class), ' '), ' Ww4FFb vt6azd ')
+        ) and
+        not(contains(concat(' ', normalize-space(@class), ' '), ' k6t1jb ')) and
+        not(contains(concat(' ', normalize-space(@class), ' '), ' jmjoTe '))) or contains(concat(' ', normalize-space(@class), ' '), ' MYVUIe ')]", $node);
 
         if ($naturalResults->length == 0) {
             if ($node->getAttribute('id') == 'rso') {
