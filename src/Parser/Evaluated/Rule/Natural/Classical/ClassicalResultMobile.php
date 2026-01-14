@@ -64,8 +64,7 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
                         contains(concat(' ', normalize-space(@class), ' '), ' xpd EtOod ') or
                         contains(concat(' ', normalize-space(@class), ' '), ' svwwZ ') or
                         contains(concat(' ', normalize-space(@class), ' '), 'UDZeY fAgajc') or
-                        (contains(concat(' ', normalize-space(@class), ' '), 'Ww4FFb') and
-                        contains(concat(' ', normalize-space(@class), ' '), 'vt6azd')) or
+                        (contains(concat(' ', normalize-space(@class), ' '), ' r ')) or
                         (
                             contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage') and
                             contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage-osrp')
