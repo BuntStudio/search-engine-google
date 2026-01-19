@@ -27,7 +27,9 @@ class DesktopV1 implements ParsingRuleByVersionInterface
             $doNotRemoveSrsltidForDomains
         );
 
-        $organicResultObject->setLink($link);
+        if ($organicResultObject->getLink() === null) {
+            $organicResultObject->setLink($link);
+        }
 
         $h3Tag = $dom->xpathQuery('descendant::h3', $organicResult)->item(0);
 
