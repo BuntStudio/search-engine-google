@@ -165,7 +165,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $linkElements4 = $dom->xpathQuery('descendant::*[@class="FqfzXd"]', $node);
 
         $linkElements5 = $dom->xpathQuery('descendant::*[@class="NDNGvf"]', $node);
+
         $linkElements6 = $dom->xpathQuery('descendant::*[@class="ZZh6Vb"]', $node);
+
+        $linkElements7 = $dom->xpathQuery('descendant::*[@target="_self"]', $node);
 
         if ($linkElements0->length > 0) {
             $this->processLinkElements($dom, $linkElements0, $urls, $data);
@@ -193,6 +196,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         if ($linkElements6->length > 0) {
             $this->processLinkElements($dom, $linkElements6, $urls, $data);
+        }
+
+        if ($linkElements7->length > 0) {
+            $this->processLinkElements($dom, $linkElements7, $urls, $data);
         }
 
 //        if (!empty($urls)) {
@@ -432,7 +439,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $jslCalls = [];
 
         // Pattern 1: Direct jsl.dh('id', 'html') calls
-        $pattern1 = '/jsl\.dh\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"](.*)[\'"]\);}\)\(\);/U';
+        $pattern1 = '/jsl\.dh\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"](.*)[\'"]\);/U';
 
         if (preg_match_all($pattern1, $htmlContent, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
