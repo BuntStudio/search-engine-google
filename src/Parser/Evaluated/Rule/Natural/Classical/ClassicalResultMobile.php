@@ -30,8 +30,6 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
      */
     protected static $customXPathVariants = [
         // 'variant_a' => "(//div[@class='custom-selector'])",
-        'newandimproved' => "(//div[@class='MjjYud' and not(ancestor::div[@id='bottomads' or @id='tadsb']) and .//*[contains(@class, 'MBeuO')]]) |
-                    (//div[@class='MjjYud' and not(ancestor::div[@id='bottomads' or @id='tadsb']) and .//a[@jsname='UWckNb']])",
     ];
 
     /**
@@ -69,21 +67,8 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
      */
     protected function getNaturalResultsXPath(): string
     {
-        $defaultXPath = "descendant::
-                    div[
-                        contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ') or
-                        contains(concat(' ', normalize-space(@class), ' '), ' xpd EtOod ') or
-                        contains(concat(' ', normalize-space(@class), ' '), ' svwwZ ') or
-                        contains(concat(' ', normalize-space(@class), ' '), 'UDZeY fAgajc') or
-                        (contains(concat(' ', normalize-space(@class), ' '), ' r ')) or
-                        (
-                            contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage') and
-                            contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage-osrp')
-                        )
-                        ] |
-                    //a[
-                        contains(concat(' ', normalize-space(@class), ' '), 'zwqzjb')
-                    ]";
+        $defaultXPath = "(//div[@class='MjjYud' and not(ancestor::div[@id='bottomads' or @id='tadsb']) and .//*[contains(@class, 'MBeuO')]]) |
+                    (//div[@class='MjjYud' and not(ancestor::div[@id='bottomads' or @id='tadsb']) and .//a[@jsname='UWckNb']])";
 
         if (self::$currentSiteId === null) {
             return $defaultXPath;
@@ -176,25 +161,6 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
 
     protected function skiResult(GoogleDom $dom, DomElement $organicResult)
     {
-        // TODO: Review/Remove these when promoting the feature flag
-        if (\FeatureFlags::getCustomSerpXPathKeyMobile(self::$currentSiteId) === null) {
-            // Default algo. skips
-            if($dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' xpd EtOod ')]", $organicResult)->length > 0) {
-                return true;
-            }
-            if($dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' zwqzjb ')]", $organicResult)->length > 0) {
-                return true;
-            }
-            if($dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' zwqzjb ')]", $organicResult)->length > 0) {
-                return true;
-            }
-            // Inside div with class= 'mnr-c xpd O9g5cc uUPGi' are more divs with 'mnr-c xpd O9g5cc uUPGi'
-            // Should ignore from processing parent result and process only children and avoid duplicate results
-            if($dom->xpathQuery("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ')]", $organicResult)->length >0) {
-                return true;
-            }
-        }
-
         // Organic result is identified as top ads
         if($dom->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' tads ')]", $organicResult)->length > 0) {
             return true;
