@@ -19,6 +19,84 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
     protected $resultType = NaturalResultType::CLASSICAL_MOBILE;
     protected $gotoDomainLinkCount = 0;
 
+    /**
+     * Current site ID for context-aware XPath selection
+     */
+    protected static $currentSiteId = null;
+
+    /**
+     * Custom XPath queries mapped by variant key
+     * Add new variants here as needed
+     */
+    protected static $customXPathVariants = [
+        // 'variant_a' => "(//div[@class='custom-selector'])",
+        'newandimproved' => "(//div[@class='MjjYud' and not(ancestor::div[@id='bottomads' or @id='tadsb']) and .//*[contains(@class, 'MBeuO')]]) |
+                    (//div[@class='MjjYud' and not(ancestor::div[@id='bottomads' or @id='tadsb']) and .//a[@jsname='UWckNb']])",
+    ];
+
+    /**
+     * Set the current site ID for XPath selection
+     *
+     * @param int|null $siteId
+     */
+    public static function setCurrentSiteId(?int $siteId): void
+    {
+        self::$currentSiteId = $siteId;
+    }
+
+    /**
+     * Get the current site ID
+     *
+     * @return int|null
+     */
+    public static function getCurrentSiteId(): ?int
+    {
+        return self::$currentSiteId;
+    }
+
+    /**
+     * Clear the current site ID context
+     */
+    public static function clearCurrentSiteId(): void
+    {
+        self::$currentSiteId = null;
+    }
+
+    /**
+     * Get the XPath query for natural results based on site configuration
+     *
+     * @return string
+     */
+    protected function getNaturalResultsXPath(): string
+    {
+        $defaultXPath = "descendant::
+                    div[
+                        contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ') or
+                        contains(concat(' ', normalize-space(@class), ' '), ' xpd EtOod ') or
+                        contains(concat(' ', normalize-space(@class), ' '), ' svwwZ ') or
+                        contains(concat(' ', normalize-space(@class), ' '), 'UDZeY fAgajc') or
+                        (contains(concat(' ', normalize-space(@class), ' '), ' r ')) or
+                        (
+                            contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage') and
+                            contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage-osrp')
+                        )
+                        ] |
+                    //a[
+                        contains(concat(' ', normalize-space(@class), ' '), 'zwqzjb')
+                    ]";
+
+        if (self::$currentSiteId === null) {
+            return $defaultXPath;
+        }
+
+        $xpathKey = \FeatureFlags::getCustomSerpXPathKeyMobile(self::$currentSiteId);
+        if ($xpathKey === null) {
+            return $defaultXPath;
+        }
+
+        return self::$customXPathVariants[$xpathKey] ?? $defaultXPath;
+    }
+
     public function match(GoogleDom $dom, DomElement $node)
     {
         if ($node->getAttribute('id') == 'center_col' || $node->getAttribute('id') =='sports-app') {
@@ -57,24 +135,7 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
     {
         $this->gotoDomainLinkCount = 0;
 
-        $naturalResults = $dom->xpathQuery(
-            "descendant::
-                    div[
-                        contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ') or
-                        contains(concat(' ', normalize-space(@class), ' '), ' xpd EtOod ') or
-                        contains(concat(' ', normalize-space(@class), ' '), ' svwwZ ') or
-                        contains(concat(' ', normalize-space(@class), ' '), 'UDZeY fAgajc') or
-                        (contains(concat(' ', normalize-space(@class), ' '), ' r ')) or
-                        (
-                            contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage') and
-                            contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage-osrp')
-                        )
-                        ] |
-                    //a[
-                        contains(concat(' ', normalize-space(@class), ' '), 'zwqzjb')
-                    ]"
-            , $node
-        );
+        $naturalResults = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
 
         if ($naturalResults->length == 0) {
             $resultSet->addItem(new BaseResult(NaturalResultType::EXCEPTIONS, [], $node));
@@ -115,8 +176,32 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
 
     protected function skiResult(GoogleDom $dom, DomElement $organicResult)
     {
+        // TODO: Review/Remove these when promoting the feature flag
+        if (\FeatureFlags::getCustomSerpXPathKeyMobile(self::$currentSiteId) === null) {
+            // Default algo. skips
+            if($dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' xpd EtOod ')]", $organicResult)->length > 0) {
+                return true;
+            }
+            if($dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' zwqzjb ')]", $organicResult)->length > 0) {
+                return true;
+            }
+            if($dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' zwqzjb ')]", $organicResult)->length > 0) {
+                return true;
+            }
+            // Inside div with class= 'mnr-c xpd O9g5cc uUPGi' are more divs with 'mnr-c xpd O9g5cc uUPGi'
+            // Should ignore from processing parent result and process only children and avoid duplicate results
+            if($dom->xpathQuery("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ')]", $organicResult)->length >0) {
+                return true;
+            }
+        }
+
         // Organic result is identified as top ads
-        if($dom->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' tads')]", $organicResult)->length > 0) {
+        if($dom->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' tads ')]", $organicResult)->length > 0) {
+            return true;
+        }
+
+        // Organic result is identified as bottom ads
+        if($dom->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' bottomads ')]", $organicResult)->length > 0) {
             return true;
         }
 
@@ -132,12 +217,6 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         if($dom->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), '  mnr-c ')]", $organicResult)->length > 0) {
             return true;
         }
-        if($dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' xpd EtOod ')]", $organicResult)->length > 0) {
-            return true;
-        }
-        if($dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' zwqzjb ')]", $organicResult)->length > 0) {
-            return true;
-        }
 
         if($dom->xpathQuery("ancestor::div[@id='HbKV2c']", $organicResult)->length > 0) {
             //id related to ads
@@ -149,17 +228,18 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
             return true;
         }
 
-
-
-        if($dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' zwqzjb ')]", $organicResult)->length > 0) {
+        if($dom->xpathQuery("descendant::*[@data-text-ad]", $organicResult)->length > 0) {
+            //child is ad result
             return true;
         }
+
+        if($dom->xpathQuery("descendant::a[starts-with(@href, 'https://www.google.com/aclk') or starts-with(@data-rw, 'https://www.google.com/aclk')]", $organicResult)->length > 0) {
+            //ad click link
+            return true;
+        }
+
+        // Ignore top stories
         if ($organicResult->hasClass('zwqzjb') && $dom->xpathQuery("ancestor::g-expandable-container", $organicResult)->length > 0 ) {
-            return true;
-        }
-        // Inside div with class= 'mnr-c xpd O9g5cc uUPGi' are more divs with 'mnr-c xpd O9g5cc uUPGi'
-        // Should ignore from processing parent result and process only children and avoid duplicate results
-        if($dom->xpathQuery("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ')]", $organicResult)->length >0) {
             return true;
         }
 
@@ -171,7 +251,6 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         $questionParent =   $dom->getXpath()->query("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' related-question-pair ')]", $organicResult);
 
         if ($questionParent->length > 0) {
-
             return true;
         }
 
@@ -186,7 +265,6 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         }
 
         // The organic result identified as "Find results on"
-
         $carouselNode = $dom->xpathQuery("descendant::g-scrolling-carousel", $organicResult);
         if ($carouselNode->length > 0 &&
             $dom->xpathQuery("descendant::g-inner-card", $organicResult)->length > 0) {
@@ -213,8 +291,8 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         // It's like an expander with click on a main text. The results under it looks like a regular classical result
         if( !empty($organicResult->firstChild) &&
             !$organicResult->firstChild instanceof \DOMText &&
-            $organicResult->firstChild->getAttribute('class') =='g card-section') {
-
+            ($organicResult->firstChild->getAttribute('class') =='g card-section' ||
+             strpos($organicResult->firstChild->getAttribute('class'), 'cUnQKe') !== false)) {
             return true;
         }
 

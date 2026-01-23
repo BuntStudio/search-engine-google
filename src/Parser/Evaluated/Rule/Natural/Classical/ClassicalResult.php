@@ -16,6 +16,75 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
 {
     protected $gotoDomainLinkCount = 0;
 
+    /**
+     * Current site ID for context-aware XPath selection
+     */
+    protected static $currentSiteId = null;
+
+    /**
+     * Custom XPath queries mapped by variant key
+     * Add new variants here as needed
+     */
+    protected static $customXPathVariants = [
+        // 'variant_a' => "descendant::*[contains(@class, 'custom-class')]",
+    ];
+
+    /**
+     * Set the current site ID for XPath selection
+     *
+     * @param int|null $siteId
+     */
+    public static function setCurrentSiteId(?int $siteId): void
+    {
+        self::$currentSiteId = $siteId;
+    }
+
+    /**
+     * Get the current site ID
+     *
+     * @return int|null
+     */
+    public static function getCurrentSiteId(): ?int
+    {
+        return self::$currentSiteId;
+    }
+
+    /**
+     * Clear the current site ID context
+     */
+    public static function clearCurrentSiteId(): void
+    {
+        self::$currentSiteId = null;
+    }
+
+    /**
+     * Get the XPath query for natural results based on site configuration
+     *
+     * @return string
+     */
+    protected function getNaturalResultsXPath(): string
+    {
+        $defaultXPath = "descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' g ') or
+        (
+            (contains(concat(' ', normalize-space(@class), ' '), ' wHYlTd ') or
+            contains(concat(' ', normalize-space(@class), ' '), ' vt6azd Ww4FFb ') or
+            contains(concat(' ', normalize-space(@class), ' '), ' Ww4FFb vt6azd ')
+        ) and
+        not(contains(concat(' ', normalize-space(@class), ' '), ' k6t1jb ')) and
+        not(contains(concat(' ', normalize-space(@class), ' '), ' jmjoTe '))) or contains(concat(' ', normalize-space(@class), ' '), ' MYVUIe ')]";
+
+        if (self::$currentSiteId === null) {
+            return $defaultXPath;
+        }
+
+        $xpathKey = \FeatureFlags::getCustomSerpXPathKeyDesktop(self::$currentSiteId);
+        if ($xpathKey === null) {
+            return $defaultXPath;
+        }
+
+        return self::$customXPathVariants[$xpathKey] ?? $defaultXPath;
+    }
+
     public function match(GoogleDom $dom, DomElement $node)
     {
         if ($node->getAttribute('id') == 'rso' || $node->getAttribute('id') == 'botstuff') {
@@ -77,14 +146,7 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
     {
         $this->gotoDomainLinkCount = 0;
 
-        $naturalResults = $dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' g ') or
-        (
-            (contains(concat(' ', normalize-space(@class), ' '), ' wHYlTd ') or
-            contains(concat(' ', normalize-space(@class), ' '), ' vt6azd Ww4FFb ') or
-            contains(concat(' ', normalize-space(@class), ' '), ' Ww4FFb vt6azd ')
-        ) and
-        not(contains(concat(' ', normalize-space(@class), ' '), ' k6t1jb ')) and
-        not(contains(concat(' ', normalize-space(@class), ' '), ' jmjoTe '))) or contains(concat(' ', normalize-space(@class), ' '), ' MYVUIe ')]", $node);
+        $naturalResults = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
 
         if ($naturalResults->length == 0) {
             if ($node->getAttribute('id') == 'rso') {
