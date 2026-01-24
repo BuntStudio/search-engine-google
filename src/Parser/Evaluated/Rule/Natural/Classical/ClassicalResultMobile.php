@@ -219,13 +219,14 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         if ($questionParent->length > 0) {
             return true;
         }
-
+        $targetNode3 = $organicResult->parentNode->parentNode->parentNode;
+        $targetNode4 = $organicResult->parentNode->parentNode->parentNode->parentNode;
         // Avoid getting  results from questions (when clicking "Show more". When clicking "Show more" on questions)
         // The result under it looks exactly like a natural results
         if(
-            $organicResult->parentNode->parentNode->parentNode->getAttribute('class') =='ymu2Hb' ||
-            $organicResult->parentNode->parentNode->parentNode->getAttribute('class') =='dfiEbb' ||
-            $organicResult->parentNode->parentNode->parentNode->parentNode->getAttribute('class') =='ymu2Hb') {
+            ( $targetNode3 && $targetNode3 instanceof DOMElement  && $targetNode3->getAttribute('class') =='ymu2Hb' )||
+            ( $targetNode3 && $targetNode3 instanceof DOMElement  &&  $targetNode3->getAttribute('class') =='dfiEbb') ||
+            ( $targetNode4 && $targetNode4 instanceof DOMElement  && $targetNode4->getAttribute('class') =='ymu2Hb')) {
 
             return true;
         }
