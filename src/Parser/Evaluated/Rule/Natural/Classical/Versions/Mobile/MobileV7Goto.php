@@ -13,7 +13,6 @@ class MobileV7Goto implements ParsingRuleByVersionInterface
     public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, array $doNotRemoveSrsltidForDomains = [])
     {
         if (strpos($organicResultObject->getLink(), '/goto?url=') !== false) {
-            /* @var $aTag \DOMElement */
             $aTag = $dom->xpathQuery("descendant::span[@role='text' and starts-with(text(), 'https://')]", $organicResult);
 
             if (!empty($aTag) && $aTag->length > 0) {
