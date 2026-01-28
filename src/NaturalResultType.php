@@ -115,11 +115,12 @@ abstract class NaturalResultType
     const SGE_WIDGET         = 'sge_widget';
     const SGE_BUTTON_MOBILE  = 'sge_button_mobile';
     const SGE_WIDGET_MOBILE  = 'sge_widget_mobile';
-    const SGE_WIDGET_OPTIONS = 'sge_widget_options';
-    const SGE_WIDGET_BASE    = 'sge_widget_base_content';
-    const SGE_WIDGET_CONTENT = 'sge_widget_content';
-    const SGE_WIDGET_LOADED  = 'sge_widget_content_loaded';
-    const SGE_WIDGET_LINKS   = 'sge_widget_links';
+    const SGE_WIDGET_OPTIONS     = 'sge_widget_options';
+    const SGE_WIDGET_BASE        = 'sge_widget_base_content';
+    const SGE_WIDGET_CONTENT     = 'sge_widget_content';
+    const SGE_WIDGET_LOADED      = 'sge_widget_content_loaded';
+    const SGE_WIDGET_LINKS       = 'sge_widget_links';
+    const SGE_WIDGET_DIAGNOSTICS = 'sge_widget_diagnostics';
 
     const CURRENCY_ANSWER             = 'currency_answer';
     const CURRENCY_ANSWER_MINE        = 'currency_answer_mine';
