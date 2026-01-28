@@ -25,10 +25,6 @@ class MobileV2 implements ParsingRuleByVersionInterface
 
         $aTagNode = $aTag->item(0);
 
-        if(!empty($aTagNode)) {
-            $titleTag = $aTagNode->lastChild;
-        }
-
         if ($organicResultObject->getLink() === null && $aTag->length > 0) {
             $link = \Utils::removeParamFromUrl(
                 \SM_Rank_Service::getUrlFromGoogleTranslate($dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href'))),
@@ -39,18 +35,20 @@ class MobileV2 implements ParsingRuleByVersionInterface
             $organicResultObject->setLink($link);
         }
 
-        if (!$titleTag instanceof DomElement) {
-            throw new InvalidDOMException('Cannot parse a classical result.');
-        }
+        if(!empty($aTagNode)) {
+            $titleTag = $aTagNode->lastChild;
 
-        if($organicResultObject->getTitle() === null) {
-            $organicResultObject->setTitle($titleTag->textContent);
+            if (!$titleTag instanceof DomElement) {
+                throw new InvalidDOMException('Cannot parse a classical result.');
+            }
+
+            if ($organicResultObject->getTitle() === null) {
+                $organicResultObject->setTitle($titleTag->textContent);
+            }
         }
 
         $descriptionNodes = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' yDYNvb ')]",
             $organicResult);
-
-        $descriptionTag = null;
 
         if ($descriptionNodes->length > 0) {
             $organicResultObject->setDescription($descriptionNodes->item(0)->textContent);
