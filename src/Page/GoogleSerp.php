@@ -56,10 +56,12 @@ class GoogleSerp extends GoogleDom
     /**
      * @param bool $mobile
      * @param array $doNotRemoveSrsltidForDomains
+     * @param int $useDbRules 0 = hardcoded only, 1 = DB rules only, 2 = both (compare)
+     * @param int|null $additionalRule Optional rule ID to test (for candidate rules)
      * @return IndexedResultSet|void
      * @throws InvalidDOMException
      */
-    public function getNaturalResults($mobile = false, array $doNotRemoveSrsltidForDomains = [])
+    public function getNaturalResults($mobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = 0, $additionalRule = null)
     {
         if ($this->javascriptIsEvaluated()) {
             if ($this->isMobile() || $mobile) {
@@ -72,7 +74,7 @@ class GoogleSerp extends GoogleDom
             (new IndexedResultSet())->addItem(new BaseResult(NaturalResultType::CLASSICAL, []));
         }
 
-        return $parser->parse($this, $doNotRemoveSrsltidForDomains);
+        return $parser->parse($this, $doNotRemoveSrsltidForDomains, $useDbRules, $additionalRule);
     }
 
 

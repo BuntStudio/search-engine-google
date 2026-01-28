@@ -13,6 +13,8 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\SiteLinksBigMobile;
 use Serps\SearchEngine\Google\Parser\ParsingRuleByVersionInterface;
 use Serps\SearchEngine\Google\Parser\ParsingRuleInterface;
 use Serps\SearchEngine\Google\NaturalResultType;
+use SM\Backend\SerpParser\RuleLoaderService;
+use SM\Backend\Log\Logger;
 
 class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInterface
 {
@@ -53,18 +55,18 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         }
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = 0, $additionalRule = null)
     {
         $this->gotoDomainLinkCount = 0;
 
-        $naturalResults = $dom->xpathQuery(
-            "descendant::
+        $hardcodedXpath = "descendant::
                     div[
                         contains(concat(' ', normalize-space(@class), ' '), ' mnr-c ') or
                         contains(concat(' ', normalize-space(@class), ' '), ' xpd EtOod ') or
                         contains(concat(' ', normalize-space(@class), ' '), ' svwwZ ') or
                         contains(concat(' ', normalize-space(@class), ' '), 'UDZeY fAgajc') or
-                        (contains(concat(' ', normalize-space(@class), ' '), ' r ')) or
+                        (contains(concat(' ', normalize-space(@class), ' '), 'Ww4FFb') and
+                        contains(concat(' ', normalize-space(@class), ' '), 'vt6azd')) or
                         (
                             contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage') and
                             contains(concat(' ', normalize-space(@class), ' '), 'kp-wholepage-osrp')
@@ -72,9 +74,47 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
                         ] |
                     //a[
                         contains(concat(' ', normalize-space(@class), ' '), 'zwqzjb')
-                    ]"
-            , $node
-        );
+                    ]";
+
+        // Calculate hardcoded results if needed (mode 0 or 2)
+        $naturalResultsHardcoded = null;
+        if ($useDbRules === 0 || $useDbRules === 2) {
+            $naturalResultsHardcoded = $dom->xpathQuery($hardcodedXpath, $node);
+        }
+
+        // Calculate DB results if needed (mode 1 or 2)
+        $naturalResultsDb = null;
+        if ($useDbRules === 1 || $useDbRules === 2) {
+            $rules = RuleLoaderService::getRulesForFeature('natural_results_mobile', false, $additionalRule);
+            if (!empty($rules)) {
+                $dynamicXpath = implode(' | ', $rules);
+                $naturalResultsDb = $dom->xpathQuery($dynamicXpath, $node);
+            }
+        }
+
+        // Determine which results to use
+        if ($useDbRules === 0) {
+            $naturalResults = $naturalResultsHardcoded;
+        } elseif ($useDbRules === 1) {
+            if ($naturalResultsDb !== null) {
+                $naturalResults = $naturalResultsDb;
+            } else {
+                Logger::error('No DB rules found for natural_results_mobile');
+                $naturalResults = $dom->xpathQuery($hardcodedXpath, $node);
+            }
+        } elseif ($useDbRules === 2) {
+            // Use hardcoded but compare and log error if mismatch
+            $naturalResults = $naturalResultsHardcoded;
+
+            if ($naturalResultsDb !== null && $naturalResultsHardcoded->length !== $naturalResultsDb->length) {
+                Logger::error('XPath rule mismatch detected', [
+                    'hardcoded_count' => $naturalResultsHardcoded->length,
+                    'db_count' => $naturalResultsDb->length,
+                    'difference' => abs($naturalResultsHardcoded->length - $naturalResultsDb->length),
+                    'additional_rule_id' => $additionalRule
+                ]);
+            }
+        }
 
         if ($naturalResults->length == 0) {
             $resultSet->addItem(new BaseResult(NaturalResultType::EXCEPTIONS, [], $node));

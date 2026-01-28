@@ -55,14 +55,16 @@ abstract class AbstractParser implements ParserInterface
      * Parses the given google dom
      * @param GoogleDom $googleDom
      * @param array $doNotRemoveSrsltidForDomains
+     * @param int $useDbRules 0 = hardcoded only, 1 = DB rules only, 2 = both (compare)
+     * @param int|null $additionalRule Optional rule ID to test (for candidate rules)
      * @return IndexedResultSet
      */
-    public function parse(GoogleDom $googleDom, array $doNotRemoveSrsltidForDomains = [])
+    public function parse(GoogleDom $googleDom, array $doNotRemoveSrsltidForDomains = [], $useDbRules = 0, $additionalRule = null)
     {
         $elementGroups = $this->getParsableItems($googleDom);
 
         $resultSet = $this->createResultSet($googleDom);
-        return $this->parseGroups($elementGroups, $resultSet, $googleDom, $doNotRemoveSrsltidForDomains);
+        return $this->parseGroups($elementGroups, $resultSet, $googleDom, $doNotRemoveSrsltidForDomains, $useDbRules, $additionalRule);
     }
 
     /**
@@ -81,9 +83,11 @@ abstract class AbstractParser implements ParserInterface
      * @param IndexedResultSet $resultSet
      * @param $googleDom
      * @param array $doNotRemoveSrsltidForDomains
+     * @param int $useDbRules 0 = hardcoded only, 1 = DB rules only, 2 = both (compare)
+     * @param int|null $additionalRule Optional rule ID to test (for candidate rules)
      * @return IndexedResultSet
      */
-    protected function parseGroups(DomNodeList $elementGroups, IndexedResultSet $resultSet, $googleDom, array $doNotRemoveSrsltidForDomains = [])
+    protected function parseGroups(DomNodeList $elementGroups, IndexedResultSet $resultSet, $googleDom, array $doNotRemoveSrsltidForDomains = [], $useDbRules = 0, $additionalRule = null)
     {
         $rules = $this->getRules();
 
@@ -101,16 +105,16 @@ abstract class AbstractParser implements ParserInterface
                 $match = $rule->match($googleDom, $group);
 
                 if ($match instanceof \DOMNodeList) {
-                    $this->parseGroups(new DomNodeList($match, $googleDom), $resultSet, $googleDom, $doNotRemoveSrsltidForDomains);
+                    $this->parseGroups(new DomNodeList($match, $googleDom), $resultSet, $googleDom, $doNotRemoveSrsltidForDomains, $useDbRules, $additionalRule);
                     break;
                 } elseif ($match instanceof DomNodeList) {
-                    $this->parseGroups($match, $resultSet, $googleDom, $doNotRemoveSrsltidForDomains);
+                    $this->parseGroups($match, $resultSet, $googleDom, $doNotRemoveSrsltidForDomains, $useDbRules, $additionalRule);
                     break;
                 } else {
 
                     switch ($match) {
                         case ParsingRuleInterface::RULE_MATCH_MATCHED:
-                            $rule->parse($googleDom, $group, $resultSet, $this->isMobile, $doNotRemoveSrsltidForDomains);
+                            $rule->parse($googleDom, $group, $resultSet, $this->isMobile, $doNotRemoveSrsltidForDomains, $useDbRules, $additionalRule);
                             break 2;
                         case ParsingRuleInterface::RULE_MATCH_STOP:
                             break 2;
