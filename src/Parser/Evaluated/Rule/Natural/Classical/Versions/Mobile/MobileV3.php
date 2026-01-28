@@ -11,7 +11,6 @@ class MobileV3 implements ParsingRuleByVersionInterface
 {
     public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, array $doNotRemoveSrsltidForDomains = [])
     {
-        /* @var $aTag \DOMElement */
         $aTag = $dom->xpathQuery("descendant::*[
             contains(concat(' ', normalize-space(@class), ' '), ' d5oMvf KJDcUb ') or
             contains(concat(' ', normalize-space(@class), ' '), ' tKdlvb KJDcUb ') or
@@ -30,7 +29,7 @@ class MobileV3 implements ParsingRuleByVersionInterface
             throw new InvalidDOMException('Cannot parse a classical result.');
         }
 
-        if ($organicResultObject->getLink() === null) {
+        if ($organicResultObject->getLink() === null && $aTag->length > 0) {
             $link = \Utils::removeParamFromUrl(
                 \SM_Rank_Service::getUrlFromGoogleTranslate($dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href'))),
                 'srsltid',
@@ -46,7 +45,7 @@ class MobileV3 implements ParsingRuleByVersionInterface
 
         ]", $organicResult);
 
-        if ($titleTag->length ==0) {
+        if ($titleTag->length == 0) {
             throw new InvalidDOMException('Cannot parse a classical result.');
         }
 
