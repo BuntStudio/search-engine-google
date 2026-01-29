@@ -82,13 +82,23 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
             $naturalResultsHardcoded = $dom->xpathQuery($hardcodedXpath, $node);
         }
 
-        // Calculate DB results if needed (mode 1 or 2)
+        // Calculate DB results if needed (mode 1, 2, or 3)
         $naturalResultsDb = null;
         if ($useDbRules === 1 || $useDbRules === 2) {
             $rules = RuleLoaderService::getRulesForFeature('natural_results_mobile', false, $additionalRule);
             if (!empty($rules)) {
                 $dynamicXpath = implode(' | ', $rules);
                 $naturalResultsDb = $dom->xpathQuery($dynamicXpath, $node);
+            }
+        } elseif ($useDbRules === 3) {
+            // Mode 3: Use ONLY the additional rule, ignore all other validated rules
+            if ($additionalRule !== null) {
+                $rules = RuleLoaderService::getRulesForFeature('natural_results_mobile', false, $additionalRule);
+                if (!empty($rules)) {
+                    // Get ONLY the additional rule (first element - it's prepended by getRulesForFeature)
+                    $additionalRuleXpath = reset($rules);
+                    $naturalResultsDb = $dom->xpathQuery($additionalRuleXpath, $node);
+                }
             }
         }
 
@@ -113,6 +123,17 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
                     'difference' => abs($naturalResultsHardcoded->length - $naturalResultsDb->length),
                     'additional_rule_id' => $additionalRule
                 ]);
+            }
+        } elseif ($useDbRules === 3) {
+            // Mode 3: Use ONLY the additional rule
+            if ($naturalResultsDb !== null) {
+                $naturalResults = $naturalResultsDb;
+            } else {
+                Logger::error('No additional rule found or provided for mode 3', [
+                    'additional_rule_id' => $additionalRule
+                ]);
+                // Fallback to hardcoded to prevent empty results
+                $naturalResults = $dom->xpathQuery($hardcodedXpath, $node);
             }
         }
 
