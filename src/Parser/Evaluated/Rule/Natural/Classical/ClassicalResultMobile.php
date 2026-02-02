@@ -68,7 +68,8 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
     protected function getNaturalResultsXPath(): string
     {
         $defaultXPath = "(//div[@class='MjjYud' and not(ancestor::div[@id='bottomads' or @id='tadsb']) and .//*[contains(@class, 'MBeuO')]]) |
-                    (//div[@class='MjjYud' and not(ancestor::div[@id='bottomads' or @id='tadsb']) and .//a[@jsname='UWckNb']])";
+                    (//div[@class='MjjYud' and not(ancestor::div[@id='bottomads' or @id='tadsb']) and .//a[@jsname='UWckNb']]) |
+                    (//div[@data-dsrp and not(ancestor::div[@id='bottomads' or @id='tadsb'])])";
 
         if (self::$currentSiteId === null) {
             return $defaultXPath;
