@@ -111,6 +111,7 @@ class MobileNaturalParser extends AbstractParser
         //[contains(@class, 'LQQ1Bd')] - flights
         // [@class='BNeawe DwrKqd'] - new flights
         //div[@class='hNKF2b'] = hotels
+        //jscontroller='dGwZHb' = hotels
         //div[@class='lr_container wDYxhc yc7KLc'] = definitions
         // @jsname='MGJTwe'  = recipes
         //@id='oFNiHe' - misspelings
@@ -156,6 +157,7 @@ class MobileNaturalParser extends AbstractParser
             contains(@class, 'vtSz8d Ww4FFb vt6azd') or
             contains(@class, 'EDblX HG5ZQb') or
             contains(@class, 'hNKF2b') or
+            @jscontroller='dGwZHb' or
             contains(@class, 'lr_container wDYxhc yc7KLc') or
             @jsname='MGJTwe' or
             @data-attrid='SupercatRecipeClusterTitle' or
