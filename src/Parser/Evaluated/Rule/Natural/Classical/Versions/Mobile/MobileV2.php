@@ -3,6 +3,7 @@
 namespace Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\Versions\Mobile;
 
 use Serps\Core\Dom\DomElement;
+use Serps\Core\Dom\DomNodeList;
 use Serps\SearchEngine\Google\Exception\InvalidDOMException;
 use Serps\SearchEngine\Google\Page\GoogleDom;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\OrganicResultObject;
@@ -12,7 +13,6 @@ class MobileV2 implements ParsingRuleByVersionInterface
 {
     public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, array $doNotRemoveSrsltidForDomains = [])
     {
-        /* @var $aTag \DOMElement */
         $aTag = $dom->xpathQuery("descendant::*[
             contains(concat(' ', normalize-space(@class), ' '), ' d5oMvf KJDcUb ') or
             contains(concat(' ', normalize-space(@class), ' '), ' tKdlvb KJDcUb ') or
@@ -25,12 +25,7 @@ class MobileV2 implements ParsingRuleByVersionInterface
 
         $aTagNode = $aTag->item(0);
 
-        if(!empty($aTagNode)) {
-            $titleTag = $aTagNode->lastChild;
-        }
-
-
-        if ($organicResultObject->getLink() === null) {
+        if ($organicResultObject->getLink() === null && $aTag->length > 0) {
             $link = \Utils::removeParamFromUrl(
                 \SM_Rank_Service::getUrlFromGoogleTranslate($dom->getUrl()->resolveAsString($aTag->item(0)->getAttribute('href'))),
                 'srsltid',
@@ -40,18 +35,20 @@ class MobileV2 implements ParsingRuleByVersionInterface
             $organicResultObject->setLink($link);
         }
 
-        if (!$titleTag instanceof DomElement) {
-            throw new InvalidDOMException('Cannot parse a classical result.');
-        }
+        if(!empty($aTagNode)) {
+            $titleTag = $aTagNode->lastChild;
 
-        if($organicResultObject->getTitle() === null) {
-            $organicResultObject->setTitle($titleTag->textContent);
+            if (!$titleTag instanceof DomElement) {
+                throw new InvalidDOMException('Cannot parse a classical result.');
+            }
+
+            if ($organicResultObject->getTitle() === null) {
+                $organicResultObject->setTitle($titleTag->textContent);
+            }
         }
 
         $descriptionNodes = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' yDYNvb ')]",
             $organicResult);
-
-        $descriptionTag = null;
 
         if ($descriptionNodes->length > 0) {
             $organicResultObject->setDescription($descriptionNodes->item(0)->textContent);

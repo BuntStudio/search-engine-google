@@ -15,6 +15,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     protected $removeStyles = true;
     protected $removeScripts = true;
 
+    protected $jslDhCallsCount = 0;
+    protected $aioIdFound = false;
+
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
         if ($node->getAttribute('jsname') == 'ZLxsqf' && $this->isWidget($dom, $node)) {
@@ -110,7 +113,17 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             NaturalResultType::SGE_WIDGET_LINKS   => [],
             NaturalResultType::SGE_WIDGET_BASE    => '',
             NaturalResultType::SGE_WIDGET_CONTENT => '',
+            NaturalResultType::SGE_WIDGET_DIAGNOSTICS => [
+                'jsl_dh_calls_count' => 0,
+                'widget_not_loaded_reason' => null,
+                'link_selectors_matched' => [],
+                'content_length' => 0,
+                'aio_id_found' => false,
+            ],
         ];
+
+        $this->jslDhCallsCount = 0;
+        $this->aioIdFound = false;
 
         // First, enrich the content with all dynamic data
         $this->enrichContentWithDynamicData($dom, $node, $originalDom);
@@ -120,6 +133,8 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         // If widget is not loaded (progressbar visible), don't extract content
         if (!$data[NaturalResultType::SGE_WIDGET_LOADED]) {
+            $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['widget_not_loaded_reason'] = 'progressbar_visible_or_no_folsrch';
+            $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['jsl_dh_calls_count'] = $this->jslDhCallsCount;
             return $data;
         }
 
@@ -165,7 +180,22 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $linkElements4 = $dom->xpathQuery('descendant::*[@class="FqfzXd"]', $node);
 
         $linkElements5 = $dom->xpathQuery('descendant::*[@class="NDNGvf"]', $node);
+
         $linkElements6 = $dom->xpathQuery('descendant::*[@class="ZZh6Vb"]', $node);
+
+        $linkElements7 = $dom->xpathQuery('descendant::*[@target="_self"]', $node);
+
+        // Track which selectors matched for diagnostics
+        $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['link_selectors_matched'] = [
+            'SGEAttributionFeedback' => $linkElements0->length,
+            'BOThhc_LLtSOc' => $linkElements1->length,
+            'g4PEk_LLtSOc' => $linkElements2->length,
+            'uVhVib' => $linkElements3->length,
+            'FqfzXd' => $linkElements4->length,
+            'NDNGvf' => $linkElements5->length,
+            'ZZh6Vb' => $linkElements6->length,
+            'target_self' => $linkElements7->length,
+        ];
 
         if ($linkElements0->length > 0) {
             $this->processLinkElements($dom, $linkElements0, $urls, $data);
@@ -195,6 +225,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             $this->processLinkElements($dom, $linkElements6, $urls, $data);
         }
 
+        if ($linkElements7->length > 0) {
+            $this->processLinkElements($dom, $linkElements7, $urls, $data);
+        }
+
 //        if (!empty($urls)) {
 //            $this->processScriptElements($originalDom, $urls, $data);
 //        }
@@ -202,6 +236,11 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         if (!empty($urls)) {
             $this->processMagiFeature($originalDom, $urls, $data);
         }
+
+        // Populate final diagnostics
+        $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['jsl_dh_calls_count'] = $this->jslDhCallsCount;
+        $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['aio_id_found'] = $this->aioIdFound;
+        $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['content_length'] = strlen($data[NaturalResultType::SGE_WIDGET_CONTENT]);
 
         return $data;
     }
@@ -378,6 +417,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         // Extract all jsl.dh() calls from the original content
         $jslCalls = $this->extractJslDhCalls($originalContent);
 
+        // Track for diagnostics
+        $this->jslDhCallsCount = count($jslCalls);
+
         // Process bsmXxe elements recursively
         $this->processBsmXxeElementsRecursively($dom, $node, $jslCalls, []);
     }
@@ -432,7 +474,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $jslCalls = [];
 
         // Pattern 1: Direct jsl.dh('id', 'html') calls
-        $pattern1 = '/jsl\.dh\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"](.*)[\'"]\);}\)\(\);/U';
+        $pattern1 = '/jsl\.dh\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"](.*)[\'"]\);/U';
 
         if (preg_match_all($pattern1, $htmlContent, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
@@ -575,6 +617,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         if (empty($aioId)) {
             return;
         }
+
+        // Track that we found the AIO ID for diagnostics
+        $this->aioIdFound = true;
 
         // Extract all jsl.dh() calls from the original content
         $jslCalls = $this->extractJslDhCalls($originalContent);

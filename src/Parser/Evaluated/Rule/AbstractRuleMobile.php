@@ -12,6 +12,7 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\Versions\M
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\Versions\Mobile\MobileV5;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\Versions\Mobile\MobileV6;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\Versions\Mobile\MobileV7Goto;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\Versions\Mobile\MobileV8;
 
 class AbstractRuleMobile extends ClassicalResultEngine
 {
@@ -27,6 +28,7 @@ class AbstractRuleMobile extends ClassicalResultEngine
             new MobileV5(),
             new MobileV6(),
             new MobileV7Goto(),
+            new MobileV8(),
             new DesktopV1(),
             new DesktopV2(),
             new DesktopV3Goto(),

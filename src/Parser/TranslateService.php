@@ -224,7 +224,8 @@ class TranslateService
         if (empty($this->response['list_of_urls'][0][$domainName])) {
 
             if($rewritePositionFromPosZero) {
-                $this->response['list_of_urls'][0] = [$domainName=>$rank] + $this->response['list_of_urls'][0];
+                $currentUrls = isset($this->response['list_of_urls'][0]) ? $this->response['list_of_urls'][0] : [];
+                $this->response['list_of_urls'][0] = [$domainName=>$rank] + $currentUrls;
             } else {
                 $this->response['list_of_urls'][0][$domainName] = $rank;
             }

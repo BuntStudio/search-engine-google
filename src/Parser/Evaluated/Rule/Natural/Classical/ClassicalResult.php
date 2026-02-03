@@ -18,6 +18,75 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
 {
     protected $gotoDomainLinkCount = 0;
 
+    /**
+     * Current site ID for context-aware XPath selection
+     */
+    protected static $currentSiteId = null;
+
+    /**
+     * Custom XPath queries mapped by variant key
+     * Add new variants here as needed
+     */
+    protected static $customXPathVariants = [
+        // 'variant_a' => "descendant::*[contains(@class, 'custom-class')]",
+    ];
+
+    /**
+     * Set the current site ID for XPath selection
+     *
+     * @param int|null $siteId
+     */
+    public static function setCurrentSiteId(?int $siteId): void
+    {
+        self::$currentSiteId = $siteId;
+    }
+
+    /**
+     * Get the current site ID
+     *
+     * @return int|null
+     */
+    public static function getCurrentSiteId(): ?int
+    {
+        return self::$currentSiteId;
+    }
+
+    /**
+     * Clear the current site ID context
+     */
+    public static function clearCurrentSiteId(): void
+    {
+        self::$currentSiteId = null;
+    }
+
+    /**
+     * Get the XPath query for natural results based on site configuration
+     *
+     * @return string
+     */
+    protected function getNaturalResultsXPath(): string
+    {
+        $defaultXPath = "descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' g ') or
+        (
+            (contains(concat(' ', normalize-space(@class), ' '), ' wHYlTd ') or
+            contains(concat(' ', normalize-space(@class), ' '), ' vt6azd Ww4FFb ') or
+            contains(concat(' ', normalize-space(@class), ' '), ' Ww4FFb vt6azd ')
+        ) and
+        not(contains(concat(' ', normalize-space(@class), ' '), ' k6t1jb ')) and
+        not(contains(concat(' ', normalize-space(@class), ' '), ' jmjoTe '))) or contains(concat(' ', normalize-space(@class), ' '), ' MYVUIe ')]";
+
+        if (self::$currentSiteId === null) {
+            return $defaultXPath;
+        }
+
+        $xpathKey = \FeatureFlags::getCustomSerpXPathKeyDesktop(self::$currentSiteId);
+        if ($xpathKey === null) {
+            return $defaultXPath;
+        }
+
+        return self::$customXPathVariants[$xpathKey] ?? $defaultXPath;
+    }
+
     public function match(GoogleDom $dom, DomElement $node)
     {
         if ($node->getAttribute('id') == 'rso' || $node->getAttribute('id') == 'botstuff') {
@@ -79,19 +148,12 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
     {
         $this->gotoDomainLinkCount = 0;
 
-        $hardcodedXpath = "descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' g ') or
-        (
-            (contains(concat(' ', normalize-space(@class), ' '), ' wHYlTd ') or
-            contains(concat(' ', normalize-space(@class), ' '), ' vt6azd Ww4FFb ') or
-            contains(concat(' ', normalize-space(@class), ' '), ' Ww4FFb vt6azd ')
-        ) and
-        not(contains(concat(' ', normalize-space(@class), ' '), ' k6t1jb ')) and
-        not(contains(concat(' ', normalize-space(@class), ' '), ' jmjoTe '))) or contains(concat(' ', normalize-space(@class), ' '), ' MYVUIe ')]";
-
+       
         // Calculate hardcoded results if needed (mode 0 or 2)
         $naturalResultsHardcoded = null;
         if ($useDbRules === 0 || $useDbRules === 2) {
-            $naturalResultsHardcoded = $dom->xpathQuery($hardcodedXpath, $node);
+            $naturalResultsHardcoded = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
+
         }
 
         // Calculate DB results if needed (mode 1, 2, or 3)
@@ -122,7 +184,8 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
                 $naturalResults = $naturalResultsDb;
             } else {
                 Logger::error('No DB rules found for natural_results');
-                $naturalResults = $dom->xpathQuery($hardcodedXpath, $node);
+                $naturalResults = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
+
             }
         } elseif ($useDbRules === 2) {
             // Use hardcoded but compare and log error if mismatch
@@ -145,7 +208,8 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
                     'additional_rule_id' => $additionalRule
                 ]);
                 // Fallback to hardcoded to prevent empty results
-                $naturalResults = $dom->xpathQuery($hardcodedXpath, $node);
+                $naturalResults = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
+
             }
         }
 

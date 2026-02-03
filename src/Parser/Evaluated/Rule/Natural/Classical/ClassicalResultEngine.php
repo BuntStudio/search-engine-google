@@ -50,7 +50,7 @@ class ClassicalResultEngine
             return null;
         }
 
-        if (strpos($organicResultObject->getLink(), 'google.') !== false && strpos($organicResultObject->getLink(), '/search') !== false ) {
+        if (strpos($organicResultObject->getLink(), 'google.') !== false && strpos($organicResultObject->getLink(), 'https://developers.google.') !== 0 && strpos($organicResultObject->getLink(), '/search') !== false ) {
             return null;
         }
         $imbricatorParent = $dom->xpathQuery("ancestor::*[@class='FxLDp']", $organicResult);
