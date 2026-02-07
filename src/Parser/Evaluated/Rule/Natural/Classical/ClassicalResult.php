@@ -19,6 +19,14 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
     protected $gotoDomainLinkCount = 0;
 
     /**
+     * Parser mode constants for self-healing parser integration
+     */
+    const MODE_HARDCODED = 0;           // Production default - uses hardcoded XPath
+    const MODE_DATABASE = 1;            // Uses database-managed rules (future production)
+    const MODE_COMPARISON = 2;          // Comparison mode - validates DB rules vs hardcoded
+    const MODE_CANDIDATE_TESTING = 3;   // Isolated testing - tests single candidate rule
+
+    /**
      * Current site ID for context-aware XPath selection
      */
     protected static $currentSiteId = null;
@@ -144,53 +152,122 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         }
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = 0, $additionalRule = null)
+    /**
+     * Parse natural search results from SERP HTML
+     * 
+     * PARSER MODES (Self-Healing Parser Integration):
+     * ================================================
+     * 
+     * MODE_HARDCODED (0 - Default/Production):
+     * - Uses hardcoded XPath rules (via getNaturalResultsXPath())
+     * - Site-specific custom XPath may be applied if configured via FeatureFlags
+     * - No database rules fetched
+     * - Use case: Current production behavior, zero overhead
+     * 
+     * MODE_DATABASE (1 - Database Rules/Future Production):
+     * - Uses XPath rules from database (managed by self-healing parser)
+     * - Falls back to hardcoded rules if DB rules not found
+     * - If $additionalRule provided, it's prepended to live rules for testing
+     * - Use case: After cache invalidation bug is fixed, enables dynamic rule updates
+     * 
+     * MODE_COMPARISON (2 - Comparison/Monitoring):
+     * - Uses hardcoded XPath for actual parsing (production results unchanged)
+     * - Fetches DB rules and compares result counts
+     * - Logs error if counts mismatch (monitoring for rule accuracy)
+     * - If $additionalRule provided, it's included in DB rules comparison
+     * - Use case: Validate DB rules match hardcoded before Mode 1 rollout
+     * 
+     * MODE_CANDIDATE_TESTING (3 - Isolated Candidate Testing):
+     * - Uses ONLY the $additionalRule provided (ignores all live DB rules)
+     * - Falls back to hardcoded if additional rule fails
+     * - Use case: Self-healing parser investigation workflow - test single candidate rule
+     * - NOT for production crawling
+     * 
+     * SITE-SPECIFIC XPATH FEATURE:
+     * =============================
+     * - getNaturalResultsXPath() may return custom XPath based on site ID
+     * - Controlled by FeatureFlags::getCustomSerpXPathKeyDesktop()
+     * - Allows per-site XPath overrides without code changes
+     * - Works with all modes (Mode 0 uses it directly, Modes 1-3 use it as fallback)
+     * 
+     * @param GoogleDom $dom The Google DOM object
+     * @param \DomElement $node The node to parse
+     * @param IndexedResultSet $resultSet Result set to populate
+     * @param bool $isMobile Mobile detection flag
+     * @param array $doNotRemoveSrsltidForDomains Domains to preserve rsltid parameter
+     * @param int $useDbRules Parser mode (use MODE_* constants)
+     * @param int|null $additionalRule Rule ID to test (behavior varies by mode)
+     * @return void
+     */
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
     {
         $this->gotoDomainLinkCount = 0;
 
-       
-        // Calculate hardcoded results if needed (mode 0 or 2)
+        // ============================================================================
+        // STEP 1: Calculate "reference" XPath results (hardcoded or site-custom)
+        // ============================================================================
+        // This is used by MODE_HARDCODED for production parsing, and by other modes as fallback.
+        // Note: getNaturalResultsXPath() may return site-specific custom XPath if configured.
+        
         $naturalResultsHardcoded = null;
-        if ($useDbRules === 0 || $useDbRules === 2) {
+        if ($useDbRules === self::MODE_HARDCODED || $useDbRules === self::MODE_COMPARISON) {
             $naturalResultsHardcoded = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
-
         }
 
-        // Calculate DB results if needed (mode 1, 2, or 3)
+        // ============================================================================
+        // STEP 2: Calculate database-driven XPath results (if applicable modes)
+        // ============================================================================
+        
         $naturalResultsDb = null;
-        if ($useDbRules === 1 || $useDbRules === 2) {
+        
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_COMPARISON) {
+            // MODE_DATABASE & MODE_COMPARISON: Fetch all live DB rules for this feature
+            // If $additionalRule is provided, it's prepended to the live rules array
             $rules = RuleLoaderService::getRulesForFeature('natural_results', false, $additionalRule);
             if (!empty($rules)) {
+                // Combine all rules with XPath union operator (|)
                 $dynamicXpath = implode(' | ', $rules);
                 $naturalResultsDb = $dom->xpathQuery($dynamicXpath, $node);
             }
-        } elseif ($useDbRules === 3) {
-            // Mode 3: Use ONLY the additional rule, ignore all other validated rules
+        } elseif ($useDbRules === self::MODE_CANDIDATE_TESTING) {
+            // MODE_CANDIDATE_TESTING: ISOLATED CANDIDATE TESTING
+            // Use ONLY the $additionalRule, ignore all other live rules
+            // Used by self-healing parser investigation workflow
             if ($additionalRule !== null) {
                 $rules = RuleLoaderService::getRulesForFeature('natural_results', false, $additionalRule);
                 if (!empty($rules)) {
-                    // Get ONLY the additional rule (first element - it's prepended by getRulesForFeature)
+                    // Extract only the additional rule (it's prepended as first element)
                     $additionalRuleXpath = reset($rules);
                     $naturalResultsDb = $dom->xpathQuery($additionalRuleXpath, $node);
                 }
             }
         }
 
-        // Determine which results to use
-        if ($useDbRules === 0) {
+        // ============================================================================
+        // STEP 3: Select final results based on mode
+        // ============================================================================
+        
+        if ($useDbRules === self::MODE_HARDCODED) {
+            // MODE_HARDCODED: Production default - use reference XPath only
             $naturalResults = $naturalResultsHardcoded;
-        } elseif ($useDbRules === 1) {
+            
+        } elseif ($useDbRules === self::MODE_DATABASE) {
+            // MODE_DATABASE: Database rules (future production)
             if ($naturalResultsDb !== null) {
+                // Use DB rules for parsing
                 $naturalResults = $naturalResultsDb;
             } else {
+                // Fallback: No DB rules found, use reference XPath
                 Logger::error('No DB rules found for natural_results');
                 $naturalResults = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
-
             }
-        } elseif ($useDbRules === 2) {
-            // Use hardcoded but compare and log error if mismatch
+            
+        } elseif ($useDbRules === self::MODE_COMPARISON) {
+            // MODE_COMPARISON: Comparison/monitoring mode
+            // Always use reference XPath for production results (no risk)
             $naturalResults = $naturalResultsHardcoded;
 
+            // Compare with DB rules and log any mismatches
             if ($naturalResultsDb !== null && $naturalResultsHardcoded->length !== $naturalResultsDb->length) {
                 Logger::error('XPath rule mismatch detected', [
                     'hardcoded_count' => $naturalResultsHardcoded->length,
@@ -199,17 +276,18 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
                     'additional_rule_id' => $additionalRule
                 ]);
             }
-        } elseif ($useDbRules === 3) {
-            // Mode 3: Use ONLY the additional rule
+            
+        } elseif ($useDbRules === self::MODE_CANDIDATE_TESTING) {
+            // MODE_CANDIDATE_TESTING: Isolated candidate testing (investigation only)
             if ($naturalResultsDb !== null) {
+                // Use the single candidate rule being tested
                 $naturalResults = $naturalResultsDb;
             } else {
+                // Fallback: Candidate rule failed or not provided
                 Logger::error('No additional rule found or provided for mode 3', [
                     'additional_rule_id' => $additionalRule
                 ]);
-                // Fallback to hardcoded to prevent empty results
                 $naturalResults = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
-
             }
         }
 
