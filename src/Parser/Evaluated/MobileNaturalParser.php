@@ -8,6 +8,7 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\AdsTopMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\AppPackMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\ClassicalResultMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\ClassicalResultMobileV2;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Definitions;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\DefinitionsMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\DirectionsMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\FeaturedSnipped;
@@ -63,6 +64,7 @@ class MobileNaturalParser extends AbstractParser
             new Jobs(),
             new HotelsMobile(),
             new DefinitionsMobile(),
+            new Definitions(),
             new VideosMobile(),
             new MisspellingMobile(),
             new DirectionsMobile(),
@@ -159,6 +161,7 @@ class MobileNaturalParser extends AbstractParser
             contains(@class, 'hNKF2b') or
             @jscontroller='dGwZHb' or
             contains(@class, 'lr_container wDYxhc yc7KLc') or
+            contains(@class, 'lr_container yc7KLc mBNN3d') or
             @jsname='MGJTwe' or
             @data-attrid='SupercatRecipeClusterTitle' or
             contains(@class, 'kp-wholepage') or
