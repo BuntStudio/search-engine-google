@@ -15,6 +15,7 @@ use Serps\SearchEngine\Google\Parser\ParsingRuleInterface;
 use Serps\SearchEngine\Google\NaturalResultType;
 use SM\Backend\SerpParser\RuleLoaderService;
 use SM\Backend\Log\Logger;
+use SM\Backend\IncidentResponse\IncidentResponseClient;
 
 class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInterface
 {
@@ -95,7 +96,7 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
 
     public function match(GoogleDom $dom, DomElement $node)
     {
-        if ($node->getAttribute('id') == 'center_col' || $node->getAttribute('id') =='sports-app') {
+        if ($node->getAttribute('id') == 'center_col' || $node->getAttribute('id') == 'sports-app') {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -110,8 +111,12 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
             $this->gotoDomainLinkCount++;
         }
 
-        if ($dom->xpathQuery("descendant::div[@class='MUxGbd v0nnCb lyLwlc']",
-                $organicResult->parentNode->parentNode)->length > 0) {
+        if (
+            $dom->xpathQuery(
+                "descendant::div[@class='MUxGbd v0nnCb lyLwlc']",
+                $organicResult->parentNode->parentNode
+            )->length > 0
+        ) {
             (new SiteLinksBigMobile())->parse($dom, $organicResult->parentNode->parentNode, $resultSet, false, $doNotRemoveSrsltidForDomains);
         }
 
@@ -183,7 +188,7 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         // ============================================================================
         // This is used by MODE_HARDCODED for production parsing, and by other modes as fallback.
         // Note: getNaturalResultsXPath() may return site-specific custom XPath if configured.
-        
+
         $naturalResultsHardcoded = null;
         if ($useDbRules === self::MODE_HARDCODED || $useDbRules === self::MODE_COMPARISON) {
             $naturalResultsHardcoded = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
@@ -192,9 +197,9 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         // ============================================================================
         // STEP 2: Calculate database-driven XPath results (if applicable modes)
         // ============================================================================
-        
+
         $naturalResultsDb = null;
-        
+
         if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_COMPARISON) {
             // MODE_DATABASE & MODE_COMPARISON: Fetch all live DB rules for this feature (mobile)
             // If $additionalRule is provided, it's prepended to the live rules array
@@ -221,11 +226,11 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         // ============================================================================
         // STEP 3: Select final results based on mode
         // ============================================================================
-        
+
         if ($useDbRules === self::MODE_HARDCODED) {
             // MODE_HARDCODED: Production default - use reference XPath only
             $naturalResults = $naturalResultsHardcoded;
-            
+
         } elseif ($useDbRules === self::MODE_DATABASE) {
             // MODE_DATABASE: Database rules (future production)
             if ($naturalResultsDb !== null) {
@@ -235,8 +240,34 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
                 // Fallback: No DB rules found, use reference XPath
                 Logger::error('No DB rules found for natural_results_mobile');
                 $naturalResults = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
+
+                // ON-CALL ALERT: DB rules pipeline is broken — parser had to fallback
+                try {
+                    $alertTitle = 'SERP Parser: DB rules fallback — Mobile';
+                    $oncallAlert = new IncidentResponseClient();
+                    $oncallAlert->triggerOrResolveEvent(
+                        IncidentResponseClient::SERVICE_PARSERS,
+                        $alertTitle,
+                        [
+                            'title' => $alertTitle,
+                            'description' => 'MODE_DATABASE is active but no DB rules were found for natural_results_mobile. ' .
+                                'Parser fell back to hardcoded XPath rules. This means the DB rules pipeline is broken.',
+                            'fields' => [
+                                ['title' => 'Feature', 'value' => 'natural_results_mobile', 'short' => true],
+                                ['title' => 'Mode', 'value' => 'MODE_DATABASE (1)', 'short' => true],
+                                ['title' => 'Action Taken', 'value' => 'Fell back to hardcoded XPath', 'short' => false],
+                                ['title' => 'Admin', 'value' => 'https://admin.seomonitor.com/developer/serp-parser/monitoring', 'short' => false],
+                            ],
+                        ],
+                        IncidentResponseClient::STATUS_TRIGGER,
+                        'sev1',
+                        'p1'
+                    );
+                } catch (\Throwable $e) {
+                    Logger::error('Failed to send SERP parser on-call alert', ['error' => $e->getMessage()]);
+                }
             }
-            
+
         } elseif ($useDbRules === self::MODE_COMPARISON) {
             // MODE_COMPARISON: Comparison/monitoring mode
             // Always use reference XPath for production results (no risk)
@@ -250,8 +281,38 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
                     'difference' => abs($naturalResultsHardcoded->length - $naturalResultsDb->length),
                     'additional_rule_id' => $additionalRule
                 ]);
+
+                // ON-CALL ALERT: DB rules produce different results than hardcoded
+                try {
+                    $alertTitle = 'SERP Parser: XPath rule mismatch — Mobile';
+                    $oncallAlert = new IncidentResponseClient();
+                    $oncallAlert->triggerOrResolveEvent(
+                        IncidentResponseClient::SERVICE_PARSERS,
+                        $alertTitle,
+                        [
+                            'title' => $alertTitle,
+                            'description' => 'MODE_COMPARISON detected a mismatch between hardcoded and DB XPath rules for natural_results_mobile. ' .
+                                'Hardcoded rules found ' . $naturalResultsHardcoded->length . ' results, DB rules found ' . $naturalResultsDb->length . ' results ' .
+                                '(difference: ' . abs($naturalResultsHardcoded->length - $naturalResultsDb->length) . '). ' .
+                                'Production parsing is unaffected (using hardcoded), but DB rules need investigation before switching to MODE_DATABASE.',
+                            'fields' => [
+                                ['title' => 'Feature', 'value' => 'natural_results_mobile', 'short' => true],
+                                ['title' => 'Mode', 'value' => 'MODE_COMPARISON (2)', 'short' => true],
+                                ['title' => 'Hardcoded Count', 'value' => (string) $naturalResultsHardcoded->length, 'short' => true],
+                                ['title' => 'DB Count', 'value' => (string) $naturalResultsDb->length, 'short' => true],
+                                ['title' => 'Difference', 'value' => (string) abs($naturalResultsHardcoded->length - $naturalResultsDb->length), 'short' => true],
+                                ['title' => 'Admin', 'value' => 'https://admin.seomonitor.com/developer/serp-parser/rules', 'short' => false],
+                            ],
+                        ],
+                        IncidentResponseClient::STATUS_TRIGGER,
+                        'sev2',
+                        'p2'
+                    );
+                } catch (\Throwable $e) {
+                    Logger::error('Failed to send SERP parser on-call alert', ['error' => $e->getMessage()]);
+                }
             }
-            
+
         } elseif ($useDbRules === self::MODE_CANDIDATE_TESTING) {
             // MODE_CANDIDATE_TESTING: Isolated candidate testing (investigation only)
             if ($naturalResultsDb !== null) {
@@ -306,16 +367,16 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
     protected function skiResult(GoogleDom $dom, DomElement $organicResult)
     {
         // Organic result is identified as top ads
-        if($dom->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' tads ')]", $organicResult)->length > 0) {
+        if ($dom->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' tads ')]", $organicResult)->length > 0) {
             return true;
         }
 
         // Organic result is identified as bottom ads
-        if($dom->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' bottomads ')]", $organicResult)->length > 0) {
+        if ($dom->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' bottomads ')]", $organicResult)->length > 0) {
             return true;
         }
 
-        if($dom->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' tvcap ')]", $organicResult)->length > 0) {
+        if ($dom->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' tvcap ')]", $organicResult)->length > 0) {
             return true;
         }
 
@@ -324,41 +385,41 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
             return true;
         }
 
-        if($dom->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), '  mnr-c ')]", $organicResult)->length > 0) {
+        if ($dom->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), '  mnr-c ')]", $organicResult)->length > 0) {
             return true;
         }
 
-        if($dom->xpathQuery("ancestor::div[@id='HbKV2c']", $organicResult)->length > 0) {
+        if ($dom->xpathQuery("ancestor::div[@id='HbKV2c']", $organicResult)->length > 0) {
             //id related to ads
             return true;
         }
 
-        if($dom->xpathQuery("ancestor::div[@data-text-ad]", $organicResult)->length > 0) {
+        if ($dom->xpathQuery("ancestor::div[@data-text-ad]", $organicResult)->length > 0) {
             //ad result
             return true;
         }
 
-        if($dom->xpathQuery("descendant::*[@data-text-ad]", $organicResult)->length > 0) {
+        if ($dom->xpathQuery("descendant::*[@data-text-ad]", $organicResult)->length > 0) {
             //child is ad result
             return true;
         }
 
-        if($dom->xpathQuery("descendant::a[starts-with(@href, 'https://www.google.com/aclk') or starts-with(@data-rw, 'https://www.google.com/aclk')]", $organicResult)->length > 0) {
+        if ($dom->xpathQuery("descendant::a[starts-with(@href, 'https://www.google.com/aclk') or starts-with(@data-rw, 'https://www.google.com/aclk')]", $organicResult)->length > 0) {
             //ad click link
             return true;
         }
 
         // Ignore top stories
-        if ($organicResult->hasClass('zwqzjb') && $dom->xpathQuery("ancestor::g-expandable-container", $organicResult)->length > 0 ) {
+        if ($organicResult->hasClass('zwqzjb') && $dom->xpathQuery("ancestor::g-expandable-container", $organicResult)->length > 0) {
             return true;
         }
 
         // Ignore maps from results
-        if($dom->xpathQuery("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' z3HNkc ')]", $organicResult)->length >0) {
+        if ($dom->xpathQuery("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' z3HNkc ')]", $organicResult)->length > 0) {
             return true;
         }
 
-        $questionParent =   $dom->getXpath()->query("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' related-question-pair ')]", $organicResult);
+        $questionParent = $dom->getXpath()->query("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' related-question-pair ')]", $organicResult);
 
         if ($questionParent->length > 0) {
             return true;
@@ -367,43 +428,50 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         $targetNode4 = $organicResult->parentNode->parentNode->parentNode->parentNode;
         // Avoid getting  results from questions (when clicking "Show more". When clicking "Show more" on questions)
         // The result under it looks exactly like a natural results
-        if(
-            ( $targetNode3 && $targetNode3 instanceof DOMElement  && $targetNode3->getAttribute('class') =='ymu2Hb' )||
-            ( $targetNode3 && $targetNode3 instanceof DOMElement  &&  $targetNode3->getAttribute('class') =='dfiEbb') ||
-            ( $targetNode4 && $targetNode4 instanceof DOMElement  && $targetNode4->getAttribute('class') =='ymu2Hb')) {
+        if (
+            ($targetNode3 && $targetNode3 instanceof DOMElement && $targetNode3->getAttribute('class') == 'ymu2Hb') ||
+            ($targetNode3 && $targetNode3 instanceof DOMElement && $targetNode3->getAttribute('class') == 'dfiEbb') ||
+            ($targetNode4 && $targetNode4 instanceof DOMElement && $targetNode4->getAttribute('class') == 'ymu2Hb')
+        ) {
 
             return true;
         }
 
         // The organic result identified as "Find results on"
         $carouselNode = $dom->xpathQuery("descendant::g-scrolling-carousel", $organicResult);
-        if ($carouselNode->length > 0 &&
-            $dom->xpathQuery("descendant::g-inner-card", $organicResult)->length > 0) {
+        if (
+            $carouselNode->length > 0 &&
+            $dom->xpathQuery("descendant::g-inner-card", $organicResult)->length > 0
+        ) {
 
             // If the  direct parent of the carousel is the class from classical results -> meaning that there is no classical result here to be parsed.
             // If the  direct parent of the carousel is NOT the class from classical results -> this is a classical result and under it is a carousel. need to parse the node and identify title/url/description
-            if(preg_match('/mnr\-c/', $carouselNode->item(0)->parentNode->getAttribute('class'))) {
+            if (preg_match('/mnr\-c/', $carouselNode->item(0)->parentNode->getAttribute('class'))) {
                 return true;
             }
         }
 
         // Result has carousel in it
-        if ($dom->xpathQuery("descendant::g-scrolling-carousel", $organicResult)->length > 0 &&
+        if (
+            $dom->xpathQuery("descendant::g-scrolling-carousel", $organicResult)->length > 0 &&
             $dom->xpathQuery("descendant::svg", $organicResult)->length > 0 &&
             (  // And carousel have title like "Results in "
                 $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' pxp6I MUxGbd ')]", $organicResult)->length > 0 ||
                 // Temporary keep this
                 $dom->getXpath()->query("descendant::table", $organicResult)->length > 0
-            )) {
+            )
+        ) {
             return true;
         }
 
         // Avoid getting results  such as "people also ask" near a regular result; (it's not a "people also ask" but the functionality is exactly like "people also ask")
         // It's like an expander with click on a main text. The results under it looks like a regular classical result
-        if( !empty($organicResult->firstChild) &&
+        if (
+            !empty($organicResult->firstChild) &&
             !$organicResult->firstChild instanceof \DOMText &&
-            ($organicResult->firstChild->getAttribute('class') =='g card-section' ||
-             strpos($organicResult->firstChild->getAttribute('class'), 'cUnQKe') !== false)) {
+            ($organicResult->firstChild->getAttribute('class') == 'g card-section' ||
+                strpos($organicResult->firstChild->getAttribute('class'), 'cUnQKe') !== false)
+        ) {
             return true;
         }
 

@@ -13,6 +13,7 @@ use Serps\SearchEngine\Google\Parser\ParsingRuleInterface;
 use Serps\SearchEngine\Google\NaturalResultType;
 use SM\Backend\SerpParser\RuleLoaderService;
 use SM\Backend\Log\Logger;
+use SM\Backend\IncidentResponse\IncidentResponseClient;
 
 class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterface
 {
@@ -112,41 +113,41 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
             $this->gotoDomainLinkCount++;
         }
 
-        if( $dom->xpathQuery("descendant::table[@class='jmjoTe']", $organicResult)->length >0) {
+        if ($dom->xpathQuery("descendant::table[@class='jmjoTe']", $organicResult)->length > 0) {
             (new SiteLinksBig())->parse($dom, $organicResult, $resultSet, false);
         }
 
         $parentWithSameClass = $dom->xpathQuery("ancestor::div[@class='g']", $organicResult);
 
 
-        if($parentWithSameClass->length > 0) {
-            if( $dom->xpathQuery("descendant::table[@class='jmjoTe']", $parentWithSameClass->item(0))->length >0) {
+        if ($parentWithSameClass->length > 0) {
+            if ($dom->xpathQuery("descendant::table[@class='jmjoTe']", $parentWithSameClass->item(0))->length > 0) {
                 (new SiteLinksBig())->parse($dom, $parentWithSameClass->item(0), $resultSet, false);
             }
         }
 
-        if( $dom->xpathQuery("descendant::div[@class='HiHjCd']", $organicResult)->length >0) {
+        if ($dom->xpathQuery("descendant::div[@class='HiHjCd']", $organicResult)->length > 0) {
             (new SiteLinksSmall())->parse($dom, $organicResult, $resultSet, false);
         }
 
-        if($parentWithSameClass->length > 0) {
-            if( $dom->xpathQuery("descendant::div[@class='HiHjCd']", $parentWithSameClass->item(0))->length >0) {
+        if ($parentWithSameClass->length > 0) {
+            if ($dom->xpathQuery("descendant::div[@class='HiHjCd']", $parentWithSameClass->item(0))->length > 0) {
                 (new SiteLinksBig())->parse($dom, $parentWithSameClass->item(0), $resultSet, false);
             }
         }
 
         $parentWithClass = $dom->xpathQuery("ancestor::div[@class='BYM4Nd']", $organicResult);
 
-        if($parentWithClass->length > 0) {
-            if( $dom->xpathQuery("descendant::table[contains(@class, 'jmjoTe')]", $parentWithClass->item(0))->length >0) {
+        if ($parentWithClass->length > 0) {
+            if ($dom->xpathQuery("descendant::table[contains(@class, 'jmjoTe')]", $parentWithClass->item(0))->length > 0) {
                 (new SiteLinksBig())->parse($dom, $parentWithClass->item(0), $resultSet, false);
             }
         }
 
         $descendentWithClass = $dom->xpathQuery("descendant::div[@class='BYM4Nd']", $organicResult);
 
-        if($descendentWithClass->length > 0) {
-            if( $dom->xpathQuery("descendant::table[contains(@class, 'jmjoTe')]", $descendentWithClass->item(0))->length >0) {
+        if ($descendentWithClass->length > 0) {
+            if ($dom->xpathQuery("descendant::table[contains(@class, 'jmjoTe')]", $descendentWithClass->item(0))->length > 0) {
                 (new SiteLinksBig())->parse($dom, $descendentWithClass->item(0), $resultSet, false);
             }
         }
@@ -208,7 +209,7 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         // ============================================================================
         // This is used by MODE_HARDCODED for production parsing, and by other modes as fallback.
         // Note: getNaturalResultsXPath() may return site-specific custom XPath if configured.
-        
+
         $naturalResultsHardcoded = null;
         if ($useDbRules === self::MODE_HARDCODED || $useDbRules === self::MODE_COMPARISON) {
             $naturalResultsHardcoded = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
@@ -217,9 +218,9 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         // ============================================================================
         // STEP 2: Calculate database-driven XPath results (if applicable modes)
         // ============================================================================
-        
+
         $naturalResultsDb = null;
-        
+
         if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_COMPARISON) {
             // MODE_DATABASE & MODE_COMPARISON: Fetch all live DB rules for this feature
             // If $additionalRule is provided, it's prepended to the live rules array
@@ -246,11 +247,11 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         // ============================================================================
         // STEP 3: Select final results based on mode
         // ============================================================================
-        
+
         if ($useDbRules === self::MODE_HARDCODED) {
             // MODE_HARDCODED: Production default - use reference XPath only
             $naturalResults = $naturalResultsHardcoded;
-            
+
         } elseif ($useDbRules === self::MODE_DATABASE) {
             // MODE_DATABASE: Database rules (future production)
             if ($naturalResultsDb !== null) {
@@ -260,8 +261,34 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
                 // Fallback: No DB rules found, use reference XPath
                 Logger::error('No DB rules found for natural_results');
                 $naturalResults = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
+
+                // ON-CALL ALERT: DB rules pipeline is broken — parser had to fallback
+                try {
+                    $alertTitle = 'SERP Parser: DB rules fallback — Desktop';
+                    $oncallAlert = new IncidentResponseClient();
+                    $oncallAlert->triggerOrResolveEvent(
+                        IncidentResponseClient::SERVICE_PARSERS,
+                        $alertTitle,
+                        [
+                            'title' => $alertTitle,
+                            'description' => 'MODE_DATABASE is active but no DB rules were found for natural_results (desktop). ' .
+                                'Parser fell back to hardcoded XPath rules. This means the DB rules pipeline is broken.',
+                            'fields' => [
+                                ['title' => 'Feature', 'value' => 'natural_results', 'short' => true],
+                                ['title' => 'Mode', 'value' => 'MODE_DATABASE (1)', 'short' => true],
+                                ['title' => 'Action Taken', 'value' => 'Fell back to hardcoded XPath', 'short' => false],
+                                ['title' => 'Admin', 'value' => 'https://admin.seomonitor.com/developer/serp-parser/monitoring', 'short' => false],
+                            ],
+                        ],
+                        IncidentResponseClient::STATUS_TRIGGER,
+                        'sev1',
+                        'p1'
+                    );
+                } catch (\Throwable $e) {
+                    Logger::error('Failed to send SERP parser on-call alert', ['error' => $e->getMessage()]);
+                }
             }
-            
+
         } elseif ($useDbRules === self::MODE_COMPARISON) {
             // MODE_COMPARISON: Comparison/monitoring mode
             // Always use reference XPath for production results (no risk)
@@ -275,8 +302,38 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
                     'difference' => abs($naturalResultsHardcoded->length - $naturalResultsDb->length),
                     'additional_rule_id' => $additionalRule
                 ]);
+
+                // ON-CALL ALERT: DB rules produce different results than hardcoded
+                try {
+                    $alertTitle = 'SERP Parser: XPath rule mismatch — Desktop';
+                    $oncallAlert = new IncidentResponseClient();
+                    $oncallAlert->triggerOrResolveEvent(
+                        IncidentResponseClient::SERVICE_PARSERS,
+                        $alertTitle,
+                        [
+                            'title' => $alertTitle,
+                            'description' => 'MODE_COMPARISON detected a mismatch between hardcoded and DB XPath rules for natural_results (desktop). ' .
+                                'Hardcoded rules found ' . $naturalResultsHardcoded->length . ' results, DB rules found ' . $naturalResultsDb->length . ' results ' .
+                                '(difference: ' . abs($naturalResultsHardcoded->length - $naturalResultsDb->length) . '). ' .
+                                'Production parsing is unaffected (using hardcoded), but DB rules need investigation before switching to MODE_DATABASE.',
+                            'fields' => [
+                                ['title' => 'Feature', 'value' => 'natural_results', 'short' => true],
+                                ['title' => 'Mode', 'value' => 'MODE_COMPARISON (2)', 'short' => true],
+                                ['title' => 'Hardcoded Count', 'value' => (string) $naturalResultsHardcoded->length, 'short' => true],
+                                ['title' => 'DB Count', 'value' => (string) $naturalResultsDb->length, 'short' => true],
+                                ['title' => 'Difference', 'value' => (string) abs($naturalResultsHardcoded->length - $naturalResultsDb->length), 'short' => true],
+                                ['title' => 'Admin', 'value' => 'https://admin.seomonitor.com/developer/serp-parser/rules', 'short' => false],
+                            ],
+                        ],
+                        IncidentResponseClient::STATUS_TRIGGER,
+                        'sev2',
+                        'p2'
+                    );
+                } catch (\Throwable $e) {
+                    Logger::error('Failed to send SERP parser on-call alert', ['error' => $e->getMessage()]);
+                }
             }
-            
+
         } elseif ($useDbRules === self::MODE_CANDIDATE_TESTING) {
             // MODE_CANDIDATE_TESTING: Isolated candidate testing (investigation only)
             if ($naturalResultsDb !== null) {
@@ -299,11 +356,11 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
             return;
         }
 
-        $k=0;
+        $k = 0;
 
         foreach ($naturalResults as $organicResult) {
 
-            if($this->skiResult($dom,$organicResult)) {
+            if ($this->skiResult($dom, $organicResult)) {
                 continue;
             }
 
@@ -323,15 +380,15 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
     {
 
         // Organic result is identified as top ads
-        if($googleDOM->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' tads')]", $organicResult)->length > 0) {
+        if ($googleDOM->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' tads')]", $organicResult)->length > 0) {
             return true;
         }
 
-        if ($googleDOM->xpathQuery("ancestor::g-accordion-expander ", $organicResult)->length >0) {
+        if ($googleDOM->xpathQuery("ancestor::g-accordion-expander ", $organicResult)->length > 0) {
             return true;
         }
 
-        if($googleDOM->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' tvcap ')]", $organicResult)->length > 0) {
+        if ($googleDOM->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' tvcap ')]", $organicResult)->length > 0) {
             return true;
         }
 
@@ -341,15 +398,15 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         }
 
         // This result is a featured snipped. It it has another div with class g that contains organic results -> avoid duplicates
-        if( $organicResult->hasClasses(['mnr-c'])) {
+        if ($organicResult->hasClasses(['mnr-c'])) {
             return true;
         }
 
-        if( $organicResult->hasClasses(['g-blk'])) {
+        if ($organicResult->hasClasses(['g-blk'])) {
             return true;
         }
 
-        $fsnParent =   $googleDOM->getXpath()->query("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' xpdopen ')]", $organicResult);
+        $fsnParent = $googleDOM->getXpath()->query("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' xpdopen ')]", $organicResult);
 
         if ($fsnParent->length > 0) {
 
@@ -359,16 +416,16 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
 
         // Avoid getting  results from questions (when clicking "Show more". When clicking "Show more" on questions)
         // The result under it looks exactly like a natural results
-        $questionParent =   $googleDOM->getXpath()->query("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' related-question-pair ')]", $organicResult);
+        $questionParent = $googleDOM->getXpath()->query("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' related-question-pair ')]", $organicResult);
 
         if ($questionParent->length > 0) {
 
             return true;
         }
 
-        $hasParentG     = $googleDOM->getXpath()->query("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' g ')]", $organicResult);
+        $hasParentG = $googleDOM->getXpath()->query("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' g ')]", $organicResult);
         $hasParentFxLDp = $googleDOM->getXpath()->query("ancestor::ul[contains(concat(' ', normalize-space(@class), ' '), ' FxLDp ')]", $organicResult);
-        $hasSameChild  = false;
+        $hasSameChild = false;
 
         if ($organicResult->hasClasses(['MYVUIe'])) {
             $hasChildG = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' g ')]", $organicResult);
@@ -378,7 +435,7 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
             }
         }
 
-        if ( ($hasParentG->length > 0 && $hasParentFxLDp->length ==0)  || $hasSameChild) {
+        if (($hasParentG->length > 0 && $hasParentFxLDp->length == 0) || $hasSameChild) {
             return true;
         }
 
@@ -390,7 +447,7 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         //
         $currencyPlayer = $googleDOM->getXpath()->query('descendant::div[@id="knowledge-currency__updatable-data-column"]', $organicResult);
 
-        if($currencyPlayer->length>0) {
+        if ($currencyPlayer->length > 0) {
             return true;
         }
 
