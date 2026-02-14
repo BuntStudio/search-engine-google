@@ -23,9 +23,18 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
         $class = $node->getAttribute('class');
-        if (!empty($class) && strpos($class, 'LQQ1Bd') !== false && $node->getChildren()->count() != 0) {
-            return self::RULE_MATCH_MATCHED;
+        
+        // Check for NEW Google Flights widget classes
+        // These are specific to the actual flight booking widget
+        if (!empty($class)) {
+            // QCqCbd - Airline container in new Google Flights widget
+            if (strpos($class, 'QCqCbd') !== false) {
+                return self::RULE_MATCH_MATCHED;
+            }
         }
+        
+        // LQQ1Bd is a generic "show more" class - not specific to flights
+        // Skip it to avoid false positives
 
         if (!empty($class) && strpos($class, 'BNeawe DwrKqd') !== false) {
             $this->isNewFlight = true;
