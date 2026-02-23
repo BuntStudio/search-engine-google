@@ -70,35 +70,42 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     protected function isElementVisible($element)
     {
-        // Check if element has style attribute with display:none or visibility:hidden
-        if ($element->hasAttribute('style')) {
-            $style = $element->getAttribute('style');
+        $current = $element;
 
-            // Check for display:none
-            if (preg_match('/display\s*:\s*none/i', $style)) {
-                return false;
-            }
+        while ($current && $current instanceof \DOMElement) {
+            // Check if element has style attribute with display:none or visibility:hidden
+            if ($current->hasAttribute('style')) {
+                $style = $current->getAttribute('style');
 
-            // Check for visibility:hidden
-            if (preg_match('/visibility\s*:\s*hidden/i', $style)) {
-                return false;
-            }
-        }
+                // Check for display:none
+                if (preg_match('/display\s*:\s*none/i', $style)) {
+                    return false;
+                }
 
-        // Check if element has a class that might indicate it's hidden
-        if ($element->hasAttribute('class')) {
-            $classes = $element->getAttribute('class');
-
-            // Common hidden classes in Google's UI
-            $hiddenClasses = ['hidden', 'invisible', 'hide'];
-            foreach ($hiddenClasses as $hiddenClass) {
-                if (strpos($classes, $hiddenClass) !== false) {
+                // Check for visibility:hidden
+                if (preg_match('/visibility\s*:\s*hidden/i', $style)) {
                     return false;
                 }
             }
+
+            // Check if element has a class that might indicate it's hidden
+            if ($current->hasAttribute('class')) {
+                $classes = $current->getAttribute('class');
+
+                // Common hidden classes in Google's UI
+                $hiddenClasses = ['hidden', 'invisible', 'hide'];
+                foreach ($hiddenClasses as $hiddenClass) {
+                    if (strpos($classes, $hiddenClass) !== false) {
+                        return false;
+                    }
+                }
+            }
+
+            // Traverse to the parent node
+            $current = $current->parentNode;
         }
 
-        // If no obvious hiding styles/classes found, consider it visible
+        // If no obvious hiding styles/classes found in the element or its ancestors, consider it visible
         return true;
     }
 
