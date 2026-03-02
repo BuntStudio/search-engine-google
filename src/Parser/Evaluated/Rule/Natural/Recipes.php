@@ -37,6 +37,12 @@ class Recipes implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
             $parent = $node->parentNode;
             if ($parent && $parent->nextSibling) {
                 $urls = $dom->getXpath()->query('descendant::g-link', $parent->nextSibling);
+
+                // Mobile SERP variant: recipe links use <a class="ddkIM"> instead of g-link
+                if ($urls->length == 0) {
+                    $urls = $dom->getXpath()->query("descendant::a[contains(@class, 'ddkIM')]", $parent->nextSibling);
+                    $urlOnAttribute = 'ddkIM';
+                }
             }
         }
 
@@ -52,7 +58,9 @@ class Recipes implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 
         if ($urls->length > 0) {
             foreach ($urls as $urlNode) {
-                if ($urlOnAttribute) {
+                if ($urlOnAttribute === 'ddkIM') {
+                    $item['recipes_links'][] = ['link' => $urlNode->getAttribute('href')];
+                } elseif ($urlOnAttribute) {
                     $item['recipes_links'][] = ['link' => $urlNode->getAttribute('data-rl')];
                 } else {
                     $item['recipes_links'][] = ['link' => $urlNode->firstChild->getAttribute('href')];
