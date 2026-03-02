@@ -15,15 +15,59 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
 
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
+        $isCandidate = false;
+
         if (strpos($node->getAttribute('class'), 'xpdopen') !== false || strpos($node->getAttribute('class'), 'xpdbox') !== false) {
-            return self::RULE_MATCH_MATCHED;
+            $isCandidate = true;
         }
 
         if (strpos($node->getAttribute('class'), 'CWesnb') !== false) {
+            $isCandidate = true;
+        }
+
+        if ($dom->getXpath()->query('.//div[@class="MjjYud"]/div[@class="pxiwBd GqJbWc M6ON8"]', $node)->length > 0) {
+            $isCandidate = true;
+        }
+
+        if (!$isCandidate) {
+            return self::RULE_MATCH_NOMATCH;
+        }
+
+        // Confirm this is actually a featured snippet, not another xpdopen block
+        // (e.g. "See results about", expandable sections, etc.)
+
+        // 1. Text-based detection (most robust, resistant to CSS class rotation):
+        //    Real featured snippets have a hidden h2 with text "Featured snippet from the web"
+        $headings = $dom->getXpath()->query(
+            'descendant::*[self::h2 or self::h3]', $node
+        );
+        foreach ($headings as $heading) {
+            if (stripos($heading->textContent, 'featured snippet') !== false) {
+                return self::RULE_MATCH_MATCHED;
+            }
+        }
+
+        // 2. Feedback URL detection (Google includes a "About featured snippets" link):
+        //    The href contains "p=featured_snippets"
+        $feedbackLinks = $dom->getXpath()->query(
+            'descendant::a[contains(@href, "featured_snippets")]', $node
+        );
+        if ($feedbackLinks->length > 0) {
             return self::RULE_MATCH_MATCHED;
         }
 
-        if ($dom->getXpath()->query('//div[@class="MjjYud"]/div[@class="pxiwBd GqJbWc M6ON8"]', $node)->length > 0) {
+        // 3. Class-based fallback (less stable, but covers edge cases):
+        //    bNg8Rb = hidden screen-reader heading class
+        //    V3FYCf = snippet content wrapper class
+        $hasFeaturedSnippetLabel = $dom->getXpath()->query(
+            'descendant::h2[contains(@class, "bNg8Rb")]', $node
+        )->length > 0;
+
+        $hasV3FYCf = $dom->getXpath()->query(
+            'descendant::div[contains(@class, "V3FYCf")]', $node
+        )->length > 0;
+
+        if ($hasFeaturedSnippetLabel || $hasV3FYCf) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -72,10 +116,16 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
 
             $aTag = $googleDOM->getXpath()->query("descendant::a", $featureSnippetNode);
             $h3Tag = $googleDOM->getXpath()->query("descendant::h3", $featureSnippetNode);//title
-            $description = $googleDOM->getXpath()->query("preceding-sibling::div/descendant::div[@class='LGOjhe']", $featureSnippetNode);//description
-            if ($description->length == 0)  {
-                $description = $googleDOM->getXpath()->query("descendant::div[@class='LGOjhe']", $featureSnippetNode);//description
-
+            // Description: prefer semantic data-attrid, fall back to CSS class
+            $description = $googleDOM->getXpath()->query("preceding-sibling::div/descendant::div[@data-attrid='wa:/description']", $featureSnippetNode);
+            if ($description->length == 0) {
+                $description = $googleDOM->getXpath()->query("descendant::div[@data-attrid='wa:/description']", $featureSnippetNode);
+            }
+            if ($description->length == 0) {
+                $description = $googleDOM->getXpath()->query("preceding-sibling::div/descendant::div[@class='LGOjhe']", $featureSnippetNode);
+            }
+            if ($description->length == 0) {
+                $description = $googleDOM->getXpath()->query("descendant::div[@class='LGOjhe']", $featureSnippetNode);
             }
             if ($aTag->length == 0) {
                 continue;
@@ -113,18 +163,25 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
 
         $object = new \StdClass();
 
-        // Try the primary source URL XPath
-        $sourceUrls = $googleDOM->getXpath()->query('//a[@class="sXtWJb"]/@href', $node);
+        // Try the primary source URL XPath (class-based)
+        $sourceUrls = $googleDOM->getXpath()->query('.//a[@class="sXtWJb"]/@href', $node);
 
         // If not found, try the alternative XPath
         if ($sourceUrls->length == 0) {
-            $sourceUrls = $googleDOM->getXpath()->query('//h3[@class="yuRUbf JtGQ40d MBeuO q8U8x"]//a/@href', $node);
+            $sourceUrls = $googleDOM->getXpath()->query('.//h3[@class="yuRUbf JtGQ40d MBeuO q8U8x"]//a/@href', $node);
         }
 
-        // If still not found, let's try a more general approach to find any link
+        // Try class-based result link
         if ($sourceUrls->length == 0) {
-            // Try to find standard result links
-            $sourceUrls = $googleDOM->getXpath()->query('//div[contains(@class, "yuRUbf")]//a/@href', $node);
+            $sourceUrls = $googleDOM->getXpath()->query('.//div[contains(@class, "yuRUbf")]//a/@href', $node);
+        }
+
+        // Semantic fallback: first outbound link that isn't a Google-internal URL
+        if ($sourceUrls->length == 0) {
+            $sourceUrls = $googleDOM->getXpath()->query(
+                './/a[@href and not(contains(@href, "google.com")) and not(starts-with(@href, "/search"))]/@href',
+                $node
+            );
         }
 
         // If we found a URL, process it
@@ -135,15 +192,23 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
                 $doNotRemoveSrsltidForDomains
             );
 
-            // Try to get title from the combination XPath
-            $titleElements = $googleDOM->getXpath()->query('//a[@class="sXtWJb" and @jsname="UWckNb"]', $node);
-
-            // If not found, try a more general approach
+            // Title: try class-based first, then semantic h3 fallback
+            $titleElements = $googleDOM->getXpath()->query('.//a[@class="sXtWJb" and @jsname="UWckNb"]', $node);
             if ($titleElements->length == 0) {
-                $titleElements = $googleDOM->getXpath()->query('//h3', $node);
+                $titleElements = $googleDOM->getXpath()->query('.//h3', $node);
             }
-
             $object->title = ($titleElements->length > 0) ? trim($titleElements->item(0)->textContent) : '';
+
+            // Direct answer: use Google's TTS marker (e.g. phone numbers, dates)
+            $ttsAnswer = $googleDOM->getXpath()->query('.//div[@data-tts="answers"]', $node);
+            $object->callout = ($ttsAnswer->length > 0) ? trim($ttsAnswer->item(0)->textContent) : '';
+
+            // Description: prefer semantic data-attrid, fall back to CSS class
+            $description = $googleDOM->getXpath()->query('.//div[@data-attrid="wa:/description"]', $node);
+            if ($description->length == 0) {
+                $description = $googleDOM->getXpath()->query('.//div[@class="LGOjhe"]', $node);
+            }
+            $object->description = ($description->length > 0) ? trim($description->item(0)->textContent) : '';
 
             $results[] = $object;
         }
