@@ -53,7 +53,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     protected function isWidgetLoaded(GoogleDom $dom, $node)
     {
         // Check if there's a visible progressbar div indicating the widget is still loading
-        $progressBar = $dom->xpathQuery('descendant::div[@role="progressbar"]', $node);
+        $progressBar = $dom->xpathQuery('//div[@role="progressbar"]', $node);
         if ($progressBar->length > 0) {
             // Check if any progressbar is actually visible (not hidden by CSS)
             foreach ($progressBar as $bar) {
