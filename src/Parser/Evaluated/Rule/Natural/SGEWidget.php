@@ -52,10 +52,11 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     protected function isWidgetLoaded(GoogleDom $dom, $node)
     {
-        // Check if there's a visible progressbar div indicating the widget is still loading
-        $progressBar = $dom->xpathQuery('//div[@role="progressbar"]', $node);
+        // Check if there's a visible progressbar inside a folsrch container (AIO content area)
+        // The AIO progressbar lives in a folsrch-* sibling element, not inside the widget node itself
+        $progressBar = $dom->xpathQuery('//div[starts-with(@id, "folsrch-")]//div[@role="progressbar"]', $node);
         if ($progressBar->length > 0) {
-            // Check if any progressbar is actually visible (not hidden by CSS)
+            // Check if any AIO progressbar is actually visible (not hidden by CSS)
             foreach ($progressBar as $bar) {
                 if ($this->isElementVisible($bar)) {
                     return false;
@@ -63,9 +64,20 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             }
         }
 
-        $widgetContent = $dom->xpathQuery("descendant::*[contains(concat(' ', normalize-space(@id), ' '), 'folsrch-')]", $node);
+        // folsrch-* elements are siblings of the widget node, not descendants — search from document root
+        $widgetContent = $dom->xpathQuery('//div[starts-with(@id, "folsrch-")]', $node);
 
-        return $widgetContent->length > 0;
+        if ($widgetContent->length > 0) {
+            return true;
+        }
+
+        // Fallback: if folsrch- is not found but bsmXxe elements were enriched with children, consider loaded
+        $enrichedElements = $dom->xpathQuery('descendant::*[contains(@class, "bsmXxe") and ./*]', $node);
+        if ($enrichedElements->length > 0) {
+            return true;
+        }
+
+        return false;
     }
 
     protected function isElementVisible($element)
