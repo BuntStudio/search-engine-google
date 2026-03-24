@@ -110,17 +110,17 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
         $imagesDb = null;
 
         if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_COMPARISON) {
-            $rules = RuleLoaderService::getRulesForFeature($featureName, false, $additionalRule);
+            $singleRuleId = is_int($additionalRule) ? $additionalRule : null;
+            $rules = RuleLoaderService::getRulesForFeature($featureName, false, $singleRuleId);
             if (!empty($rules)) {
                 $imagesDb = $this->parseWithDbRules($dom, $node, $rules, $isMobile);
             }
         } elseif ($useDbRules === self::MODE_CANDIDATE_TESTING) {
-            if ($additionalRule !== null) {
-                $rules = RuleLoaderService::getRulesForFeature($featureName, false, $additionalRule);
+            // MODE_CANDIDATE_TESTING: Use ONLY the rule IDs specified in $additionalRule array
+            if ($additionalRule !== null && is_array($additionalRule)) {
+                $rules = RuleLoaderService::getRulesByIds($additionalRule);
                 if (!empty($rules)) {
-                    // Extract only the candidate rule (prepended as first element)
-                    $candidateXpath = reset($rules);
-                    $imagesDb = $this->parseWithDbRules($dom, $node, [$candidateXpath], $isMobile);
+                    $imagesDb = $this->parseWithDbRules($dom, $node, $rules, $isMobile);
                 }
             }
         }
@@ -237,8 +237,8 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             if ($imagesDb !== null) {
                 $this->addImagesToResultSet($resultSet, $imagesDb, $isMobile, $node);
             } else {
-                Logger::error('No additional rule found or provided for ImageGroup mode 3', [
-                    'additional_rule_id' => $additionalRule,
+                Logger::error('No rules found or provided for ImageGroup mode 3', [
+                    'rule_ids' => $additionalRule,
                 ]);
                 $fallback = $this->parseHardcoded($dom, $node, $isMobile);
                 $this->addImagesToResultSet($resultSet, $fallback, $isMobile, $node);

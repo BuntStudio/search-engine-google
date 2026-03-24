@@ -176,7 +176,7 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
      * @param bool $isMobile Mobile detection flag
      * @param array $doNotRemoveSrsltidForDomains Domains to preserve rsltid parameter
      * @param int $useDbRules Parser mode (use MODE_* constants)
-     * @param int|null $additionalRule Rule ID to test (behavior varies by mode)
+     * @param array|int|null $additionalRule Rule ID(s) to test. Mode 3: array of all rule IDs to use. Modes 1/2: single rule ID to prepend.
      * @return void
      */
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
@@ -202,23 +202,21 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
 
         if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_COMPARISON) {
             // MODE_DATABASE & MODE_COMPARISON: Fetch all live DB rules for this feature (mobile)
-            // If $additionalRule is provided, it's prepended to the live rules array
-            $rules = RuleLoaderService::getRulesForFeature('natural_results_mobile', false, $additionalRule);
+            // If $additionalRule is provided (int), it's prepended to the live rules array
+            $singleRuleId = is_int($additionalRule) ? $additionalRule : null;
+            $rules = RuleLoaderService::getRulesForFeature('natural_results_mobile', false, $singleRuleId);
             if (!empty($rules)) {
                 // Combine all rules with XPath union operator (|)
                 $dynamicXpath = implode(' | ', $rules);
                 $naturalResultsDb = $dom->xpathQuery($dynamicXpath, $node);
             }
         } elseif ($useDbRules === self::MODE_CANDIDATE_TESTING) {
-            // MODE_CANDIDATE_TESTING: ISOLATED CANDIDATE TESTING
-            // Use ONLY the $additionalRule, ignore all other live rules
-            // Used by self-healing parser investigation workflow
-            if ($additionalRule !== null) {
-                $rules = RuleLoaderService::getRulesForFeature('natural_results_mobile', false, $additionalRule);
+            // MODE_CANDIDATE_TESTING: Use ONLY the rule IDs specified in $additionalRule array
+            if ($additionalRule !== null && is_array($additionalRule)) {
+                $rules = RuleLoaderService::getRulesByIds($additionalRule);
                 if (!empty($rules)) {
-                    // Extract only the additional rule (it's prepended as first element)
-                    $additionalRuleXpath = reset($rules);
-                    $naturalResultsDb = $dom->xpathQuery($additionalRuleXpath, $node);
+                    $dynamicXpath = implode(' | ', $rules);
+                    $naturalResultsDb = $dom->xpathQuery($dynamicXpath, $node);
                 }
             }
         }
@@ -314,14 +312,12 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
             }
 
         } elseif ($useDbRules === self::MODE_CANDIDATE_TESTING) {
-            // MODE_CANDIDATE_TESTING: Isolated candidate testing (investigation only)
+            // MODE_CANDIDATE_TESTING: Explicit rule set testing (investigation only)
             if ($naturalResultsDb !== null) {
-                // Use the single candidate rule being tested
                 $naturalResults = $naturalResultsDb;
             } else {
-                // Fallback: Candidate rule failed or not provided
-                Logger::error('No additional rule found or provided for mode 3', [
-                    'additional_rule_id' => $additionalRule
+                Logger::error('No rules found or provided for mode 3', [
+                    'rule_ids' => $additionalRule
                 ]);
                 $naturalResults = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
             }

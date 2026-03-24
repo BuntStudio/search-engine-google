@@ -55,8 +55,8 @@ abstract class AbstractParser implements ParserInterface
      * Parses the given google dom
      * @param GoogleDom $googleDom
      * @param array $doNotRemoveSrsltidForDomains
-     * @param int $useDbRules 0 = hardcoded only, 1 = DB rules only, 2 = both (compare)
-     * @param int|null $additionalRule Optional rule ID to test (for candidate rules)
+     * @param int $useDbRules 0 = hardcoded only, 1 = DB rules only, 2 = both (compare), 3 = candidate testing
+     * @param array|int|null $additionalRule Rule ID(s) to test. Mode 3: array of all rule IDs to use. Modes 1/2: single rule ID to prepend.
      * @return IndexedResultSet
      */
     public function parse(GoogleDom $googleDom, array $doNotRemoveSrsltidForDomains = [], $useDbRules = 0, $additionalRule = null)
@@ -83,8 +83,8 @@ abstract class AbstractParser implements ParserInterface
      * @param IndexedResultSet $resultSet
      * @param $googleDom
      * @param array $doNotRemoveSrsltidForDomains
-     * @param int $useDbRules 0 = hardcoded only, 1 = DB rules only, 2 = both (compare)
-     * @param int|null $additionalRule Optional rule ID to test (for candidate rules)
+     * @param int $useDbRules 0 = hardcoded only, 1 = DB rules only, 2 = both (compare), 3 = candidate testing
+     * @param array|int|null $additionalRule Rule ID(s) to test. Mode 3: array of all rule IDs to use. Modes 1/2: single rule ID to prepend.
      * @return IndexedResultSet
      */
     protected function parseGroups(DomNodeList $elementGroups, IndexedResultSet $resultSet, $googleDom, array $doNotRemoveSrsltidForDomains = [], $useDbRules = 0, $additionalRule = null)

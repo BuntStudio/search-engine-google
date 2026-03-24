@@ -57,7 +57,7 @@ class GoogleSerp extends GoogleDom
      * @param bool $mobile
      * @param array $doNotRemoveSrsltidForDomains
      * @param int $useDbRules Parser mode (0 = hardcoded, 1 = DB rules, 2 = comparison, 3 = candidate testing)
-     * @param int|null $additionalRule Optional rule ID to test (for candidate rules)
+     * @param array|int|null $additionalRule Rule ID(s) to test. Mode 3: array of all rule IDs to use. Modes 1/2: single rule ID to prepend.
      * @return IndexedResultSet|void
      * @throws InvalidDOMException
      */
