@@ -204,6 +204,10 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
                     }
 
                     $alertTitle = "SERP Parser: ImageGroup mismatch — {$deviceLabel}";
+                    $queryString = '';
+                    if (!empty($dom) && !empty($dom->getUrl()) && !empty($dom->getUrl()->getQueryString())) {
+                        $queryString = $dom->getUrl()->getQueryString();
+                    }
                     $oncallAlert = new IncidentResponseClient();
                     $oncallAlert->triggerOrResolveEvent(
                         IncidentResponseClient::SERVICE_PARSERS,
@@ -215,6 +219,7 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
                                 implode('. ', $mismatchSummary) . '. ' .
                                 'Production parsing is unaffected (using hardcoded), but DB rules need investigation before switching to MODE_DATABASE.',
                             'fields' => [
+                                ['title' => 'Query String', 'value' => $queryString, 'short' => false],
                                 ['title' => 'Feature', 'value' => $featureName, 'short' => true],
                                 ['title' => 'Mode', 'value' => 'MODE_COMPARISON (2)', 'short' => true],
                                 ['title' => 'Hardcoded Count', 'value' => (string) $hardcodedCount, 'short' => true],
