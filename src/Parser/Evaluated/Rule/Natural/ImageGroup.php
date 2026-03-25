@@ -223,30 +223,30 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
 
                     $alertTitle = "SERP Parser: ImageGroup mismatch — {$deviceLabel}";
                     $oncallAlert = new IncidentResponseClient();
-                    $oncallAlert->triggerOrResolveEvent(
-                        IncidentResponseClient::SERVICE_PARSERS,
-                        $alertTitle,
-                        [
-                            'title' => $alertTitle,
-                            'description' => "MODE_COMPARISON detected a mismatch between hardcoded and DB XPath rules for {$featureName} ({$deviceLabel}). " .
-                                "Hardcoded found {$hardcodedCount} images, DB rules found {$dbCount} images. " .
-                                implode('. ', $mismatchSummary) . '. ' .
-                                'Production parsing is unaffected (using hardcoded), but DB rules need investigation before switching to MODE_DATABASE.',
-                            'fields' => [
-                                ['title' => 'Query String', 'value' => $queryString, 'short' => false],
-                                ['title' => 'Feature', 'value' => $featureName, 'short' => true],
-                                ['title' => 'Mode', 'value' => 'MODE_COMPARISON (2)', 'short' => true],
-                                ['title' => 'Hardcoded Count', 'value' => (string) $hardcodedCount, 'short' => true],
-                                ['title' => 'DB Count', 'value' => (string) $dbCount, 'short' => true],
-                                ['title' => 'Missing from DB', 'value' => !empty($missingFromDb) ? implode(', ', array_slice($missingFromDb, 0, 3)) : 'none', 'short' => false],
-                                ['title' => 'Extra in DB', 'value' => !empty($extraInDb) ? implode(', ', array_slice($extraInDb, 0, 3)) : 'none', 'short' => false],
-                                ['title' => 'Admin', 'value' => 'https://admin.seomonitor.com/developer/serp-parser/rules', 'short' => false],
-                            ],
-                        ],
-                        IncidentResponseClient::STATUS_TRIGGER,
-                        'sev2',
-                        'p2'
-                    );
+//                    $oncallAlert->triggerOrResolveEvent(
+//                        IncidentResponseClient::SERVICE_PARSERS,
+//                        $alertTitle,
+//                        [
+//                            'title' => $alertTitle,
+//                            'description' => "MODE_COMPARISON detected a mismatch between hardcoded and DB XPath rules for {$featureName} ({$deviceLabel}). " .
+//                                "Hardcoded found {$hardcodedCount} images, DB rules found {$dbCount} images. " .
+//                                implode('. ', $mismatchSummary) . '. ' .
+//                                'Production parsing is unaffected (using hardcoded), but DB rules need investigation before switching to MODE_DATABASE.',
+//                            'fields' => [
+//                                ['title' => 'Query String', 'value' => $queryString, 'short' => false],
+//                                ['title' => 'Feature', 'value' => $featureName, 'short' => true],
+//                                ['title' => 'Mode', 'value' => 'MODE_COMPARISON (2)', 'short' => true],
+//                                ['title' => 'Hardcoded Count', 'value' => (string) $hardcodedCount, 'short' => true],
+//                                ['title' => 'DB Count', 'value' => (string) $dbCount, 'short' => true],
+//                                ['title' => 'Missing from DB', 'value' => !empty($missingFromDb) ? implode(', ', array_slice($missingFromDb, 0, 3)) : 'none', 'short' => false],
+//                                ['title' => 'Extra in DB', 'value' => !empty($extraInDb) ? implode(', ', array_slice($extraInDb, 0, 3)) : 'none', 'short' => false],
+//                                ['title' => 'Admin', 'value' => 'https://admin.seomonitor.com/developer/serp-parser/rules', 'short' => false],
+//                            ],
+//                        ],
+//                        IncidentResponseClient::STATUS_TRIGGER,
+//                        'sev2',
+//                        'p2'
+//                    );
                 } catch (\Throwable $e) {
                     Logger::error('Failed to send SERP parser on-call alert', ['error' => $e->getMessage()]);
                 }
