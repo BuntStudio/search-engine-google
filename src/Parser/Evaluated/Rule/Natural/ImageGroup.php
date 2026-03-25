@@ -184,13 +184,26 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             $extraInDb = array_values(array_diff($dbUrls, $hardcodedUrls));
             $hasMismatch = !empty($missingFromDb) || !empty($extraInDb);
 
+            $hasMismatch = true; //todo remove
             if ($imagesDb !== null && $hasMismatch) {
                 $queryString = '';
-                if (!empty($dom) && !empty($dom->getUrl()) && !empty($dom->getUrl()->getQueryString())) {
-                    $queryString = $dom->getUrl()->getQueryString();
+                $pageTitle = '';
+                if (!empty($dom)) {
+                    if (!empty($dom->getUrl()) && !empty($dom->getUrl()->getQueryString())) {
+                        $queryString = $dom->getUrl()->getQueryString();
+                    }
+                    try {
+                        $titleNodes = $dom->getDom()->getElementsByTagName('title');
+                        if ($titleNodes->length > 0) {
+                            $pageTitle = $titleNodes->item(0)->nodeValue;
+                        }
+                    } catch (\Exception $e) {
+                        $pageTitle = '';
+                    }
                 }
                 Logger::error('ImageGroup XPath rule mismatch detected', [
                     'query_string' => $queryString,
+                    'page_title' => $pageTitle,
                     'hardcoded_count' => $hardcodedCount,
                     'db_count' => $dbCount,
                     'missing_from_db' => array_slice($missingFromDb, 0, 5),
