@@ -185,7 +185,12 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             $hasMismatch = !empty($missingFromDb) || !empty($extraInDb);
 
             if ($imagesDb !== null && $hasMismatch) {
+                $queryString = '';
+                if (!empty($dom) && !empty($dom->getUrl()) && !empty($dom->getUrl()->getQueryString())) {
+                    $queryString = $dom->getUrl()->getQueryString();
+                }
                 Logger::error('ImageGroup XPath rule mismatch detected', [
+                    'query_string' => $queryString,
                     'hardcoded_count' => $hardcodedCount,
                     'db_count' => $dbCount,
                     'missing_from_db' => array_slice($missingFromDb, 0, 5),
@@ -204,10 +209,6 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
                     }
 
                     $alertTitle = "SERP Parser: ImageGroup mismatch — {$deviceLabel}";
-                    $queryString = '';
-                    if (!empty($dom) && !empty($dom->getUrl()) && !empty($dom->getUrl()->getQueryString())) {
-                        $queryString = $dom->getUrl()->getQueryString();
-                    }
                     $oncallAlert = new IncidentResponseClient();
                     $oncallAlert->triggerOrResolveEvent(
                         IncidentResponseClient::SERVICE_PARSERS,
