@@ -184,7 +184,6 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             $extraInDb = array_values(array_diff($dbUrls, $hardcodedUrls));
             $hasMismatch = !empty($missingFromDb) || !empty($extraInDb);
 
-            $hasMismatch = true; //todo remove
             if ($imagesDb !== null && $hasMismatch) {
                 $queryString = '';
                 $pageTitle = '';
