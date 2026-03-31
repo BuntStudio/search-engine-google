@@ -398,7 +398,22 @@ class TranslateService
         if ($item->is(NaturalResultType::IMAGE_GROUP) || $item->is(NaturalResultType::IMAGE_GROUP_MOBILE) ) {
             $data = $item->getData();
             if (isset($data['images'])){
-                $this->response[NaturalResultType::IMAGE_GROUP] = $item->getData()['images'];
+                if (
+                    isset($this->response[NaturalResultType::IMAGE_GROUP]) &&
+                    !empty($this->response[NaturalResultType::IMAGE_GROUP]) &&
+                    is_array($this->response[NaturalResultType::IMAGE_GROUP])
+                ) {
+                    $existingUrls = array_column($this->response[NaturalResultType::IMAGE_GROUP], 'url');
+                    $newImages = array_filter($data['images'], function ($img) use ($existingUrls) {
+                        return !in_array($img['url'], $existingUrls, true);
+                    });
+                    $this->response[NaturalResultType::IMAGE_GROUP] = array_merge(
+                        $this->response[NaturalResultType::IMAGE_GROUP],
+                        array_values($newImages)
+                    );
+                } else {
+                    $this->response[NaturalResultType::IMAGE_GROUP] = $data['images'];
+                }
             }
         }
 
