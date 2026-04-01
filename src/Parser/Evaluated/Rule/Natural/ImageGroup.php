@@ -14,7 +14,6 @@ use Serps\SearchEngine\Google\Parser\ParsingRuleInterface;
 use Serps\SearchEngine\Google\NaturalResultType;
 use SM\Backend\SerpParser\RuleLoaderService;
 use SM\Backend\Log\Logger;
-use SM\Backend\IncidentResponse\IncidentResponseClient;
 
 class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
@@ -51,8 +50,9 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
         ];
     }
 
-    public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
+    public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node, $useDbRules = self::MODE_HARDCODED)
     {
+        // Maps exclusion — always hardcoded (structural check, not feature-specific)
         $mapsRule = new Maps();
         if ($mapsRule->match($dom, $node) === self::RULE_MATCH_MATCHED) {
             return self::RULE_MATCH_NOMATCH;
@@ -63,6 +63,22 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             return self::RULE_MATCH_NOMATCH;
         }
 
+        if ($useDbRules === self::MODE_DATABASE) {
+            // DB rules replace all hardcoded match checks (iur+jsmodel, data-attrid, IZE3Td)
+            $matchRules = array_unique(array_merge(
+                RuleLoaderService::getRulesForFeature('images_match'),
+                RuleLoaderService::getRulesForFeature('images_mobile_match')
+            ));
+
+            if (!empty($matchRules)) {
+                $matchXpath = implode(' | ', $matchRules);
+                $matchResult = $dom->getXpath()->query($matchXpath, $node);
+                return $matchResult->length > 0 ? self::RULE_MATCH_MATCHED : self::RULE_MATCH_NOMATCH;
+            }
+            // No DB rules — fall through to hardcoded
+        }
+
+        // Hardcoded match checks
         if ($node->getAttribute('id') == 'iur' &&
             (   // Mobile
                 $node->parentNode->hasAttribute('jsmodel') ||
@@ -75,15 +91,15 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             return self::RULE_MATCH_MATCHED;
         }
 
+        if ($node->getAttribute('data-attrid') == 'images universal') {
+            return self::RULE_MATCH_MATCHED;
+        }
+
         if (strpos($node->getAttribute('class'), 'IZE3Td') !== false) {
             $images = $dom->getXpath()->query('descendant::div[contains(concat(" ", @data-attrid, " "), " images universal ")]', $node);
             if ($images->length > 0) {
                 return self::RULE_MATCH_MATCHED;
             }
-        }
-
-        if ($node->getAttribute('data-attrid') == 'images universal') {
-            return self::RULE_MATCH_MATCHED;
         }
 
         return self::RULE_MATCH_NOMATCH;
@@ -92,176 +108,41 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
     {
         $featureName = self::getFeatureName($isMobile);
-        $deviceLabel = $isMobile ? 'Mobile' : 'Desktop';
 
-        // ============================================================================
-        // STEP 1: Calculate hardcoded results (for MODE_HARDCODED and MODE_COMPARISON)
-        // ============================================================================
-
-        $imagesHardcoded = null;
-        if ($useDbRules === self::MODE_HARDCODED || $useDbRules === self::MODE_COMPARISON) {
-            $imagesHardcoded = $this->parseHardcoded($dom, $node, $isMobile);
-        }
-
-        // ============================================================================
-        // STEP 2: Calculate DB-driven results (if applicable modes)
-        // ============================================================================
-
-        $imagesDb = null;
-
-        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_COMPARISON) {
+        if ($useDbRules === self::MODE_DATABASE) {
             $singleRuleId = is_int($additionalRule) ? $additionalRule : null;
-            $rules = RuleLoaderService::getRulesForFeature($featureName, false, $singleRuleId);
-            if (!empty($rules)) {
-                $imagesDb = $this->parseWithDbRules($dom, $node, $rules, $isMobile);
+            $structuredRules = RuleLoaderService::getRulesForFeatureWithChildren($featureName, false, $singleRuleId);
+            if (!empty($structuredRules['parent']) || !empty($structuredRules['children'])) {
+                $images = $this->parseWithDbRulesHierarchical($dom, $node, $structuredRules, $isMobile);
+            } else {
+                Logger::error("No DB rules found for {$featureName}, falling back to hardcoded");
+                $images = $this->parseHardcoded($dom, $node, $isMobile);
             }
         } elseif ($useDbRules === self::MODE_CANDIDATE_TESTING) {
-            // MODE_CANDIDATE_TESTING: Use ONLY the rule IDs specified in $additionalRule array
             if ($additionalRule !== null && is_array($additionalRule)) {
-                $rules = RuleLoaderService::getRulesByIds($additionalRule);
+                // Only use rules that belong to this feature; fall back to mode 1 otherwise
+                $rules = RuleLoaderService::getRulesByIdsForFeature($additionalRule, $featureName);
                 if (!empty($rules)) {
-                    $imagesDb = $this->parseWithDbRules($dom, $node, $rules, $isMobile);
+                    $images = $this->parseWithDbRules($dom, $node, $rules, $isMobile);
+                } else {
+                    // Rules don't belong to this feature — use mode 1 behavior (hierarchical DB rules)
+                    $structuredRules = RuleLoaderService::getRulesForFeatureWithChildren($featureName);
+                    if (!empty($structuredRules['parent']) || !empty($structuredRules['children'])) {
+                        $images = $this->parseWithDbRulesHierarchical($dom, $node, $structuredRules, $isMobile);
+                    } else {
+                        $images = $this->parseHardcoded($dom, $node, $isMobile);
+                    }
                 }
+            } else {
+                Logger::error('No rule IDs provided for ImageGroup mode 3');
+                $images = $this->parseHardcoded($dom, $node, $isMobile);
             }
+        } else {
+            // MODE_HARDCODED (default)
+            $images = $this->parseHardcoded($dom, $node, $isMobile);
         }
 
-        // ============================================================================
-        // STEP 3: Select final results based on mode
-        // ============================================================================
-
-        if ($useDbRules === self::MODE_HARDCODED) {
-            // MODE_HARDCODED: Production default — use hardcoded steps
-            $this->addImagesToResultSet($resultSet, $imagesHardcoded, $isMobile, $node);
-
-        } elseif ($useDbRules === self::MODE_DATABASE) {
-            if ($imagesDb !== null) {
-                $this->addImagesToResultSet($resultSet, $imagesDb, $isMobile, $node);
-            } else {
-                // Fallback: No DB rules found, use hardcoded
-                Logger::error("No DB rules found for {$featureName}");
-                $fallback = $this->parseHardcoded($dom, $node, $isMobile);
-                $this->addImagesToResultSet($resultSet, $fallback, $isMobile, $node);
-
-                try {
-                    $alertTitle = "SERP Parser: DB rules fallback — Images {$deviceLabel}";
-                    $oncallAlert = new IncidentResponseClient();
-                    $oncallAlert->triggerOrResolveEvent(
-                        IncidentResponseClient::SERVICE_PARSERS,
-                        $alertTitle,
-                        [
-                            'title' => $alertTitle,
-                            'description' => "MODE_DATABASE is active but no DB rules were found for {$featureName} ({$deviceLabel}). " .
-                                'Parser fell back to hardcoded XPath rules. This means the DB rules pipeline is broken.',
-                            'fields' => [
-                                ['title' => 'Feature', 'value' => $featureName, 'short' => true],
-                                ['title' => 'Mode', 'value' => 'MODE_DATABASE (1)', 'short' => true],
-                                ['title' => 'Action Taken', 'value' => 'Fell back to hardcoded XPath', 'short' => false],
-                                ['title' => 'Admin', 'value' => 'https://admin.seomonitor.com/developer/serp-parser/monitoring', 'short' => false],
-                            ],
-                        ],
-                        IncidentResponseClient::STATUS_TRIGGER,
-                        'sev1',
-                        'p1'
-                    );
-                } catch (\Throwable $e) {
-                    Logger::error('Failed to send SERP parser on-call alert', ['error' => $e->getMessage()]);
-                }
-            }
-
-        } elseif ($useDbRules === self::MODE_COMPARISON) {
-            // Always use hardcoded for production
-            $this->addImagesToResultSet($resultSet, $imagesHardcoded, $isMobile, $node);
-
-            // Compare actual results (URLs), not just counts
-            $hardcodedUrls = $imagesHardcoded !== null ? array_column($imagesHardcoded, 'url') : [];
-            $dbUrls = $imagesDb !== null ? array_column($imagesDb, 'url') : [];
-
-            $hardcodedCount = count($hardcodedUrls);
-            $dbCount = count($dbUrls);
-
-            // Find differences
-            $missingFromDb = array_values(array_diff($hardcodedUrls, $dbUrls));
-            $extraInDb = array_values(array_diff($dbUrls, $hardcodedUrls));
-            $hasMismatch = !empty($missingFromDb) || !empty($extraInDb);
-
-            if ($imagesDb !== null && $hasMismatch) {
-                $queryString = '';
-                $pageTitle = '';
-                if (!empty($dom)) {
-                    if (!empty($dom->getUrl()) && !empty($dom->getUrl()->getQueryString())) {
-                        $queryString = $dom->getUrl()->getQueryString();
-                    }
-                    try {
-                        $titleNodes = $dom->getDom()->getElementsByTagName('title');
-                        if ($titleNodes->length > 0) {
-                            $pageTitle = $titleNodes->item(0)->nodeValue;
-                        }
-                    } catch (\Exception $e) {
-                        $pageTitle = '';
-                    }
-                }
-                Logger::error('ImageGroup XPath rule mismatch detected', [
-                    'query_string' => $queryString,
-                    'page_title' => $pageTitle,
-                    'hardcoded_count' => $hardcodedCount,
-                    'db_count' => $dbCount,
-                    'missing_from_db' => array_slice($missingFromDb, 0, 5),
-                    'extra_in_db' => array_slice($extraInDb, 0, 5),
-                    'feature' => $featureName,
-                    'additional_rule_id' => $additionalRule,
-                ]);
-
-                try {
-                    $mismatchSummary = [];
-                    if (!empty($missingFromDb)) {
-                        $mismatchSummary[] = count($missingFromDb) . ' URLs found by hardcoded but not DB';
-                    }
-                    if (!empty($extraInDb)) {
-                        $mismatchSummary[] = count($extraInDb) . ' URLs found by DB but not hardcoded';
-                    }
-
-                    $alertTitle = "SERP Parser: ImageGroup mismatch — {$deviceLabel}";
-                    $oncallAlert = new IncidentResponseClient();
-//                    $oncallAlert->triggerOrResolveEvent(
-//                        IncidentResponseClient::SERVICE_PARSERS,
-//                        $alertTitle,
-//                        [
-//                            'title' => $alertTitle,
-//                            'description' => "MODE_COMPARISON detected a mismatch between hardcoded and DB XPath rules for {$featureName} ({$deviceLabel}). " .
-//                                "Hardcoded found {$hardcodedCount} images, DB rules found {$dbCount} images. " .
-//                                implode('. ', $mismatchSummary) . '. ' .
-//                                'Production parsing is unaffected (using hardcoded), but DB rules need investigation before switching to MODE_DATABASE.',
-//                            'fields' => [
-//                                ['title' => 'Query String', 'value' => $queryString, 'short' => false],
-//                                ['title' => 'Feature', 'value' => $featureName, 'short' => true],
-//                                ['title' => 'Mode', 'value' => 'MODE_COMPARISON (2)', 'short' => true],
-//                                ['title' => 'Hardcoded Count', 'value' => (string) $hardcodedCount, 'short' => true],
-//                                ['title' => 'DB Count', 'value' => (string) $dbCount, 'short' => true],
-//                                ['title' => 'Missing from DB', 'value' => !empty($missingFromDb) ? implode(', ', array_slice($missingFromDb, 0, 3)) : 'none', 'short' => false],
-//                                ['title' => 'Extra in DB', 'value' => !empty($extraInDb) ? implode(', ', array_slice($extraInDb, 0, 3)) : 'none', 'short' => false],
-//                                ['title' => 'Admin', 'value' => 'https://admin.seomonitor.com/developer/serp-parser/rules', 'short' => false],
-//                            ],
-//                        ],
-//                        IncidentResponseClient::STATUS_TRIGGER,
-//                        'sev2',
-//                        'p2'
-//                    );
-                } catch (\Throwable $e) {
-                    Logger::error('Failed to send SERP parser on-call alert', ['error' => $e->getMessage()]);
-                }
-            }
-
-        } elseif ($useDbRules === self::MODE_CANDIDATE_TESTING) {
-            if ($imagesDb !== null) {
-                $this->addImagesToResultSet($resultSet, $imagesDb, $isMobile, $node);
-            } else {
-                Logger::error('No rules found or provided for ImageGroup mode 3', [
-                    'rule_ids' => $additionalRule,
-                ]);
-                $fallback = $this->parseHardcoded($dom, $node, $isMobile);
-                $this->addImagesToResultSet($resultSet, $fallback, $isMobile, $node);
-            }
-        }
+        $this->addImagesToResultSet($resultSet, $images, $isMobile, $node);
     }
 
     /**
@@ -311,8 +192,73 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
     }
 
     /**
-     * Parse images using DB rules. Each rule is an XPath to find image nodes.
-     * For each matched node, extracts the URL via data-lpage or descendant <a> href.
+     * Parse images using DB rules with parent-child hierarchy.
+     *
+     * Step structure:
+     * 1. Parent rules: primary image detection (e.g. descendant::div[@data-lpage])
+     * 2. Fallback child (images[_mobile]_parse_fallback): CONDITIONAL — only if parent found nothing
+     * 3. V2 child (images[_mobile]_parse_v2): ADDITIVE — always run, merge results
+     */
+    protected function parseWithDbRulesHierarchical(GoogleDom $dom, \DomElement $node, array $structuredRules, bool $isMobile = false): array
+    {
+        $allImages = [];
+        $featurePrefix = $isMobile ? 'images_mobile' : 'images';
+
+        // Step 1: Parent rules (primary detection)
+        $parentRules = $structuredRules['parent'] ?? [];
+        if (!empty($parentRules)) {
+            $parentXpath = implode(' | ', $parentRules);
+            $allImages = $this->queryImageNodes($dom, $node, $parentXpath);
+        }
+
+        // Step 2: Conditional fallback child — only if parent found nothing
+        $fallbackChildName = $featurePrefix . '_parse_fallback';
+        $fallbackRules = $structuredRules['children'][$fallbackChildName] ?? [];
+        if (empty($allImages) && !empty($fallbackRules)) {
+            $fallbackXpath = implode(' | ', $fallbackRules);
+            $allImages = $this->queryImageNodes($dom, $node, $fallbackXpath);
+        }
+
+        // Step 3: Additive child — always run, merge results
+        $v2ChildName = $featurePrefix . '_parse_v2';
+        $v2Rules = $structuredRules['children'][$v2ChildName] ?? [];
+        if (!empty($v2Rules)) {
+            $v2Xpath = implode(' | ', $v2Rules);
+            $v2Images = $this->queryImageNodes($dom, $node, $v2Xpath);
+            $allImages = array_merge($allImages, $v2Images);
+        }
+
+        return $allImages;
+    }
+
+    /**
+     * Query image nodes with a given XPath and extract URLs.
+     */
+    private function queryImageNodes(GoogleDom $dom, \DomElement $node, string $xpath): array
+    {
+        $images = [];
+        try {
+            $nodes = $dom->getXpath()->query($xpath, $node);
+            foreach ($nodes as $imageNode) {
+                $url = $imageNode->getAttribute('data-lpage');
+                if (!empty($url)) {
+                    $images[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($url)];
+                    continue;
+                }
+                $links = $dom->getXpath()->query('descendant::a', $imageNode);
+                if ($links->length > 0 && $links->item(0) && $links->item(0)->getAttribute('href')) {
+                    $images[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($links->item(0)->getAttribute('href'))];
+                }
+            }
+        } catch (\Exception $e) {
+            Logger::error('ImageGroup XPath query failed', ['xpath' => $xpath, 'error' => $e->getMessage()]);
+        }
+        return $images;
+    }
+
+    /**
+     * Parse images using DB rules (flat — all rules combined).
+     * Used for MODE_CANDIDATE_TESTING where rules are explicitly specified.
      * Returns a flat array of image URL arrays: [['url' => '...'], ...]
      */
     protected function parseWithDbRules(GoogleDom $dom, \DomElement $node, array $rules, $isMobile = false): array

@@ -33,6 +33,7 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VideoCarouselMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VideosMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VisualDigest;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VisualDigestMobile;
+use SM\Backend\SerpParser\RuleLoaderService;
 
 /**
  * Parses natural results from a mobile google SERP
@@ -80,8 +81,24 @@ class MobileNaturalParser extends AbstractParser
     /**
      * @inheritdoc
      */
-    protected function getParsableItems(GoogleDom $googleDom)
+    protected function getParsableItems(GoogleDom $googleDom, $useDbRules = 0)
     {
+        // When using DB rules, collect additional match xpaths to append
+        $dbMatchConditions = '';
+        if ($useDbRules > 0) {
+            $matchFeatures = ['images_mobile_match', 'natural_results_mobile_match'];
+            $dbXpaths = [];
+            foreach ($matchFeatures as $matchFeature) {
+                $rules = RuleLoaderService::getRulesForFeature($matchFeature);
+                foreach ($rules as $rule) {
+                    $dbXpaths[] = $rule;
+                }
+            }
+            if (!empty($dbXpaths)) {
+                $dbMatchConditions = ' or ' . implode(' or ', $dbXpaths);
+            }
+        }
+
         // [@id='iur'] = images
         // @data-attrid='images universal' = images -- removed FIX IT!
         // [@id='sports-app'] = classical results
@@ -180,7 +197,8 @@ class MobileNaturalParser extends AbstractParser
             starts-with(@data-kpid, 'vise:') or
 
             @id='rso' or
-            @id='botstuff'
+            @id='botstuff'" .
+            $dbMatchConditions . "
         ][not(self::script) and not(self::style)]");
     }
 }

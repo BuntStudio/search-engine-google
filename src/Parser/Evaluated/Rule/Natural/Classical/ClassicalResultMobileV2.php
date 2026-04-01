@@ -11,7 +11,7 @@ class ClassicalResultMobileV2 extends ClassicalResultMobile
 {
     protected $resultType = NaturalResultType::CLASSICAL_MOBILE;
 
-    public function match(GoogleDom $dom, DomElement $node)
+    public function match(GoogleDom $dom, DomElement $node, $useDbRules = self::MODE_HARDCODED)
     {
         if ($node->getAttribute('id') == 'center_col') {
             return self::RULE_MATCH_MATCHED;

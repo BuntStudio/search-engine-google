@@ -13,11 +13,11 @@ use Serps\SearchEngine\Google\Parser\ParsingRuleInterface;
 use Serps\SearchEngine\Google\NaturalResultType;
 use SM\Backend\SerpParser\RuleLoaderService;
 use SM\Backend\Log\Logger;
-use SM\Backend\IncidentResponse\IncidentResponseClient;
 
 class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterface
 {
     protected $gotoDomainLinkCount = 0;
+    protected $currentUseDbRules = 0;
 
     /**
      * Parser mode constants for self-healing parser integration
@@ -96,8 +96,18 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         return self::$customXPathVariants[$xpathKey] ?? $defaultXPath;
     }
 
-    public function match(GoogleDom $dom, DomElement $node)
+    public function match(GoogleDom $dom, DomElement $node, $useDbRules = self::MODE_HARDCODED)
     {
+        if ($useDbRules === self::MODE_DATABASE) {
+            $matchRules = RuleLoaderService::getRulesForFeature('natural_results_match');
+            if (!empty($matchRules)) {
+                $matchXpath = implode(' | ', $matchRules);
+                $result = $dom->getXpath()->query($matchXpath, $node);
+                return $result->length > 0 ? self::RULE_MATCH_MATCHED : self::RULE_MATCH_NOMATCH;
+            }
+            // No DB rules for match — fall through to hardcoded
+        }
+
         if ($node->getAttribute('id') == 'rso' || $node->getAttribute('id') == 'botstuff') {
             return self::RULE_MATCH_MATCHED;
         }
@@ -113,25 +123,39 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
             $this->gotoDomainLinkCount++;
         }
 
-        if ($dom->xpathQuery("descendant::table[@class='jmjoTe']", $organicResult)->length > 0) {
+        // Sitelinks detection — supports DB rules for the detection xpath
+        $sitelinksBigXpath = "descendant::table[@class='jmjoTe']";
+        $sitelinksSmallXpath = "descendant::div[@class='HiHjCd']";
+
+        if ($this->currentUseDbRules === self::MODE_DATABASE) {
+            $sitelinkRules = RuleLoaderService::getRulesForFeature('natural_results_sitelinks_detection');
+            if (!empty($sitelinkRules)) {
+                // First rule = big sitelinks detection, second = small sitelinks detection
+                $sitelinksBigXpath = $sitelinkRules[0] ?? $sitelinksBigXpath;
+                if (count($sitelinkRules) > 1) {
+                    $sitelinksSmallXpath = $sitelinkRules[1] ?? $sitelinksSmallXpath;
+                }
+            }
+        }
+
+        if ($dom->xpathQuery($sitelinksBigXpath, $organicResult)->length > 0) {
             (new SiteLinksBig())->parse($dom, $organicResult, $resultSet, false);
         }
 
         $parentWithSameClass = $dom->xpathQuery("ancestor::div[@class='g']", $organicResult);
 
-
         if ($parentWithSameClass->length > 0) {
-            if ($dom->xpathQuery("descendant::table[@class='jmjoTe']", $parentWithSameClass->item(0))->length > 0) {
+            if ($dom->xpathQuery($sitelinksBigXpath, $parentWithSameClass->item(0))->length > 0) {
                 (new SiteLinksBig())->parse($dom, $parentWithSameClass->item(0), $resultSet, false);
             }
         }
 
-        if ($dom->xpathQuery("descendant::div[@class='HiHjCd']", $organicResult)->length > 0) {
+        if ($dom->xpathQuery($sitelinksSmallXpath, $organicResult)->length > 0) {
             (new SiteLinksSmall())->parse($dom, $organicResult, $resultSet, false);
         }
 
         if ($parentWithSameClass->length > 0) {
-            if ($dom->xpathQuery("descendant::div[@class='HiHjCd']", $parentWithSameClass->item(0))->length > 0) {
+            if ($dom->xpathQuery($sitelinksSmallXpath, $parentWithSameClass->item(0))->length > 0) {
                 (new SiteLinksBig())->parse($dom, $parentWithSameClass->item(0), $resultSet, false);
             }
         }
@@ -155,194 +179,55 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
 
     /**
      * Parse natural search results from SERP HTML
-     * 
-     * PARSER MODES (Self-Healing Parser Integration):
-     * ================================================
-     * 
-     * MODE_HARDCODED (0 - Default/Production):
-     * - Uses hardcoded XPath rules (via getNaturalResultsXPath())
-     * - Site-specific custom XPath may be applied if configured via FeatureFlags
-     * - No database rules fetched
-     * - Use case: Current production behavior, zero overhead
-     * 
-     * MODE_DATABASE (1 - Database Rules/Future Production):
-     * - Uses XPath rules from database (managed by self-healing parser)
-     * - Falls back to hardcoded rules if DB rules not found
-     * - If $additionalRule provided, it's prepended to live rules for testing
-     * - Use case: After cache invalidation bug is fixed, enables dynamic rule updates
-     * 
-     * MODE_COMPARISON (2 - Comparison/Monitoring):
-     * - Uses hardcoded XPath for actual parsing (production results unchanged)
-     * - Fetches DB rules and compares result counts
-     * - Logs error if counts mismatch (monitoring for rule accuracy)
-     * - If $additionalRule provided, it's included in DB rules comparison
-     * - Use case: Validate DB rules match hardcoded before Mode 1 rollout
-     * 
-     * MODE_CANDIDATE_TESTING (3 - Isolated Candidate Testing):
-     * - Uses ONLY the $additionalRule provided (ignores all live DB rules)
-     * - Falls back to hardcoded if additional rule fails
-     * - Use case: Self-healing parser investigation workflow - test single candidate rule
-     * - NOT for production crawling
-     * 
-     * SITE-SPECIFIC XPATH FEATURE:
-     * =============================
-     * - getNaturalResultsXPath() may return custom XPath based on site ID
-     * - Controlled by FeatureFlags::getCustomSerpXPathKeyDesktop()
-     * - Allows per-site XPath overrides without code changes
-     * - Works with all modes (Mode 0 uses it directly, Modes 1-3 use it as fallback)
-     * 
+     *
      * @param GoogleDom $dom The Google DOM object
      * @param \DomElement $node The node to parse
      * @param IndexedResultSet $resultSet Result set to populate
      * @param bool $isMobile Mobile detection flag
      * @param array $doNotRemoveSrsltidForDomains Domains to preserve rsltid parameter
-     * @param int $useDbRules Parser mode (use MODE_* constants)
-     * @param array|int|null $additionalRule Rule ID(s) to test. Mode 3: array of all rule IDs to use. Modes 1/2: single rule ID to prepend.
+     * @param int $useDbRules Parser mode: 0=hardcoded, 1=DB rules, 3=candidate testing
+     * @param array|int|null $additionalRule Rule ID(s) to test. Mode 3: array of all rule IDs to use. Mode 1: single rule ID to prepend.
      * @return void
      */
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
     {
         $this->gotoDomainLinkCount = 0;
+        $this->currentUseDbRules = $useDbRules;
 
-        // ============================================================================
-        // STEP 1: Calculate "reference" XPath results (hardcoded or site-custom)
-        // ============================================================================
-        // This is used by MODE_HARDCODED for production parsing, and by other modes as fallback.
-        // Note: getNaturalResultsXPath() may return site-specific custom XPath if configured.
-
-        $naturalResultsHardcoded = null;
-        if ($useDbRules === self::MODE_HARDCODED || $useDbRules === self::MODE_COMPARISON) {
-            $naturalResultsHardcoded = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
-        }
-
-        // ============================================================================
-        // STEP 2: Calculate database-driven XPath results (if applicable modes)
-        // ============================================================================
-
-        $naturalResultsDb = null;
-
-        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_COMPARISON) {
-            // MODE_DATABASE & MODE_COMPARISON: Fetch all live DB rules for this feature
-            // If $additionalRule is provided (int), it's prepended to the live rules array
+        if ($useDbRules === self::MODE_DATABASE) {
             $singleRuleId = is_int($additionalRule) ? $additionalRule : null;
             $rules = RuleLoaderService::getRulesForFeature('natural_results', false, $singleRuleId);
             if (!empty($rules)) {
-                // Combine all rules with XPath union operator (|)
                 $dynamicXpath = implode(' | ', $rules);
-                $naturalResultsDb = $dom->xpathQuery($dynamicXpath, $node);
+                $naturalResults = $dom->xpathQuery($dynamicXpath, $node);
+            } else {
+                Logger::error('No DB rules found for natural_results, falling back to hardcoded');
+                $naturalResults = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
             }
         } elseif ($useDbRules === self::MODE_CANDIDATE_TESTING) {
-            // MODE_CANDIDATE_TESTING: Use ONLY the rule IDs specified in $additionalRule array
-            // $additionalRule is an array of rule IDs (e.g. live rules + candidate - replaced rules)
             if ($additionalRule !== null && is_array($additionalRule)) {
-                $rules = RuleLoaderService::getRulesByIds($additionalRule);
+                // Only use rules that belong to this feature; fall back to mode 1 otherwise
+                $rules = RuleLoaderService::getRulesByIdsForFeature($additionalRule, 'natural_results');
                 if (!empty($rules)) {
                     $dynamicXpath = implode(' | ', $rules);
-                    $naturalResultsDb = $dom->xpathQuery($dynamicXpath, $node);
+                    $naturalResults = $dom->xpathQuery($dynamicXpath, $node);
+                } else {
+                    // Rules don't belong to this feature — use live DB rules (mode 1 behavior)
+                    $rules = RuleLoaderService::getRulesForFeature('natural_results');
+                    if (!empty($rules)) {
+                        $dynamicXpath = implode(' | ', $rules);
+                        $naturalResults = $dom->xpathQuery($dynamicXpath, $node);
+                    } else {
+                        $naturalResults = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
+                    }
                 }
-            }
-        }
-
-        // ============================================================================
-        // STEP 3: Select final results based on mode
-        // ============================================================================
-
-        if ($useDbRules === self::MODE_HARDCODED) {
-            // MODE_HARDCODED: Production default - use reference XPath only
-            $naturalResults = $naturalResultsHardcoded;
-
-        } elseif ($useDbRules === self::MODE_DATABASE) {
-            // MODE_DATABASE: Database rules (future production)
-            if ($naturalResultsDb !== null) {
-                // Use DB rules for parsing
-                $naturalResults = $naturalResultsDb;
             } else {
-                // Fallback: No DB rules found, use reference XPath
-                Logger::error('No DB rules found for natural_results');
-                $naturalResults = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
-
-                // ON-CALL ALERT: DB rules pipeline is broken — parser had to fallback
-                try {
-                    $alertTitle = 'SERP Parser: DB rules fallback — Desktop';
-                    $oncallAlert = new IncidentResponseClient();
-                    $oncallAlert->triggerOrResolveEvent(
-                        IncidentResponseClient::SERVICE_PARSERS,
-                        $alertTitle,
-                        [
-                            'title' => $alertTitle,
-                            'description' => 'MODE_DATABASE is active but no DB rules were found for natural_results (desktop). ' .
-                                'Parser fell back to hardcoded XPath rules. This means the DB rules pipeline is broken.',
-                            'fields' => [
-                                ['title' => 'Feature', 'value' => 'natural_results', 'short' => true],
-                                ['title' => 'Mode', 'value' => 'MODE_DATABASE (1)', 'short' => true],
-                                ['title' => 'Action Taken', 'value' => 'Fell back to hardcoded XPath', 'short' => false],
-                                ['title' => 'Admin', 'value' => 'https://admin.seomonitor.com/developer/serp-parser/monitoring', 'short' => false],
-                            ],
-                        ],
-                        IncidentResponseClient::STATUS_TRIGGER,
-                        'sev1',
-                        'p1'
-                    );
-                } catch (\Throwable $e) {
-                    Logger::error('Failed to send SERP parser on-call alert', ['error' => $e->getMessage()]);
-                }
-            }
-
-        } elseif ($useDbRules === self::MODE_COMPARISON) {
-            // MODE_COMPARISON: Comparison/monitoring mode
-            // Always use reference XPath for production results (no risk)
-            $naturalResults = $naturalResultsHardcoded;
-
-            // Compare with DB rules and log any mismatches
-            if ($naturalResultsDb !== null && $naturalResultsHardcoded->length !== $naturalResultsDb->length) {
-                Logger::error('XPath rule mismatch detected', [
-                    'hardcoded_count' => $naturalResultsHardcoded->length,
-                    'db_count' => $naturalResultsDb->length,
-                    'difference' => abs($naturalResultsHardcoded->length - $naturalResultsDb->length),
-                    'additional_rule_id' => $additionalRule
-                ]);
-
-                // ON-CALL ALERT: DB rules produce different results than hardcoded
-                try {
-                    $alertTitle = 'SERP Parser: XPath rule mismatch — Desktop';
-                    $oncallAlert = new IncidentResponseClient();
-                    $oncallAlert->triggerOrResolveEvent(
-                        IncidentResponseClient::SERVICE_PARSERS,
-                        $alertTitle,
-                        [
-                            'title' => $alertTitle,
-                            'description' => 'MODE_COMPARISON detected a mismatch between hardcoded and DB XPath rules for natural_results (desktop). ' .
-                                'Hardcoded rules found ' . $naturalResultsHardcoded->length . ' results, DB rules found ' . $naturalResultsDb->length . ' results ' .
-                                '(difference: ' . abs($naturalResultsHardcoded->length - $naturalResultsDb->length) . '). ' .
-                                'Production parsing is unaffected (using hardcoded), but DB rules need investigation before switching to MODE_DATABASE.',
-                            'fields' => [
-                                ['title' => 'Feature', 'value' => 'natural_results', 'short' => true],
-                                ['title' => 'Mode', 'value' => 'MODE_COMPARISON (2)', 'short' => true],
-                                ['title' => 'Hardcoded Count', 'value' => (string) $naturalResultsHardcoded->length, 'short' => true],
-                                ['title' => 'DB Count', 'value' => (string) $naturalResultsDb->length, 'short' => true],
-                                ['title' => 'Difference', 'value' => (string) abs($naturalResultsHardcoded->length - $naturalResultsDb->length), 'short' => true],
-                                ['title' => 'Admin', 'value' => 'https://admin.seomonitor.com/developer/serp-parser/rules', 'short' => false],
-                            ],
-                        ],
-                        IncidentResponseClient::STATUS_TRIGGER,
-                        'sev2',
-                        'p2'
-                    );
-                } catch (\Throwable $e) {
-                    Logger::error('Failed to send SERP parser on-call alert', ['error' => $e->getMessage()]);
-                }
-            }
-
-        } elseif ($useDbRules === self::MODE_CANDIDATE_TESTING) {
-            // MODE_CANDIDATE_TESTING: Explicit rule set testing (investigation only)
-            if ($naturalResultsDb !== null) {
-                $naturalResults = $naturalResultsDb;
-            } else {
-                Logger::error('No rules found or provided for mode 3', [
-                    'rule_ids' => $additionalRule
-                ]);
+                Logger::error('No rule IDs provided for mode 3');
                 $naturalResults = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
             }
+        } else {
+            // MODE_HARDCODED (default)
+            $naturalResults = $dom->xpathQuery($this->getNaturalResultsXPath(), $node);
         }
 
         if ($naturalResults->length == 0) {
@@ -375,6 +260,10 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
 
     protected function skiResult(GoogleDom $googleDOM, DomElement $organicResult)
     {
+        // Skip filters are always hardcoded — they use complex compound logic
+        // (hasClasses, parentNode traversal, multi-condition checks) that can't be
+        // reliably expressed as single XPath rules. They also rarely break since
+        // Google changes result appearance more often than structural separation.
 
         // Organic result is identified as top ads
         if ($googleDOM->xpathQuery("ancestor::*[contains(concat(' ', normalize-space(@id), ' '), ' tads')]", $organicResult)->length > 0) {

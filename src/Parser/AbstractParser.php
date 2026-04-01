@@ -35,9 +35,10 @@ abstract class AbstractParser implements ParserInterface
 
     /**
      * @param GoogleDom $googleDom
+     * @param int $useDbRules Parser mode (0=hardcoded, 1=DB rules, 3=candidate testing)
      * @return DomNodeList
      */
-    abstract protected function getParsableItems(GoogleDom $googleDom);
+    abstract protected function getParsableItems(GoogleDom $googleDom, $useDbRules = 0);
 
 
     /**
@@ -61,7 +62,7 @@ abstract class AbstractParser implements ParserInterface
      */
     public function parse(GoogleDom $googleDom, array $doNotRemoveSrsltidForDomains = [], $useDbRules = 0, $additionalRule = null)
     {
-        $elementGroups = $this->getParsableItems($googleDom);
+        $elementGroups = $this->getParsableItems($googleDom, $useDbRules);
 
         $resultSet = $this->createResultSet($googleDom);
         return $this->parseGroups($elementGroups, $resultSet, $googleDom, $doNotRemoveSrsltidForDomains, $useDbRules, $additionalRule);
@@ -102,7 +103,7 @@ abstract class AbstractParser implements ParserInterface
 
             foreach ($rules as $rule) {
 
-                $match = $rule->match($googleDom, $group);
+                $match = $rule->match($googleDom, $group, $useDbRules);
 
                 if ($match instanceof \DOMNodeList) {
                     $this->parseGroups(new DomNodeList($match, $googleDom), $resultSet, $googleDom, $doNotRemoveSrsltidForDomains, $useDbRules, $additionalRule);
