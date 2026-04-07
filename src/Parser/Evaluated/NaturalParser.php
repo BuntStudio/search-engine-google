@@ -111,7 +111,7 @@ class NaturalParser extends AbstractParser
         // When using DB rules, collect additional match xpaths to append
         $dbMatchConditions = '';
         if ($useDbRules > 0) {
-            $matchFeatures = ['images_match', 'natural_results_match'];
+            $matchFeatures = ['images_match', 'natural_results_match', 'sge_widget_match'];
             $dbXpaths = [];
             foreach ($matchFeatures as $matchFeature) {
                 $rules = RuleLoaderService::getRulesForFeature($matchFeature);

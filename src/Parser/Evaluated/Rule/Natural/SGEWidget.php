@@ -6,9 +6,19 @@ use Serps\Core\Serp\BaseResult;
 use Serps\Core\Serp\IndexedResultSet;
 use Serps\SearchEngine\Google\Page\GoogleDom;
 use Serps\SearchEngine\Google\NaturalResultType;
+use SM\Backend\SerpParser\RuleLoaderService;
+use SM\Backend\Log\Logger;
 
 class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
+    /**
+     * Parser mode constants for self-healing parser integration
+     */
+    const MODE_HARDCODED = 0;
+    const MODE_DATABASE = 1;
+    const MODE_COMPARISON = 2;
+    const MODE_CANDIDATE_TESTING = 3;
+
     protected $hasSerpFeaturePosition = false;
     protected $hasSideSerpFeaturePosition = false;
 
@@ -18,13 +28,38 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     protected $jslDhCallsCount = 0;
     protected $aioIdFound = false;
 
-    public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
+    /**
+     * Get the feature name based on mobile flag.
+     */
+    protected static function getFeatureName($isMobile)
     {
-        if ($node->getAttribute('jsname') == 'ZLxsqf' && $this->isWidget($dom, $node)) {
+        return $isMobile ? 'sge_widget_mobile' : 'sge_widget';
+    }
+
+    public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node, $useDbRules = self::MODE_HARDCODED)
+    {
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            $matchRules = array_unique(array_merge(
+                RuleLoaderService::getRulesForFeature('sge_widget_match'),
+                RuleLoaderService::getRulesForFeature('sge_widget_mobile_match')
+            ));
+
+            if (!empty($matchRules)) {
+                $matchXpath = implode(' | ', $matchRules);
+                $matchResult = $dom->getXpath()->query($matchXpath, $node);
+                if ($matchResult->length > 0) {
+                    return $this->isWidget($dom, $node, $useDbRules) ? self::RULE_MATCH_MATCHED : self::RULE_MATCH_NOMATCH;
+                }
+                return self::RULE_MATCH_NOMATCH;
+            }
+            // No DB rules found — fall through to hardcoded
+        }
+
+        if ($node->getAttribute('jsname') == 'ZLxsqf' && $this->isWidget($dom, $node, $useDbRules)) {
             return self::RULE_MATCH_MATCHED;
         }
 
-        if ($node->getAttribute('id') =='eKIzJc' && $this->isWidget($dom, $node)) {
+        if ($node->getAttribute('id') =='eKIzJc' && $this->isWidget($dom, $node, $useDbRules)) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -36,22 +71,41 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         return $isMobile ? NaturalResultType::SGE_WIDGET_MOBILE : NaturalResultType::SGE_WIDGET;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
     {
         $localNode = clone $node;
 
         if (!empty($resultSet->getResultsByType($this->getType($isMobile))->getItems())) { return; }
-        $resultSet->addItem(new BaseResult($this->getType($isMobile), $this->extractWidgetData($dom, $localNode), $localNode, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
+        $resultSet->addItem(new BaseResult($this->getType($isMobile), $this->extractWidgetData($dom, $localNode, $useDbRules, $isMobile), $localNode, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }
 
-    protected function isWidget(GoogleDom $dom, $node)
+    protected function isWidget(GoogleDom $dom, $node, $useDbRules = self::MODE_HARDCODED)
     {
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            $buttonRules = array_unique(array_merge(
+                RuleLoaderService::getRulesForFeature('sge_widget_button_detection'),
+                RuleLoaderService::getRulesForFeature('sge_widget_mobile_button_detection')
+            ));
+
+            if (!empty($buttonRules)) {
+                $buttonXpath = implode(' | ', $buttonRules);
+                $generateButton = $dom->xpathQuery($buttonXpath, $node);
+                return $generateButton->length == 0;
+            }
+            // No DB rules — fall through to hardcoded
+        }
+
         $generateButton = $dom->xpathQuery('descendant::div[@jsname="B76aWe"]', $node);
         return $generateButton->length == 0;
     }
 
-    protected function isWidgetLoaded(GoogleDom $dom, $node)
+    protected function isWidgetLoaded(GoogleDom $dom, $node, $useDbRules = self::MODE_HARDCODED, $isMobile = false)
     {
+        // Widget loaded checks remain hardcoded — they have complex positional semantics
+        // (progressbar visibility → return false, folsrch presence → return true, bsmXxe fallback → return true)
+        // that don't fit the "interchangeable rules" DB model. The rules are stored in DB for
+        // tracking/investigation but the actual logic stays here.
+
         // Check if there's a visible progressbar inside a folsrch container (AIO content area)
         // The AIO progressbar lives in a folsrch-* sibling element, not inside the widget node itself
         $progressBar = $dom->xpathQuery('//div[starts-with(@id, "folsrch-")]//div[@role="progressbar"]', $node);
@@ -121,7 +175,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         return true;
     }
 
-    protected function extractWidgetData($dom, $node)
+    protected function extractWidgetData($dom, $node, $useDbRules = self::MODE_HARDCODED, $isMobile = false)
     {
         // Keep a clone of the real DOM; We're transforming the node, so we need to keep the original for later use
         $originalDom = clone $dom->getDom();
@@ -148,7 +202,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $this->enrichContentWithDynamicData($dom, $node, $originalDom);
 
         // Check again if widget is loaded after enrichment (progressbar might be visible after enrichment)
-        $data[NaturalResultType::SGE_WIDGET_LOADED] = $this->isWidgetLoaded($dom, $node);
+        $data[NaturalResultType::SGE_WIDGET_LOADED] = $this->isWidgetLoaded($dom, $node, $useDbRules, $isMobile);
 
         // If widget is not loaded (progressbar visible), don't extract content
         if (!$data[NaturalResultType::SGE_WIDGET_LOADED]) {
@@ -164,89 +218,31 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $this->hideElementById($dom, $node, 'folsrch-sqf-1');
 
         // Process AIO links from window.jsl.dh() calls
-        $this->enrichAioLinksFromDynamicData($dom, $node, $originalDom, $urls, $data);
+        $this->enrichAioLinksFromDynamicData($dom, $node, $originalDom, $urls, $data, $useDbRules, $isMobile);
 
         // Remove all button and svg elements
         $this->removeElements($dom, $node);
 
-        $this->removeSvgElements($dom, $node);
+        $this->removeSvgElements($dom, $node, $useDbRules, $isMobile);
 
         // Add display:block to OS7YA elements after everything is extracted
-        $this->addDisplayBlockToOS7YA($dom, $node);
+        $this->addDisplayBlockToOS7YA($dom, $node, $useDbRules, $isMobile);
 
         // Remove specific classes from all elements
-        $this->removeSpecificClasses($dom, $node);
+        $this->removeSpecificClasses($dom, $node, $useDbRules, $isMobile);
 
         // Now save the base content with all enrichments but before style/script removal
-        $baseNode = $this->transformNode($dom, clone($node));
+        $baseNode = $this->transformNode($dom, clone($node), false, false, $useDbRules, $isMobile);
         $data[NaturalResultType::SGE_WIDGET_BASE] = $baseNode->ownerDocument->saveHTML($baseNode);
 
         // Now remove styles and scripts for the processed content
-        $node = $this->transformNode($dom, $node, $this->removeStyles, $this->removeScripts);
+        $node = $this->transformNode($dom, $node, $this->removeStyles, $this->removeScripts, $useDbRules, $isMobile);
 
         // Save the processed content after style/script removal
         $data[NaturalResultType::SGE_WIDGET_CONTENT] = $node->ownerDocument->saveHTML($node);
 
         // Collect link elements AFTER AIO enrichment and node removal
-        $linkElements0 = $dom->xpathQuery('descendant::div[@data-attrid="SGEAttributionFeedback"]', $node);
-
-        $linkElements1 = $dom->xpathQuery('descendant::*[@class="BOThhc"]//descendant::*[@class="LLtSOc"]', $node);
-
-        $linkElements2 = $dom->xpathQuery('descendant::*[@jscontroller="g4PEk"]//descendant::*[@class="LLtSOc"]', $node);
-
-        $linkElements3 = $dom->xpathQuery('descendant::*[@class="uVhVib"]', $node);
-
-        $linkElements4 = $dom->xpathQuery('descendant::*[@class="FqfzXd"]', $node);
-
-        $linkElements5 = $dom->xpathQuery('descendant::*[@class="NDNGvf"]', $node);
-
-        $linkElements6 = $dom->xpathQuery('descendant::*[@class="ZZh6Vb"]', $node);
-
-        $linkElements7 = $dom->xpathQuery('descendant::*[@target="_self"]', $node);
-
-        // Track which selectors matched for diagnostics
-        $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['link_selectors_matched'] = [
-            'SGEAttributionFeedback' => $linkElements0->length,
-            'BOThhc_LLtSOc' => $linkElements1->length,
-            'g4PEk_LLtSOc' => $linkElements2->length,
-            'uVhVib' => $linkElements3->length,
-            'FqfzXd' => $linkElements4->length,
-            'NDNGvf' => $linkElements5->length,
-            'ZZh6Vb' => $linkElements6->length,
-            'target_self' => $linkElements7->length,
-        ];
-
-        if ($linkElements0->length > 0) {
-            $this->processLinkElements($dom, $linkElements0, $urls, $data);
-        }
-
-        if ($linkElements1->length > 0) {
-            $this->processLinkElements($dom, $linkElements1, $urls, $data);
-        }
-
-        if ($linkElements2->length > 0) {
-            $this->processLinkElements($dom, $linkElements2, $urls, $data);
-        }
-
-        if ($linkElements3->length > 0) {
-            $this->processLinkElements($dom, $linkElements3, $urls, $data);
-        }
-
-        if ($linkElements4->length > 0) {
-            $this->processLinkElements($dom, $linkElements4, $urls, $data);
-        }
-
-        if ($linkElements5->length > 0) {
-            $this->processLinkElements($dom, $linkElements5, $urls, $data);
-        }
-
-        if ($linkElements6->length > 0) {
-            $this->processLinkElements($dom, $linkElements6, $urls, $data);
-        }
-
-        if ($linkElements7->length > 0) {
-            $this->processLinkElements($dom, $linkElements7, $urls, $data);
-        }
+        $this->extractLinkElements($dom, $node, $urls, $data, $useDbRules, $isMobile);
 
 //        if (!empty($urls)) {
 //            $this->processScriptElements($originalDom, $urls, $data);
@@ -264,7 +260,82 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         return $data;
     }
 
-    protected function transformNode($dom, $node, $removeStyles = false, $removeScripts = false)
+    /**
+     * Extract link elements using either DB rules or hardcoded selectors.
+     * Each rule is run individually (not union) because order matters for deduplication.
+     */
+    /**
+     * Hardcoded link selectors with their diagnostic labels.
+     * Order matters — each rule is run individually for deduplication.
+     */
+    protected static function getHardcodedLinkSelectors()
+    {
+        return [
+            'SGEAttributionFeedback' => 'descendant::div[@data-attrid="SGEAttributionFeedback"]',
+            'BOThhc_LLtSOc' => 'descendant::*[@class="BOThhc"]//descendant::*[@class="LLtSOc"]',
+            'g4PEk_LLtSOc' => 'descendant::*[@jscontroller="g4PEk"]//descendant::*[@class="LLtSOc"]',
+            'uVhVib' => 'descendant::*[@class="uVhVib"]',
+            'FqfzXd' => 'descendant::*[@class="FqfzXd"]',
+            'NDNGvf' => 'descendant::*[@class="NDNGvf"]',
+            'ZZh6Vb' => 'descendant::*[@class="ZZh6Vb"]',
+            'target_self' => 'descendant::*[@target="_self"]',
+        ];
+    }
+
+    /**
+     * Extract link elements using either DB rules or hardcoded selectors.
+     * Each rule is run individually (not union) because order matters for deduplication.
+     */
+    protected function extractLinkElements($dom, $node, &$urls, &$data, $useDbRules = self::MODE_HARDCODED, $isMobile = false)
+    {
+        $hardcodedSelectors = self::getHardcodedLinkSelectors();
+
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            $featurePrefix = self::getFeatureName($isMobile);
+            $linkRules = RuleLoaderService::getRulesForFeature($featurePrefix . '_link_selectors');
+
+            if (!empty($linkRules)) {
+                // Build a reverse map from XPath to diagnostic label for consistency
+                $xpathToLabel = array_flip($hardcodedSelectors);
+                $linkRulesFlip = array_flip($linkRules);
+
+                // Pre-populate with hardcoded labels in correct order so key order matches,
+                // but only for rules that still exist in DB (self-healing may deprecate old rules)
+                $selectorMatches = [];
+                foreach ($hardcodedSelectors as $label => $xpath) {
+                    if (isset($linkRulesFlip[$xpath])) {
+                        $selectorMatches[$label] = 0;
+                    }
+                }
+
+                foreach ($linkRules as $index => $rule) {
+                    $linkElements = $dom->xpathQuery($rule, $node);
+                    // Use the hardcoded label if available, otherwise use indexed key
+                    $label = isset($xpathToLabel[$rule]) ? $xpathToLabel[$rule] : 'db_selector_' . $index;
+                    $selectorMatches[$label] = $linkElements->length;
+                    if ($linkElements->length > 0) {
+                        $this->processLinkElements($dom, $linkElements, $urls, $data);
+                    }
+                }
+                $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['link_selectors_matched'] = $selectorMatches;
+                return;
+            }
+            // No DB rules — fall through to hardcoded
+        }
+
+        // Hardcoded link selectors
+        $selectorMatches = [];
+        foreach ($hardcodedSelectors as $label => $xpath) {
+            $linkElements = $dom->xpathQuery($xpath, $node);
+            $selectorMatches[$label] = $linkElements->length;
+            if ($linkElements->length > 0) {
+                $this->processLinkElements($dom, $linkElements, $urls, $data);
+            }
+        }
+        $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['link_selectors_matched'] = $selectorMatches;
+    }
+
+    protected function transformNode($dom, $node, $removeStyles = false, $removeScripts = false, $useDbRules = self::MODE_HARDCODED, $isMobile = false)
     {
         // Delete <style> tags
         if ($removeStyles) {
@@ -277,6 +348,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             $scriptTags = $dom->xpathQuery('//script', $node);
             foreach ($scriptTags as $scriptTag) $scriptTag->parentNode->removeChild($scriptTag);
         }
+
+        // DOM cleanup rules remain hardcoded — they have mixed positional semantics:
+        // rule[0] removes a style attribute, rules[1-3] remove elements entirely.
+        // The rules are stored in DB for tracking/investigation but logic stays here.
 
         // Remove min-height from inline style attribute
         $maxHeightDivs = $dom->xpathQuery('descendant::div[@class="h7Tj7e"]', $node);
@@ -625,7 +700,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
      * Then remove AIO links from MSC section
      * Following the same pattern as enrichContentWithDynamicData()
      */
-    protected function enrichAioLinksFromDynamicData($dom, $node, $originalDom, &$urls, &$data)
+    protected function enrichAioLinksFromDynamicData($dom, $node, $originalDom, &$urls, &$data, $useDbRules = self::MODE_HARDCODED, $isMobile = false)
     {
         // Get the original DOM content as string to search for patterns
         $originalContent = $originalDom->saveHTML();
@@ -680,7 +755,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $this->injectHtmlContent($dom, $mscElement, $htmlContent);
 
         // Parse the HTML content to extract AIO links
-        $aioLinks = $this->extractAioLinksFromHtml($htmlContent);
+        $aioLinks = $this->extractAioLinksFromHtml($htmlContent, $useDbRules, $isMobile);
 
         foreach ($aioLinks as $aioLink) {
             $url = $aioLink['url'];
@@ -707,9 +782,20 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
      * Extract AIO links from HTML content
      * Look for anchor tags with the specific AIO link class "KEVENd"
      */
-    protected function extractAioLinksFromHtml($htmlContent)
+    protected function extractAioLinksFromHtml($htmlContent, $useDbRules = self::MODE_HARDCODED, $isMobile = false)
     {
         $links = [];
+
+        $aioLinkXpath = '//a[@class="KEVENd"][@href]';
+
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            $featurePrefix = self::getFeatureName($isMobile);
+            $dbRules = RuleLoaderService::getRulesForFeature($featurePrefix . '_aio_link_class');
+
+            if (!empty($dbRules)) {
+                $aioLinkXpath = implode(' | ', $dbRules);
+            }
+        }
 
         try {
             // Create a temporary document to parse the HTML
@@ -718,8 +804,8 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
             $xpath = new \DOMXPath($tempDoc);
 
-            // Look for anchor tags with class="KEVENd" (specific AIO link class)
-            $anchorTags = $xpath->query('//a[@class="KEVENd"][@href]');
+            // Look for anchor tags with the AIO link selector
+            $anchorTags = $xpath->query($aioLinkXpath);
 
             foreach ($anchorTags as $anchor) {
                 $href = $anchor->getAttribute('href');
@@ -966,10 +1052,21 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     /**
      * Add display:block style to elements with OS7YA class after everything is extracted
      */
-    protected function addDisplayBlockToOS7YA($dom, $node)
+    protected function addDisplayBlockToOS7YA($dom, $node, $useDbRules = self::MODE_HARDCODED, $isMobile = false)
     {
-        // Find all elements with OS7YA class within the node
-        $os7yaElements = $dom->xpathQuery('descendant::*[contains(concat(" ", normalize-space(@class), " "), " OS7YA ")]', $node);
+        $overrideClass = 'OS7YA';
+
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            $featurePrefix = self::getFeatureName($isMobile);
+            $dbClasses = RuleLoaderService::getRulesForFeature($featurePrefix . '_display_override');
+
+            if (!empty($dbClasses)) {
+                $overrideClass = $dbClasses[0];
+            }
+        }
+
+        // Find all elements with the override class within the node
+        $os7yaElements = $dom->xpathQuery('descendant::*[contains(concat(" ", normalize-space(@class), " "), " ' . $overrideClass . ' ")]', $node);
 
         foreach ($os7yaElements as $element) {
             $existingStyle = $element->getAttribute('style');
@@ -1010,11 +1107,27 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     /**
      * Remove svg elements from the node, except those under specific classes
      */
-    protected function removeSvgElements($dom, $node)
+    protected function removeSvgElements($dom, $node, $useDbRules = self::MODE_HARDCODED, $isMobile = false)
     {
-        // Find all svg elements within the node that are NOT under the specified classes
-        // Exclude SVGs that have ancestors with classes: BMebGe, iPjmzb, or Sb7k4e
-        $svgElements = $dom->xpathQuery('descendant::svg[not(ancestor::*[contains(concat(" ", normalize-space(@class), " "), " BMebGe ")] or ancestor::*[contains(concat(" ", normalize-space(@class), " "), " iPjmzb ")] or ancestor::*[contains(concat(" ", normalize-space(@class), " "), " nk9vdc ")] or ancestor::*[contains(concat(" ", normalize-space(@class), " "), " Sb7k4e ")])]', $node);
+        $exclusionClasses = ['BMebGe', 'iPjmzb', 'nk9vdc', 'Sb7k4e'];
+
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            $featurePrefix = self::getFeatureName($isMobile);
+            $dbClasses = RuleLoaderService::getRulesForFeature($featurePrefix . '_svg_exclusions');
+
+            if (!empty($dbClasses)) {
+                $exclusionClasses = $dbClasses;
+            }
+        }
+
+        // Build the not(ancestor::...) clause dynamically from class list
+        $exclusionParts = [];
+        foreach ($exclusionClasses as $className) {
+            $exclusionParts[] = 'ancestor::*[contains(concat(" ", normalize-space(@class), " "), " ' . $className . ' ")]';
+        }
+        $exclusionXpath = 'descendant::svg[not(' . implode(' or ', $exclusionParts) . ')]';
+
+        $svgElements = $dom->xpathQuery($exclusionXpath, $node);
 
         foreach ($svgElements as $svg) {
             if ($svg->parentNode) {
@@ -1026,9 +1139,18 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     /**
      * Remove specific classes (dSKvsb and RDmXvc) from all elements
      */
-    protected function removeSpecificClasses($dom, $node)
+    protected function removeSpecificClasses($dom, $node, $useDbRules = self::MODE_HARDCODED, $isMobile = false)
     {
         $classesToRemove = ['dSKvsb', 'RDmXvc', 'Hw7y8e', 'okxdqe'];
+
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            $featurePrefix = self::getFeatureName($isMobile);
+            $dbClasses = RuleLoaderService::getRulesForFeature($featurePrefix . '_class_removals');
+
+            if (!empty($dbClasses)) {
+                $classesToRemove = $dbClasses;
+            }
+        }
 
         foreach ($classesToRemove as $className) {
             // Find all elements with the specific class within the node

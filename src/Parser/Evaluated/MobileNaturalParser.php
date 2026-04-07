@@ -86,7 +86,7 @@ class MobileNaturalParser extends AbstractParser
         // When using DB rules, collect additional match xpaths to append
         $dbMatchConditions = '';
         if ($useDbRules > 0) {
-            $matchFeatures = ['images_mobile_match', 'natural_results_mobile_match'];
+            $matchFeatures = ['images_mobile_match', 'natural_results_mobile_match', 'sge_widget_mobile_match'];
             $dbXpaths = [];
             foreach ($matchFeatures as $matchFeature) {
                 $rules = RuleLoaderService::getRulesForFeature($matchFeature);
