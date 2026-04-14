@@ -223,13 +223,13 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         // Remove all button and svg elements
         $this->removeElements($dom, $node);
 
-        $this->removeSvgElements($dom, $node, $useDbRules, $isMobile);
+        $this->removeSvgElements($dom, $node);
 
         // Add display:block to OS7YA elements after everything is extracted
-        $this->addDisplayBlockToOS7YA($dom, $node, $useDbRules, $isMobile);
+        $this->addDisplayBlockToOS7YA($dom, $node);
 
         // Remove specific classes from all elements
-        $this->removeSpecificClasses($dom, $node, $useDbRules, $isMobile);
+        $this->removeSpecificClasses($dom, $node);
 
         // Now save the base content with all enrichments but before style/script removal
         $baseNode = $this->transformNode($dom, clone($node), false, false, $useDbRules, $isMobile);
@@ -1052,18 +1052,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     /**
      * Add display:block style to elements with OS7YA class after everything is extracted
      */
-    protected function addDisplayBlockToOS7YA($dom, $node, $useDbRules = self::MODE_HARDCODED, $isMobile = false)
+    protected function addDisplayBlockToOS7YA($dom, $node)
     {
         $overrideClass = 'OS7YA';
-
-        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
-            $featurePrefix = self::getFeatureName($isMobile);
-            $dbClasses = RuleLoaderService::getRulesForFeature($featurePrefix . '_display_override');
-
-            if (!empty($dbClasses)) {
-                $overrideClass = $dbClasses[0];
-            }
-        }
 
         // Find all elements with the override class within the node
         $os7yaElements = $dom->xpathQuery('descendant::*[contains(concat(" ", normalize-space(@class), " "), " ' . $overrideClass . ' ")]', $node);
@@ -1107,18 +1098,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     /**
      * Remove svg elements from the node, except those under specific classes
      */
-    protected function removeSvgElements($dom, $node, $useDbRules = self::MODE_HARDCODED, $isMobile = false)
+    protected function removeSvgElements($dom, $node)
     {
         $exclusionClasses = ['BMebGe', 'iPjmzb', 'nk9vdc', 'Sb7k4e'];
-
-        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
-            $featurePrefix = self::getFeatureName($isMobile);
-            $dbClasses = RuleLoaderService::getRulesForFeature($featurePrefix . '_svg_exclusions');
-
-            if (!empty($dbClasses)) {
-                $exclusionClasses = $dbClasses;
-            }
-        }
 
         // Build the not(ancestor::...) clause dynamically from class list
         $exclusionParts = [];
@@ -1139,18 +1121,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     /**
      * Remove specific classes (dSKvsb and RDmXvc) from all elements
      */
-    protected function removeSpecificClasses($dom, $node, $useDbRules = self::MODE_HARDCODED, $isMobile = false)
+    protected function removeSpecificClasses($dom, $node)
     {
         $classesToRemove = ['dSKvsb', 'RDmXvc', 'Hw7y8e', 'okxdqe'];
-
-        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
-            $featurePrefix = self::getFeatureName($isMobile);
-            $dbClasses = RuleLoaderService::getRulesForFeature($featurePrefix . '_class_removals');
-
-            if (!empty($dbClasses)) {
-                $classesToRemove = $dbClasses;
-            }
-        }
 
         foreach ($classesToRemove as $className) {
             // Find all elements with the specific class within the node
