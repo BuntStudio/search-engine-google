@@ -123,20 +123,9 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
             $this->gotoDomainLinkCount++;
         }
 
-        // Sitelinks detection — supports DB rules for the detection xpath
+        // Sitelinks detection — hardcoded rules
         $sitelinksBigXpath = "descendant::table[@class='jmjoTe']";
         $sitelinksSmallXpath = "descendant::div[@class='HiHjCd']";
-
-        if ($this->currentUseDbRules === self::MODE_DATABASE) {
-            $sitelinkRules = RuleLoaderService::getRulesForFeature('natural_results_sitelinks_detection');
-            if (!empty($sitelinkRules)) {
-                // First rule = big sitelinks detection, second = small sitelinks detection
-                $sitelinksBigXpath = $sitelinkRules[0] ?? $sitelinksBigXpath;
-                if (count($sitelinkRules) > 1) {
-                    $sitelinksSmallXpath = $sitelinkRules[1] ?? $sitelinksSmallXpath;
-                }
-            }
-        }
 
         if ($dom->xpathQuery($sitelinksBigXpath, $organicResult)->length > 0) {
             (new SiteLinksBig())->parse($dom, $organicResult, $resultSet, false);

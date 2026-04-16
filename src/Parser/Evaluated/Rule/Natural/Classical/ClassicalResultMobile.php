@@ -121,19 +121,9 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
             $this->gotoDomainLinkCount++;
         }
 
-        // Sitelinks detection — supports DB rules
+        // Sitelinks detection — hardcoded rules
         $sitelinksXpath1 = "descendant::div[@class='MUxGbd v0nnCb lyLwlc']";
         $sitelinksXpath2 = "descendant::form[@class='xBIiEf']";
-
-        if ($this->currentUseDbRules === self::MODE_DATABASE) {
-            $sitelinkRules = RuleLoaderService::getRulesForFeature('natural_results_mobile_sitelinks_detection');
-            if (!empty($sitelinkRules)) {
-                $sitelinksXpath1 = $sitelinkRules[0] ?? $sitelinksXpath1;
-                if (count($sitelinkRules) > 1) {
-                    $sitelinksXpath2 = $sitelinkRules[1] ?? $sitelinksXpath2;
-                }
-            }
-        }
 
         if (
             $dom->xpathQuery(
