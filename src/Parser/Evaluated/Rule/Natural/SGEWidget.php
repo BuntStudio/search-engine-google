@@ -297,18 +297,31 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             if (!empty($linkRules)) {
                 // Build a reverse map from XPath to diagnostic label for consistency
                 $xpathToLabel = array_flip($hardcodedSelectors);
-                $linkRulesFlip = array_flip($linkRules);
+                $linkRulesSet = array_flip($linkRules);
 
-                // Pre-populate with hardcoded labels in correct order so key order matches,
-                // but only for rules that still exist in DB (self-healing may deprecate old rules)
+                // Reorder DB rules to match hardcoded order: hardcoded-matching rules first
+                // (in hardcoded order), then any DB-only rules appended at the end.
+                // This ensures sge_widget_links are extracted in the same order as hardcoded mode.
+                $orderedRules = [];
+                foreach ($hardcodedSelectors as $label => $xpath) {
+                    if (isset($linkRulesSet[$xpath])) {
+                        $orderedRules[] = $xpath;
+                    }
+                }
+                foreach ($linkRules as $rule) {
+                    if (!isset($xpathToLabel[$rule])) {
+                        $orderedRules[] = $rule;
+                    }
+                }
+
                 $selectorMatches = [];
                 foreach ($hardcodedSelectors as $label => $xpath) {
-                    if (isset($linkRulesFlip[$xpath])) {
+                    if (isset($linkRulesSet[$xpath])) {
                         $selectorMatches[$label] = 0;
                     }
                 }
 
-                foreach ($linkRules as $index => $rule) {
+                foreach ($orderedRules as $index => $rule) {
                     $linkElements = $dom->xpathQuery($rule, $node);
                     // Use the hardcoded label if available, otherwise use indexed key
                     $label = isset($xpathToLabel[$rule]) ? $xpathToLabel[$rule] : 'db_selector_' . $index;
