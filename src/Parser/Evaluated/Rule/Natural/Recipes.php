@@ -57,6 +57,14 @@ class Recipes implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
                 $urls = $dom->getXpath()->query("descendant::div[@jsname='Gbzile']", $node);
             }
 
+            // Desktop deferred-load variant: the MGJTwe carousel container has no inline
+            // anchors; the recipe links sit in sibling g-inner-card[jsname='WUSFrc'] cards
+            // under the same parent (jscontroller='eLjrV'). Search the parent scope.
+            if ($urls->length == 0 && $node->getAttribute('jsname') === 'MGJTwe') {
+                $urlOnAttribute = false;
+                $urls = $dom->getXpath()->query('parent::*//g-link', $node);
+            }
+
             if ($urls->length > 0) {
                 foreach ($urls as $urlNode) {
                     if ($urlOnAttribute === 'ddkIM') {
