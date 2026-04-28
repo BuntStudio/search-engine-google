@@ -25,6 +25,11 @@ class Definitions implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterf
             return self::RULE_MATCH_MATCHED;
         }
 
+        if (!empty($class) && strpos($class, 'pOOWX') !== false
+            && $node->getAttribute('jsname') === 'dvXlsc'
+        ) {
+            return self::RULE_MATCH_MATCHED;
+        }
 
         return self::RULE_MATCH_NOMATCH;
     }
