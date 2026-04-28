@@ -177,6 +177,7 @@ class MobileNaturalParser extends AbstractParser
             contains(@class, 'EDblX HG5ZQb') or
             contains(@class, 'hNKF2b') or
             @jscontroller='dGwZHb' or
+            @jscontroller='U6XW6' or
             contains(@class, 'lr_container wDYxhc yc7KLc') or
             contains(@class, 'lr_container yc7KLc mBNN3d') or
             @jsname='MGJTwe' or

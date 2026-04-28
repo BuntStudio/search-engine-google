@@ -30,8 +30,18 @@ class HotelsMobile implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
         if ($node->getAttribute('jscontroller') === 'dGwZHb') {
             $xpath = $dom->getXpath();
             $hasGuestPicker = $xpath->query("descendant::*[@jscontroller='lz6svf']", $node);
-            
+
             if ($hasGuestPicker->length > 0) {
+                return self::RULE_MATCH_MATCHED;
+            }
+        }
+
+        // Defensive validation: U6XW6 container must have a /travel/hotels/ link as descendant
+        if ($node->getAttribute('jscontroller') === 'U6XW6') {
+            $xpath = $dom->getXpath();
+            $hasHotelLink = $xpath->query("descendant::a[starts-with(@href, '/travel/hotels/')]", $node);
+
+            if ($hasHotelLink->length > 0) {
                 return self::RULE_MATCH_MATCHED;
             }
         }
