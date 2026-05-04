@@ -26,6 +26,21 @@ class DefinitionsMobile implements \Serps\SearchEngine\Google\Parser\ParsingRule
             return self::RULE_MATCH_MATCHED;
         }
 
+        if (!empty($class) && strpos($class, 'pOOWX') !== false
+            && $node->getAttribute('jsname') === 'dvXlsc'
+        ) {
+            // The pOOWX/dvXlsc wrapper is also reused as the AIO render target.
+            // Reject if any ancestor matches AIO container markers.
+            $aioAncestor = $dom->getXpath()->query(
+                'ancestor::*[contains(concat(" ", normalize-space(@class), " "), " YzCcne ")'
+                . ' or @data-attnms or @data-lfid]',
+                $node
+            );
+            if ($aioAncestor->length === 0) {
+                return self::RULE_MATCH_MATCHED;
+            }
+        }
+
         return self::RULE_MATCH_NOMATCH;
     }
 

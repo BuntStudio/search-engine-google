@@ -180,6 +180,7 @@ class MobileNaturalParser extends AbstractParser
             @jscontroller='U6XW6' or
             contains(@class, 'lr_container wDYxhc yc7KLc') or
             contains(@class, 'lr_container yc7KLc mBNN3d') or
+            @jsname='dvXlsc' or
             @jsname='MGJTwe' or
             @data-attrid='SupercatRecipeClusterTitle' or
             contains(@class, 'kp-wholepage') or
