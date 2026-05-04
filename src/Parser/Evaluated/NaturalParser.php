@@ -192,7 +192,6 @@ class NaturalParser extends AbstractParser
             @class='Qq3Lb' or
             @class='xpdopen' or
             contains(@class, 'lr_container yc7KLc mBNN3d') or
-            @jsname='dvXlsc' or
             contains(@class, 'LQQ1Bd') or
             @class='BNeawe DwrKqd' or
             contains(@class, 'CH6Bmd') or

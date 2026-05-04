@@ -26,12 +26,6 @@ class DefinitionsMobile implements \Serps\SearchEngine\Google\Parser\ParsingRule
             return self::RULE_MATCH_MATCHED;
         }
 
-        if (!empty($class) && strpos($class, 'pOOWX') !== false
-            && $node->getAttribute('jsname') === 'dvXlsc'
-        ) {
-            return self::RULE_MATCH_MATCHED;
-        }
-
         return self::RULE_MATCH_NOMATCH;
     }
 
