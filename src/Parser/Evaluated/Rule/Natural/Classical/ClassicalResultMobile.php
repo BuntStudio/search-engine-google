@@ -300,8 +300,8 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         if ($questionParent->length > 0) {
             return true;
         }
-        $targetNode3 = $organicResult->parentNode->parentNode->parentNode;
-        $targetNode4 = $organicResult->parentNode->parentNode->parentNode->parentNode;
+        $targetNode3 = $organicResult->parentNode->parentNode->parentNode ?? null;
+        $targetNode4 = $organicResult->parentNode->parentNode->parentNode->parentNode ?? null;
         // Avoid getting  results from questions (when clicking "Show more". When clicking "Show more" on questions)
         // The result under it looks exactly like a natural results
         if (
