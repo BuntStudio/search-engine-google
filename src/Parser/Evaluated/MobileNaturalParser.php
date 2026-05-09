@@ -52,7 +52,7 @@ class MobileNaturalParser extends AbstractParser
             new ClassicalResultMobile($this->logger),
             new ClassicalResultMobileV2($this->logger),
             //new ImageGroup(),
-            new MapsMobile(),
+           /* new MapsMobile(),
             new Questions(),
             new TopStoriesMobile(),
             new ProductGrid(),
@@ -69,7 +69,7 @@ class MobileNaturalParser extends AbstractParser
             new VideosMobile(),
             new MisspellingMobile(),
             new DirectionsMobile(),
-            new VideoCarouselMobile(),
+            new VideoCarouselMobile(),*/
             new NoMoreResults(),
             new VisualDigestMobile(),
             new SGEButton(),
