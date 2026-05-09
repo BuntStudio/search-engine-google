@@ -24,6 +24,7 @@ class SerpFeaturesPositionService
         // pair (O(features × items) explodes, and the same arrays were reallocated
         // for every serp feature even though they don't change between features).
         $itemsCache = [];
+        $processedTypes = [];
         foreach ($this->results->getItems() as $cachedItem) {
             $cachedIsClassical = $cachedItem->is(NaturalResultType::CLASSICAL) || $cachedItem->is(NaturalResultType::CLASSICAL_MOBILE);
             if (!$cachedIsClassical && !$cachedItem->is(NaturalResultType::EXCEPTIONS)) {
@@ -51,13 +52,16 @@ class SerpFeaturesPositionService
         }
 
         foreach ($serpResults as $serpResultsKey => $serpResultItem) {
-
+            if (!empty($processedTypes[$serpResultItem->getTypes()[0]] )) {
+                continue;
+            }
             if (
                 !$serpResultItem->serpFeatureHasPosition() ||
                 empty($serpResultItem->getNodePath())
             ) {
                 continue;
             }
+
 
             // Hoisted out of the inner loop — invariant for all items of this feature.
             $serpNodePath = $serpResultItem->getNodePath();
@@ -163,6 +167,7 @@ class SerpFeaturesPositionService
             }
 
             $serpResultItem->setSerpFeaturePositionOnPage($maxXpathSimilarityPosition);
+            $processedTypes[$serpResultItem->getTypes()[0]] = true;
             if (isset(NaturalResultType::SERP_FEATURES_TYPE_TO_OLD_RESPONSE_FOR_POSITIONS[$serpResultItem->getTypes()[0]])) {
                 // if a serp feature appears multiple times we save its first position
                 if (isset($this->serpsPositions[NaturalResultType::SERP_FEATURES_TYPE_TO_OLD_RESPONSE_FOR_POSITIONS[$serpResultItem->getTypes()[0]]])) {
