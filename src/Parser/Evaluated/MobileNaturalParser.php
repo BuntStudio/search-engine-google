@@ -51,7 +51,7 @@ class MobileNaturalParser extends AbstractParser
         return [
             new ClassicalResultMobile($this->logger),
             new ClassicalResultMobileV2($this->logger),
-            new ImageGroup(),
+            //new ImageGroup(),
             new MapsMobile(),
             new Questions(),
             new TopStoriesMobile(),
