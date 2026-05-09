@@ -21,14 +21,14 @@ class AbstractRuleMobile extends ClassicalResultEngine
     protected function generateRules()
     {
         return [
-            new MobileV1(),
-            new MobileV2(),
-            new MobileV3(),
-            new MobileV4(),
-            new MobileV5(),
-            new MobileV6(),
-            new MobileV7Goto(),
             new MobileV8(),
+            new MobileV7Goto(),
+            new MobileV6(),
+            new MobileV5(),
+            new MobileV4(),
+            new MobileV3(),
+            new MobileV2(),
+            new MobileV1(),
             new DesktopV1(),
             new DesktopV2(),
             new DesktopV3Goto(),

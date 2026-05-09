@@ -40,6 +40,9 @@ class ClassicalResultEngine
             } catch (\Throwable $exception) {
                 continue;
             }
+            if (!empty($organicResultObject->getDescription()) && !empty($organicResultObject->getLink()) && !empty($organicResultObject->getTitle())) {
+                break;
+            }
         }
 
         if ($organicResultObject->getLink() === null || $organicResultObject->getTitle() === null) {
