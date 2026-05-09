@@ -47,6 +47,14 @@ class MobileV8 implements ParsingRuleByVersionInterface
 
         if ($descriptionNode->length > 0 && $organicResultObject->getDescription() === null) {
             $organicResultObject->setDescription($descriptionNode->item(0)->textContent);
+        } else {
+            $descriptionNodes = $dom->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' yDYNvb ')
+        or contains(concat(' ', normalize-space(@class), ' '), ' Hdw6tb ')
+        ]", $organicResult);
+
+            if ($descriptionNodes->length > 0) {
+                $organicResultObject->setDescription($descriptionNodes->item(0)->textContent);
+            }
         }
     }
 
