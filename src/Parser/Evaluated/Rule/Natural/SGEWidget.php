@@ -271,6 +271,11 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     protected static function getHardcodedLinkSelectors()
     {
         return [
+            // Current AIO DOM (Google rollout 2026-05-14): citations are inline in static HTML
+            // inside <div data-subtree="aimc">, with each citation as <a class="H23r4e">.
+            // Validated across 16 SERPs / 3 markets (FI/TR/RO) / 3 content profiles.
+            'aimc_H23r4e' => 'descendant::*[@data-subtree="aimc"]//descendant::a[@class="H23r4e"]',
+            // Legacy AIO selectors retained for the rollout window in case Google partially rolls back.
             'SGEAttributionFeedback' => 'descendant::div[@data-attrid="SGEAttributionFeedback"]',
             'BOThhc_LLtSOc' => 'descendant::*[@class="BOThhc"]//descendant::*[@class="LLtSOc"]',
             'g4PEk_LLtSOc' => 'descendant::*[@jscontroller="g4PEk"]//descendant::*[@class="LLtSOc"]',
