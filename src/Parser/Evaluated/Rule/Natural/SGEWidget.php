@@ -125,6 +125,13 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             return true;
         }
 
+        // New AIO variant: AIO content is server-rendered inside a data-subtree="aimc" container
+        // (no folsrch-* deferred loading, no bsmXxe placeholders to enrich)
+        $aimcSubtree = $dom->xpathQuery('descendant::*[@data-subtree="aimc"]', $node);
+        if ($aimcSubtree->length > 0) {
+            return true;
+        }
+
         // Fallback: if folsrch- is not found but bsmXxe elements were enriched with children, consider loaded
         $enrichedElements = $dom->xpathQuery('descendant::*[contains(@class, "bsmXxe") and ./*]', $node);
         if ($enrichedElements->length > 0) {
@@ -277,6 +284,8 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             'uVhVib' => 'descendant::*[@class="uVhVib"]',
             'FqfzXd' => 'descendant::*[@class="FqfzXd"]',
             'NDNGvf' => 'descendant::*[@class="NDNGvf"]',
+            'H23r4e' => 'descendant::*[@class="H23r4e"]',
+            'muU3oe' => 'descendant::*[@class="muU3oe"]',
             'ZZh6Vb' => 'descendant::*[@class="ZZh6Vb"]',
             'target_self' => 'descendant::*[@target="_self"]',
         ];
