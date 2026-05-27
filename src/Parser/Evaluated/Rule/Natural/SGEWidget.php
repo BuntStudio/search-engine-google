@@ -81,20 +81,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     protected function isWidget(GoogleDom $dom, $node, $useDbRules = self::MODE_HARDCODED)
     {
-        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
-            $buttonRules = array_unique(array_merge(
-                RuleLoaderService::getRulesForFeature('sge_widget_button_detection'),
-                RuleLoaderService::getRulesForFeature('sge_widget_mobile_button_detection')
-            ));
-
-            if (!empty($buttonRules)) {
-                $buttonXpath = implode(' | ', $buttonRules);
-                $generateButton = $dom->xpathQuery($buttonXpath, $node);
-                return $generateButton->length == 0;
-            }
-            // No DB rules — fall through to hardcoded
-        }
-
+        // Button detection is hardcoded — see SGEButton.php docblock for the rationale.
         $generateButton = $dom->xpathQuery('descendant::div[@jsname="B76aWe"]', $node);
         return $generateButton->length == 0;
     }
