@@ -19,6 +19,16 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     const MODE_COMPARISON = 2;
     const MODE_CANDIDATE_TESTING = 3;
 
+    /**
+     * Minimum trimmed text length for a <button>/<svg> wrapper to count as content (kept)
+     * rather than an interactive/decorative control (removed). The June 2026 AIO layout wraps
+     * each collapsible answer section in a <button class="vDOt8c…"> and renders some answer text
+     * inside <svg><text>, so blanket-removing buttons/svgs strips the expanded answer. Genuine
+     * controls (Close, expand toggles, icons) carry little/no text and stay below this threshold.
+     * See removeElements() / removeSvgElements().
+     */
+    const MIN_CONTENT_TEXT_LENGTH = 30;
+
     protected $hasSerpFeaturePosition = false;
     protected $hasSideSerpFeaturePosition = false;
 
@@ -593,7 +603,11 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             }
         }
 
-        // Pattern 2: [{id:'__ID__'},function(){jsl.dh(this.id, '__CONTENT__')}] calls
+        // Pattern 2: [{id:'__ID__'},function(){jsl.dh(this.id, "__CONTENT__")}] calls.
+        // Double-quote-delimited payloads. Left exactly as-is — the content matcher [^']* with the
+        // "<quote>)" anchor correctly handles double-quoted bodies even when they contain bare,
+        // unescaped double quotes mid-content (e.g. data-src=\""), which a strict quoted-string
+        // token would choke on. Do not "tighten" this without re-running the AIO fixtures.
         $pattern2 = '/\[{id:[\'"]([^\'"]+)[\'"]},function\(\){(?:window\.)?jsl\.dh\(this\.id,[\'"]([^\']*)[\'"]\)/';
 
         if (preg_match_all($pattern2, $htmlContent, $matches, PREG_SET_ORDER)) {
@@ -603,6 +617,35 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
                 // URL decode and handle escaped characters
                 $decodedHtml = $this->decodeJslHtml($htmlData);
+
+                if (!empty($decodedHtml)) {
+                    $jslCalls[$id] = $decodedHtml;
+                }
+            }
+        }
+
+        // Pattern 3: single-quote-delimited wrapper payloads — jsl.dh(this.id,'__CONTENT__');}
+        //
+        // The new AI Overview layout delivers the full expanded answer in SINGLE-quote-delimited
+        // blocks (ids like "sdh_*", up to ~280KB), with interior single quotes escaped as \'.
+        // Pattern 2's [^']* stops at the first interior single quote, so these blocks were silently
+        // dropped — losing the entire expanded AIO body. This is purely ADDITIVE: it never touches
+        // an id already captured above (isset guard), so the double-quote path is unchanged.
+        //
+        // The body can contain bare quotes of either kind, so we anchor on the wrapper's real
+        // terminator — the closing quote followed by ");}" (the jsl.dh statement + function close)
+        // — and match lazily. /s lets the body span newlines.
+        $pattern3 = '/\[{id:[\'"]([^\'"]+)[\'"]},function\(\){(?:window\.)?jsl\.dh\(this\.id,\'(.*?)\'\);?\}/s';
+
+        if (preg_match_all($pattern3, $htmlContent, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $id = $match[1];
+                if (isset($jslCalls[$id])) {
+                    continue;
+                }
+
+                // URL decode and handle escaped characters
+                $decodedHtml = $this->decodeJslHtml($match[2]);
 
                 if (!empty($decodedHtml)) {
                     $jslCalls[$id] = $decodedHtml;
@@ -1083,18 +1126,31 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     }
 
     /**
-     * Remove all elements from the node
+     * Trimmed, whitespace-collapsed text length of an element. Used to distinguish a
+     * content-bearing wrapper from a bare control/icon during cleanup.
+     */
+    protected function meaningfulTextLength($element)
+    {
+        return mb_strlen(trim(preg_replace('/\s+/', ' ', $element->textContent)));
+    }
+
+    /**
+     * Remove non-content wrappers from the node.
+     *
+     * Carousels and visibility-control elements are never answer content and are removed outright.
+     *
+     * Buttons need more care: the June 2026 AIO layout builds the expanded answer as a nested
+     * accordion of <button class="vDOt8c…"> elements that wrap ordinary block content
+     * (div/ol/li/span). Deleting them strips the answer; but merely keeping the <button> tags
+     * leaves the body trapped inside buttons, where a browser will not render the block content
+     * as normal flow (so SGE_WIDGET_CONTENT looks complete to text extraction but renders blank).
+     * So we UNWRAP content-bearing buttons — promote their children in place and drop the tag —
+     * and delete only bare control buttons (Close / expand toggles / icons). Innermost-first so
+     * the nested accordion flattens completely.
      */
     protected function removeElements($dom, $node)
     {
-        $elementTypes = [
-            'button',
-            'g-scrolling-carousel',
-            'omnient-visibility-control',
-        ];
-
-        foreach ($elementTypes as $elementType) {
-            // Find all button elements within the node
+        foreach (['g-scrolling-carousel', 'omnient-visibility-control'] as $elementType) {
             $elements = $dom->xpathQuery('descendant::' . $elementType, $node);
             foreach ($elements as $element) {
                 if ($element->parentNode) {
@@ -1102,6 +1158,23 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 }
             }
         }
+
+        do {
+            $buttons = $dom->xpathQuery('descendant::button[not(descendant::button)]', $node);
+            $remaining = $buttons->length;
+            foreach ($buttons as $button) {
+                if (!$button->parentNode) {
+                    continue;
+                }
+                // Content button: lift its children out so they render as flow, then drop the tag.
+                if ($this->meaningfulTextLength($button) >= self::MIN_CONTENT_TEXT_LENGTH) {
+                    while ($button->firstChild) {
+                        $button->parentNode->insertBefore($button->firstChild, $button);
+                    }
+                }
+                $button->parentNode->removeChild($button);
+            }
+        } while ($remaining > 0);
     }
 
     /**
@@ -1121,9 +1194,15 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $svgElements = $dom->xpathQuery($exclusionXpath, $node);
 
         foreach ($svgElements as $svg) {
-            if ($svg->parentNode) {
-                $svg->parentNode->removeChild($svg);
+            if (!$svg->parentNode) {
+                continue;
             }
+            // The June 2026 AIO layout renders some answer text inside <svg><text>; keep svgs
+            // that carry meaningful text and strip only decorative/icon svgs (which have ~no text).
+            if ($this->meaningfulTextLength($svg) >= self::MIN_CONTENT_TEXT_LENGTH) {
+                continue;
+            }
+            $svg->parentNode->removeChild($svg);
         }
     }
 
