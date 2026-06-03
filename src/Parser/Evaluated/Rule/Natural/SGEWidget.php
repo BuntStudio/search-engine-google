@@ -235,6 +235,18 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         // Remove specific classes from all elements
         $this->removeSpecificClasses($dom, $node);
 
+        // Convert inline math (≥30, ~271 …) to plain text. Google emits the symbol only as
+        // <svg><text> glyphs + an opacity:0.001 MathML mirror (both removed by cleanup), so the
+        // value would vanish; the clean form is in <img data-xpm-latex>. Do it before the split so
+        // both stored variants keep the symbol as text.
+        $this->extractInlineMath($dom, $node);
+
+        // Neutralize Google's AIO entrance-animation initial state (class-driven visibility:hidden /
+        // transform / opacity:0) so the answer renders revealed. Done before the BASE/CONTENT split
+        // so BOTH variants are correct — BASE keeps the <style> block, so removing the style alone
+        // would not un-hide it there.
+        $this->neutralizeAnimationInitialState($dom, $node);
+
         // Now save the base content with all enrichments but before style/script removal
         $baseNode = $this->transformNode($dom, clone($node), false, false, $useDbRules, $isMobile);
         $data[NaturalResultType::SGE_WIDGET_BASE] = $baseNode->ownerDocument->saveHTML($baseNode);
@@ -358,13 +370,33 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     {
         // Delete <style> tags
         if ($removeStyles) {
-            $styleTags = $dom->xpathQuery('//style', $node);
+            // Use 'descendant::', not '//style'. The node is a detached clone (parse() does
+            // clone $node) whose ownerDocument is still the full page, so the absolute '//style'
+            // matched/removed the PAGE's style tags while leaving the clone's own <style> blocks —
+            // the ones actually serialized into SGE_WIDGET_CONTENT — untouched. 'descendant::'
+            // scopes the query to the subtree we serialize.
+            $styleTags = $dom->xpathQuery('descendant::style', $node);
             foreach ($styleTags as $styleTag) $styleTag->parentNode->removeChild($styleTag);
+
+            // With the widget's own <style> blocks gone, the June 2026 AIO accordion's inline
+            // collapse-hiding (display:none / visibility:hidden / opacity:0 / height:0) would still
+            // hide the expanded answer when SGE_WIDGET_CONTENT is rendered without JS. Strip only
+            // those declarations, preserving the rest of each element's inline style.
+            $styledElements = $dom->xpathQuery('descendant-or-self::*[@style]', $node);
+            foreach ($styledElements as $styledElement) {
+                $cleaned = $this->stripHidingDeclarations($styledElement->getAttribute('style'));
+                if ($cleaned === '') {
+                    $styledElement->removeAttribute('style');
+                } else {
+                    $styledElement->setAttribute('style', $cleaned);
+                }
+            }
         }
 
         // Delete <script> tags
         if ($removeScripts) {
-            $scriptTags = $dom->xpathQuery('//script', $node);
+            // 'descendant::' for the same detached-clone reason as <style> above.
+            $scriptTags = $dom->xpathQuery('descendant::script', $node);
             foreach ($scriptTags as $scriptTag) $scriptTag->parentNode->removeChild($scriptTag);
         }
 
@@ -390,6 +422,108 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         // Return the node
         return $node;
+    }
+
+    /**
+     * Remove only the "collapse-hiding" declarations from an inline style string, preserving
+     * everything else. Returns the cleaned style (may be empty). Hiding declarations are:
+     * display:none, visibility:hidden, opacity:0, height/max-height:0 (with or without unit),
+     * and any non-none transform (the AIO accordion rotates/translates content into hiding).
+     * Non-hiding values (height:auto, opacity:0.5, transform:none, etc.) and unrecognised
+     * declarations are kept.
+     */
+    protected function stripHidingDeclarations($style)
+    {
+        $kept = [];
+        foreach (explode(';', $style) as $declaration) {
+            $declaration = trim($declaration);
+            if ($declaration === '') {
+                continue;
+            }
+            $parts = explode(':', $declaration, 2);
+            if (count($parts) === 2) {
+                $prop = strtolower(trim($parts[0]));
+                $value = strtolower(trim($parts[1]));
+                $isHiding =
+                    ($prop === 'display' && $value === 'none') ||
+                    ($prop === 'visibility' && $value === 'hidden') ||
+                    ($prop === 'opacity' && preg_match('/^0(?:\.0+)?$/', $value)) ||
+                    (($prop === 'height' || $prop === 'max-height') && preg_match('/^0(?:[a-z%]+)?$/', $value)) ||
+                    ($prop === 'transform' && $value !== 'none' && $value !== '');
+                if ($isHiding) {
+                    continue;
+                }
+            }
+            $kept[] = $declaration;
+        }
+        return implode('; ', $kept);
+    }
+
+    /**
+     * Neutralize Google's AIO entrance-animation INITIAL state so the answer renders in its final
+     * (revealed) form in a static, JS-less snapshot — in BOTH the styles-kept (SGE_WIDGET_BASE) and
+     * styles-stripped (SGE_WIDGET_CONTENT) variants.
+     *
+     * The June 2026 layout hides/transforms each answer section via obfuscated CSS CLASSES — e.g.
+     * .DHPVt{visibility:hidden}, .T6UJT{transform:rotate(135deg)} — defined in the widget's own
+     * <style> blocks, which Google's JS clears on load. Class names randomize per response, so we
+     * cannot match them by name; instead we read the widget's stylesheet, identify the single-class
+     * selectors whose rule hides or transforms its target, and strip those class tokens off the
+     * elements. Removing the class (not the declaration) clears every hiding mechanism that class
+     * carries at once — visibility AND transform — so partial fixes like dropping visibility:hidden
+     * while leaving the rotate behind cannot happen.
+     */
+    protected function neutralizeAnimationInitialState($dom, $node)
+    {
+        // 1) Collect class names whose own CSS rule hides or transforms the element.
+        $hidingClasses = [];
+        $styleTags = $dom->xpathQuery('descendant::style', $node);
+        foreach ($styleTags as $styleTag) {
+            // Only simple single-class rules ".Abc{...}". Compound/pseudo selectors (".X:has(~.Y)",
+            // ".X:hover", ".X .Y") are skipped — they are conditional, not the unconditional
+            // initial-state hiding we want to clear.
+            if (!preg_match_all('/(?<![\w.#:>+~-])\.([A-Za-z0-9_-]+)\s*\{([^{}]*)\}/', $styleTag->textContent, $rules, PREG_SET_ORDER)) {
+                continue;
+            }
+            foreach ($rules as $rule) {
+                $declaration = strtolower($rule[2]);
+                // Deliberately NOT matching display:none here. visibility:hidden / opacity:0 /
+                // transform are entrance-animation initial states (the element is laid out, just
+                // invisible or moved) and revealing them yields the correct final answer. A
+                // display:none CLASS is a general hiding utility that often hides genuine
+                // alternates (collapsed duplicates, "About this result", device variants); the
+                // blunt removeDisplayNoneFromAllElements() above was disabled for exactly that
+                // over-reveal reason, so we don't resurrect it via class stripping.
+                $hides =
+                    preg_match('/visibility\s*:\s*hidden/', $declaration) ||
+                    preg_match('/opacity\s*:\s*0(?:\.0+)?\s*(?:[;}!]|$)/', $declaration) ||
+                    preg_match('/transform\s*:\s*(?!none)\S/', $declaration);
+                if ($hides) {
+                    $hidingClasses[$rule[1]] = true;
+                }
+            }
+        }
+
+        if (empty($hidingClasses)) {
+            return;
+        }
+
+        // 2) Strip those class tokens from every element that carries them.
+        $elements = $dom->xpathQuery('descendant-or-self::*[@class]', $node);
+        foreach ($elements as $element) {
+            $tokens = preg_split('/\s+/', trim($element->getAttribute('class')), -1, PREG_SPLIT_NO_EMPTY);
+            $kept = array_values(array_filter($tokens, function ($token) use ($hidingClasses) {
+                return !isset($hidingClasses[$token]);
+            }));
+            if (count($kept) === count($tokens)) {
+                continue;
+            }
+            if (empty($kept)) {
+                $element->removeAttribute('class');
+            } else {
+                $element->setAttribute('class', implode(' ', $kept));
+            }
+        }
     }
 
     private function processLinkElements($dom, $elements, &$urls, &$data) {
@@ -680,6 +814,14 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         // Handle potential double-encoding or HTML entity issues
         $decoded = html_entity_decode($decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // Repair Google's malformed inline-math blocks at the STRING level, before any DOM parse.
+        // Each value (≥30, ~271 …) ships as <div data-xpm-copy-root><img data-xpm-latex="\ge 30">
+        // <div opacity:0.001><math>…</math></div><svg><text>…</text></svg> with the foreign
+        // <math>/<svg>/<mo> tags LEFT UNCLOSED. libxml (unlike a browser) then nests every following
+        // answer section inside that unclosed <math> — hidden by the opacity:0.001 mirror and
+        // deletable as one node. Collapsing the block to its plain symbol here avoids the mis-nest.
+        $decoded = $this->cleanInlineMath($decoded);
 
         // Fix common Romanian diacritic encoding issues
         $decoded = str_replace([
@@ -1178,7 +1320,82 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     }
 
     /**
-     * Remove svg elements from the node, except those under specific classes
+     * Convert inline math (≥30, ~271 …) to plain text.
+     *
+     * Google emits inline math ONLY as <svg><text> glyphs plus an opacity:0.001 MathML mirror —
+     * both removed by the svg/animation cleanup — so the value would otherwise vanish ("(IMC ≥30)"
+     * → "(IMC )"). The clean symbol lives in <img data-xpm-latex="\ge 30">: replace that leaf with a
+     * text node, then drop the redundant (invisible) MathML mirror. Mirrors the display-path cleaner
+     * SGEGenerateEventHelper::extractInlineMath so stored content and rendered content agree.
+     */
+    protected function extractInlineMath($dom, $node)
+    {
+        // Primary repair is string-level in cleanInlineMath() (before DOM parse). This is a DOM
+        // fallback for any data-xpm-latex <img> that still slipped through (e.g. a math block whose
+        // wrapper the string pass didn't match): replace that leaf with its symbol. We deliberately
+        // do NOT removeChild() any <math>/<svg> here — in libxml those unclosed foreign tags nest
+        // the rest of the answer inside them, so removing the node would delete whole sections.
+        $imgs = [];
+        foreach ($dom->xpathQuery('descendant::img[@data-xpm-latex]', $node) as $img) {
+            $imgs[] = $img;
+        }
+        foreach ($imgs as $img) {
+            if (!$img->parentNode) {
+                continue;
+            }
+            $span = $img->ownerDocument->createElement('span');
+            $span->appendChild($img->ownerDocument->createTextNode($this->latexToText($img->getAttribute('data-xpm-latex'))));
+            $img->parentNode->replaceChild($span, $img);
+        }
+    }
+
+    /**
+     * Best-effort LaTeX → unicode for the small symbol set Google emits in AIO inline math.
+     */
+    protected function latexToText($latex)
+    {
+        return trim(strtr(trim((string)$latex), [
+            '\\ge' => '≥', '\\le' => '≤', '\\sim' => '~', '\\approx' => '≈',
+            '\\times' => '×', '\\pm' => '±', '\\,' => ' ',
+        ]));
+    }
+
+    /**
+     * Collapse Google's malformed inline-math blocks to a plain text symbol, on the raw payload
+     * string (before DOM parsing). The block is <div data-xpm-copy-root …> … up to the first
+     * "-->" (the trailing TgQPHd data comment); the <img data-xpm-latex> inside carries the clean
+     * LaTeX. Replacing the whole block with the symbol removes the unclosed <math>/<svg>/<mo> tags
+     * that otherwise make libxml swallow the rest of the answer.
+     */
+    protected function cleanInlineMath($html)
+    {
+        if (strpos($html, 'data-xpm-copy-root') === false) {
+            return $html;
+        }
+        return preg_replace_callback(
+            '/<div\b[^>]*\bdata-xpm-copy-root\b[^>]*>.*?-->/s',
+            function ($m) {
+                if (preg_match('/data-xpm-latex="([^"]*)"/', $m[0], $mm)) {
+                    $sym = $this->latexToText(html_entity_decode($mm[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                    if ($sym !== '') {
+                        return '<span class="aio-math">' . htmlspecialchars($sym, ENT_QUOTES) . '</span>';
+                    }
+                }
+                return '';
+            },
+            $html
+        );
+    }
+
+    /**
+     * Unwrap answer nested inside <svg><path> icon shells; remove only text-less icon svgs.
+     *
+     * Google's malformed markup nests block answer content (div/ol/li/strong) inside 12px
+     * <svg><path> link-icon shells. The old code KEPT those svgs wrapped — text extraction passed
+     * but a browser will not lay out block HTML inside <svg>, so SGE_WIDGET_CONTENT rendered blank.
+     * Unwrap any svg-namespace wrapper carrying real text (promote its children, drop the tag) and
+     * remove only the text-less glyph icons. Loop until the glyph wrappers are fully flattened.
+     * (svgs under the excluded classes — BMebGe/iPjmzb/nk9vdc/Sb7k4e — are left untouched as before.)
      */
     protected function removeSvgElements($dom, $node)
     {
@@ -1189,20 +1406,45 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         foreach ($exclusionClasses as $className) {
             $exclusionParts[] = 'ancestor::*[contains(concat(" ", normalize-space(@class), " "), " ' . $className . ' ")]';
         }
-        $exclusionXpath = 'descendant::svg[not(' . implode(' or ', $exclusionParts) . ')]';
+        $notExcluded = 'not(' . implode(' or ', $exclusionParts) . ')';
 
-        $svgElements = $dom->xpathQuery($exclusionXpath, $node);
+        $tags = ['svg', 'path', 'g', 'text', 'tspan', 'defs', 'symbol', 'use', 'mask', 'clippath', 'marker'];
 
-        foreach ($svgElements as $svg) {
-            if (!$svg->parentNode) {
-                continue;
+        // 1) Flatten the svg-namespace glyph wrappers that carry answer text (innermost stabilises
+        //    via the loop).
+        do {
+            $changed = false;
+            foreach ($tags as $tag) {
+                $els = [];
+                foreach ($dom->xpathQuery('descendant::' . $tag . '[' . $notExcluded . ']', $node) as $el) {
+                    $els[] = $el;
+                }
+                foreach ($els as $el) {
+                    if (!$el->parentNode) {
+                        continue;
+                    }
+                    if ($this->meaningfulTextLength($el) >= self::MIN_CONTENT_TEXT_LENGTH) {
+                        while ($el->firstChild) {
+                            $el->parentNode->insertBefore($el->firstChild, $el);
+                        }
+                        $el->parentNode->removeChild($el);
+                        $changed = true;
+                    }
+                }
             }
-            // The June 2026 AIO layout renders some answer text inside <svg><text>; keep svgs
-            // that carry meaningful text and strip only decorative/icon svgs (which have ~no text).
-            if ($this->meaningfulTextLength($svg) >= self::MIN_CONTENT_TEXT_LENGTH) {
-                continue;
+        } while ($changed);
+
+        // 2) Remove the now content-less glyph fragments (decorative icons + leftover svg bits).
+        foreach ($tags as $tag) {
+            $els = [];
+            foreach ($dom->xpathQuery('descendant::' . $tag . '[' . $notExcluded . ']', $node) as $el) {
+                $els[] = $el;
             }
-            $svg->parentNode->removeChild($svg);
+            foreach ($els as $el) {
+                if ($el->parentNode) {
+                    $el->parentNode->removeChild($el);
+                }
+            }
         }
     }
 
