@@ -400,6 +400,16 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             foreach ($scriptTags as $scriptTag) $scriptTag->parentNode->removeChild($scriptTag);
         }
 
+        // Remove Google's jsl framework data-comments (<!--TgQPHd|[[…]]-->, <!--qkimaf …-->,
+        // <!--BVUQsc …-->, etc.). They carry citation/source metadata, "about-this-result" request
+        // tokens and structured [[null,…]] arrays — never answer content. Left in, they bloat the
+        // snapshot and, when their delimiters get mangled (or a doubly-escaped mirror surfaces),
+        // leak as literal "<!--TgQPHd|[[null,…]]-->" text inside the AIO, exposing internal/API data
+        // to the user (ticket 869dg27m6). Comment nodes never render, so dropping the whole family
+        // here is always safe. Ungated — applies to both the BASE and CONTENT variants.
+        $frameworkComments = $dom->xpathQuery('descendant::comment()', $node);
+        foreach ($frameworkComments as $comment) $comment->parentNode->removeChild($comment);
+
         // DOM cleanup rules remain hardcoded — they have mixed positional semantics:
         // rule[0] removes a style attribute, rules[1-3] remove elements entirely.
         // The rules are stored in DB for tracking/investigation but logic stays here.
@@ -822,6 +832,12 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         // answer section inside that unclosed <math> — hidden by the opacity:0.001 mirror and
         // deletable as one node. Collapsing the block to its plain symbol here avoids the mis-nest.
         $decoded = $this->cleanInlineMath($decoded);
+
+        // A doubly-escaped jsl framework comment (the mirror nested inside a TgQPHd data block)
+        // is only decoded once here, so it surfaces as LITERAL "\x3c!--…-->" text rather than a
+        // real comment node — out of reach of the DOM comment strip in transformNode(). Remove the
+        // leaked escaped form at the string level so it never renders in the AIO (ticket 869dg27m6).
+        $decoded = $this->stripLeakedComments($decoded);
 
         // Fix common Romanian diacritic encoding issues
         $decoded = str_replace([
@@ -1367,6 +1383,28 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
      * LaTeX. Replacing the whole block with the symbol removes the unclosed <math>/<svg>/<mo> tags
      * that otherwise make libxml swallow the rest of the answer.
      */
+    /**
+     * Strip Google jsl framework data-comments that survived decoding as LITERAL escaped text
+     * (e.g. "\x3c!--TgQPHd|[]--&gt;" or "&lt;!--qkimaf …--&gt;") rather than real comment nodes.
+     * These appear when a doubly-escaped mirror inside a TgQPHd block is decoded only once: the
+     * opening "<" stays jsl-escaped ("\x3c" / "<" / "&lt;") and — crucially — the closing ">"
+     * is HTML-entity-encoded ("&gt;"), so the block reads "\x3c!--…--&gt;" and libxml never sees a
+     * real comment to drop. The payload is citation/request metadata, never answer content, and
+     * otherwise renders verbatim in the AIO (ticket 869dg27m6). Real (decoded) comment nodes are
+     * handled by the DOM comment strip in transformNode().
+     */
+    protected function stripLeakedComments($html)
+    {
+        if (strpos($html, '!--') === false) {
+            return $html;
+        }
+        return preg_replace(
+            '/(?:\\\\x3c|\\\\u003c|&lt;)!--[\s\S]*?--(?:>|&gt;|\\\\x3e|\\\\u003e)/i',
+            '',
+            $html
+        );
+    }
+
     protected function cleanInlineMath($html)
     {
         if (strpos($html, 'data-xpm-copy-root') === false) {
