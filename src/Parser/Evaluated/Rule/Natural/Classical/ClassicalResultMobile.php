@@ -104,8 +104,12 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
 
     public function match(GoogleDom $dom, DomElement $node, $useDbRules = self::MODE_HARDCODED)
     {
-        if ($useDbRules === self::MODE_DATABASE) {
-            $matchRules = RuleLoaderService::getRulesForFeature('natural_results_mobile_match');
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            // Candidate testing (mode 3) consults the heal candidate so a renamed
+            // container can validate; mode 1 uses live rules as before.
+            $matchRules = ($useDbRules === self::MODE_CANDIDATE_TESTING)
+                ? RuleLoaderService::getCandidateMatchRulesForFeatures(['natural_results_mobile_match'])
+                : RuleLoaderService::getRulesForFeature('natural_results_mobile_match');
             if (!empty($matchRules)) {
                 $matchXpath = implode(' | ', $matchRules);
                 $result = $dom->getXpath()->query($matchXpath, $node);

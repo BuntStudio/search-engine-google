@@ -63,12 +63,16 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             return self::RULE_MATCH_NOMATCH;
         }
 
-        if ($useDbRules === self::MODE_DATABASE) {
-            // DB rules replace all hardcoded match checks (iur+jsmodel, data-attrid, IZE3Td)
-            $matchRules = array_unique(array_merge(
-                RuleLoaderService::getRulesForFeature('images_match'),
-                RuleLoaderService::getRulesForFeature('images_mobile_match')
-            ));
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            // DB rules replace all hardcoded match checks (iur+jsmodel, data-attrid, IZE3Td).
+            // Candidate testing (mode 3) consults the heal candidate so a renamed
+            // container can validate; mode 1 uses live rules as before.
+            $matchRules = ($useDbRules === self::MODE_CANDIDATE_TESTING)
+                ? RuleLoaderService::getCandidateMatchRulesForFeatures(['images_match', 'images_mobile_match'])
+                : array_unique(array_merge(
+                    RuleLoaderService::getRulesForFeature('images_match'),
+                    RuleLoaderService::getRulesForFeature('images_mobile_match')
+                ));
 
             if (!empty($matchRules)) {
                 $matchXpath = implode(' | ', $matchRules);

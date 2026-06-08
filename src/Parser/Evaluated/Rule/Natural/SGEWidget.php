@@ -49,10 +49,14 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node, $useDbRules = self::MODE_HARDCODED)
     {
         if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
-            $matchRules = array_unique(array_merge(
-                RuleLoaderService::getRulesForFeature('sge_widget_match'),
-                RuleLoaderService::getRulesForFeature('sge_widget_mobile_match')
-            ));
+            // Candidate testing (mode 3) consults the heal candidate so a renamed
+            // container can validate; mode 1 uses live rules as before.
+            $matchRules = ($useDbRules === self::MODE_CANDIDATE_TESTING)
+                ? RuleLoaderService::getCandidateMatchRulesForFeatures(['sge_widget_match', 'sge_widget_mobile_match'])
+                : array_unique(array_merge(
+                    RuleLoaderService::getRulesForFeature('sge_widget_match'),
+                    RuleLoaderService::getRulesForFeature('sge_widget_mobile_match')
+                ));
 
             if (!empty($matchRules)) {
                 $matchXpath = implode(' | ', $matchRules);

@@ -23,10 +23,14 @@ class SGEButton implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node, $useDbRules = 0)
     {
         if ($useDbRules > 0) {
-            $matchRules = array_unique(array_merge(
-                RuleLoaderService::getRulesForFeature('sge_widget_match'),
-                RuleLoaderService::getRulesForFeature('sge_widget_mobile_match')
-            ));
+            // Candidate testing (mode 3) consults the heal candidate so a renamed
+            // container can validate; other DB modes use live rules as before.
+            $matchRules = ((int)$useDbRules === 3)
+                ? RuleLoaderService::getCandidateMatchRulesForFeatures(['sge_widget_match', 'sge_widget_mobile_match'])
+                : array_unique(array_merge(
+                    RuleLoaderService::getRulesForFeature('sge_widget_match'),
+                    RuleLoaderService::getRulesForFeature('sge_widget_mobile_match')
+                ));
 
             if (!empty($matchRules)) {
                 $matchXpath = implode(' | ', $matchRules);

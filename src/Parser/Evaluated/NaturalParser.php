@@ -114,7 +114,11 @@ class NaturalParser extends AbstractParser
             $matchFeatures = ['images_match', 'natural_results_match', 'sge_widget_match'];
             $dbXpaths = [];
             foreach ($matchFeatures as $matchFeature) {
-                $rules = RuleLoaderService::getRulesForFeature($matchFeature);
+                // Candidate testing (mode 3): include the heal candidate so a renamed
+                // container is still selected as a parsable node. Other modes unchanged.
+                $rules = ((int)$useDbRules === 3)
+                    ? RuleLoaderService::getCandidateMatchRulesForFeatures([$matchFeature])
+                    : RuleLoaderService::getRulesForFeature($matchFeature);
                 foreach ($rules as $rule) {
                     $dbXpaths[] = $rule;
                 }

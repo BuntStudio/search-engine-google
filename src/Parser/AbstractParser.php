@@ -62,6 +62,13 @@ abstract class AbstractParser implements ParserInterface
      */
     public function parse(GoogleDom $googleDom, array $doNotRemoveSrsltidForDomains = [], $useDbRules = 0, $additionalRule = null)
     {
+        // Candidate-testing only (useDbRules=3, heal validation): expose the candidate
+        // rule-id set so node selection + `_match` gates can exercise the candidate.
+        // Production parsing (modes 0/1/2) never enters this branch.
+        if ((int)$useDbRules === 3 && is_array($additionalRule)) {
+            \SM\Backend\SerpParser\RuleLoaderService::setValidationCandidateRuleIds($additionalRule);
+        }
+
         $elementGroups = $this->getParsableItems($googleDom, $useDbRules);
 
         $resultSet = $this->createResultSet($googleDom);
