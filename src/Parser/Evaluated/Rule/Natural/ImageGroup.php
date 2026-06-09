@@ -124,8 +124,21 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             }
         } elseif ($useDbRules === self::MODE_CANDIDATE_TESTING) {
             if ($additionalRule !== null && is_array($additionalRule)) {
-                // Only use rules that belong to this feature; fall back to mode 1 otherwise
-                $rules = RuleLoaderService::getRulesByIdsForFeature($additionalRule, $featureName);
+                // A heal candidate may belong to THIS feature ('images'/'images_mobile') OR to one of
+                // its PARSE children ('{prefix}_parse_fallback' / '{prefix}_parse_v2'). Filtering by the
+                // parent feature id alone silently drops a child-feature candidate (its serp_feature_id
+                // != the parent's), so a parse-child heal could never be validated — e.g. on desktop,
+                // image results are detected entirely by the parse_v2 'w43QB' rule, and a renamed-class
+                // candidate for images_parse_v2 was dropped, falling back to the corrupted live rule.
+                // Resolve across the parse family (the same child names used by
+                // parseWithDbRulesHierarchical). The _match child is intentionally excluded — match()
+                // handles match-feature candidates via getCandidateMatchRulesForFeatures().
+                $parseFamily = [$featureName, $featureName . '_parse_fallback', $featureName . '_parse_v2'];
+                $rules = [];
+                foreach ($parseFamily as $familyFeature) {
+                    $rules = array_merge($rules, RuleLoaderService::getRulesByIdsForFeature($additionalRule, $familyFeature));
+                }
+                $rules = array_values(array_unique($rules));
                 if (!empty($rules)) {
                     $images = $this->parseWithDbRules($dom, $node, $rules, $isMobile);
                 } else {
