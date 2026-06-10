@@ -86,7 +86,16 @@ class MobileNaturalParser extends AbstractParser
         // When using DB rules, collect additional match xpaths to append
         $dbMatchConditions = '';
         if ($useDbRules > 0) {
-            $matchFeatures = ['images_mobile_match', 'natural_results_mobile_match', 'sge_widget_mobile_match'];
+            $matchFeatures = [
+                'images_mobile_match', 'natural_results_mobile_match', 'sge_widget_mobile_match',
+                // W22 batch (2026-06-10) — append these features' DB match rules so a renamed
+                // container is still selected as a parsable node, enabling end-to-end match-rule
+                // self-healing (the rule classes were wired, but the node must reach them first).
+                // product_listing_mobile is mobile-only, so it lives here (no desktop counterpart).
+                'maps_mobile_match', 'recipes_mobile_match', 'product_listing_mobile_match',
+                'featured_snippet_mobile_match', 'definitions_mobile_match',
+                'flights_mobile_match', 'knowledge_graph_mobile_match',
+            ];
             $dbXpaths = [];
             foreach ($matchFeatures as $matchFeature) {
                 // Candidate testing (mode 3): include the heal candidate so a renamed

@@ -6,6 +6,7 @@ use Serps\Core\Serp\BaseResult;
 use Serps\Core\Serp\IndexedResultSet;
 use Serps\SearchEngine\Google\Page\GoogleDom;
 use Serps\SearchEngine\Google\NaturalResultType;
+use SM\Backend\SerpParser\RuleLoaderService;
 
 class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
@@ -13,8 +14,51 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
     protected $hasSideSerpFeaturePosition = false;
     protected $steps = ['version1', 'version2'];
 
-    public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
+    /**
+     * Parser mode constants for self-healing parser integration.
+     */
+    const MODE_HARDCODED = 0;
+    const MODE_DATABASE = 1;
+    const MODE_COMPARISON = 2;
+    const MODE_CANDIDATE_TESTING = 3;
+
+    /**
+     * Get the feature name based on mobile flag.
+     */
+    protected static function getFeatureName($isMobile)
     {
+        return $isMobile ? 'featured_snippet_mobile' : 'featured_snippet';
+    }
+
+    /**
+     * Get the _match detection feature name based on mobile flag.
+     */
+    protected static function getMatchFeatureName($isMobile)
+    {
+        return $isMobile ? 'featured_snippet_mobile_match' : 'featured_snippet_match';
+    }
+
+    public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node, $useDbRules = self::MODE_HARDCODED)
+    {
+        // DB rules path — the _match feature replaces the hardcoded detection checks below.
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            $matchRules = ($useDbRules === self::MODE_CANDIDATE_TESTING)
+                ? RuleLoaderService::getCandidateMatchRulesForFeatures(['featured_snippet_match', 'featured_snippet_mobile_match'])
+                : array_unique(array_merge(
+                    RuleLoaderService::getRulesForFeature('featured_snippet_match'),
+                    RuleLoaderService::getRulesForFeature('featured_snippet_mobile_match')
+                ));
+
+            if (!empty($matchRules)) {
+                // Match rules use the self:: axis: they run with the candidate element as
+                // the context node (see INTEGRATING_NEW_SERP_FEATURES.md §9.2).
+                $matchXpath = implode(' | ', $matchRules);
+                $matchResult = $dom->getXpath()->query($matchXpath, $node);
+                return $matchResult->length > 0 ? self::RULE_MATCH_MATCHED : self::RULE_MATCH_NOMATCH;
+            }
+            // No DB rules — fall through to hardcoded
+        }
+
         $isCandidate = false;
 
         if (strpos($node->getAttribute('class'), 'xpdopen') !== false || strpos($node->getAttribute('class'), 'xpdbox') !== false) {
@@ -79,10 +123,52 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         return $isMobile ? NaturalResultType::FEATURED_SNIPPED_MOBILE : NaturalResultType::FEATURED_SNIPPED;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
     {
         foreach ($this->steps as $functionName) {
-            call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile, $doNotRemoveSrsltidForDomains]);
+            call_user_func_array(
+                [$this, $functionName],
+                [$dom, $node, $resultSet, $isMobile, $doNotRemoveSrsltidForDomains, $useDbRules, $additionalRule]
+            );
+        }
+    }
+
+    /**
+     * Resolve the primary featured-snippet result nodes via DB rules when running in a
+     * DB mode, falling back to null so the caller uses the hardcoded fallback chain.
+     *
+     * FeaturedSnipped has no SHP parse children — it is a single-extraction feature — so
+     * candidate testing (mode 3) resolves the heal candidate against the parent feature
+     * name directly (the parse-family resolution of §9.1 does not apply here).
+     *
+     * @return \DOMNodeList|null
+     */
+    protected function queryPrimaryResultNodes(GoogleDom $googleDOM, \DomElement $node, $isMobile, $useDbRules, $additionalRule)
+    {
+        if ($useDbRules !== self::MODE_DATABASE && $useDbRules !== self::MODE_CANDIDATE_TESTING) {
+            return null;
+        }
+
+        $featureName = self::getFeatureName($isMobile);
+
+        if ($useDbRules === self::MODE_CANDIDATE_TESTING) {
+            $rules = (is_array($additionalRule))
+                ? RuleLoaderService::getRulesByIdsForFeature($additionalRule, $featureName)
+                : [];
+        } else {
+            $rules = RuleLoaderService::getRulesForFeature($featureName);
+        }
+
+        if (empty($rules)) {
+            // Candidate isn't ours / no DB rules — let the caller use the hardcoded fallback.
+            return null;
+        }
+
+        try {
+            $xpath = implode(' | ', array_values(array_unique($rules)));
+            return $googleDOM->getXpath()->query($xpath, $node);
+        } catch (\Exception $e) {
+            return null;
         }
     }
 
@@ -91,9 +177,16 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         \DomElement $node,
         IndexedResultSet $resultSet,
         $isMobile = false,
-        array $doNotRemoveSrsltidForDomains = []
+        array $doNotRemoveSrsltidForDomains = [],
+        $useDbRules = self::MODE_HARDCODED,
+        $additionalRule = null
     ) {
-        $naturalResultNodes = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' g ')]", $node);
+        // Primary extraction rule: prefer DB rules when available, else hardcoded fallback chain.
+        $naturalResultNodes = $this->queryPrimaryResultNodes($googleDOM, $node, $isMobile, $useDbRules, $additionalRule);
+
+        if ($naturalResultNodes === null || $naturalResultNodes->length == 0) {
+            $naturalResultNodes = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' g ')]", $node);
+        }
 
         if ($naturalResultNodes->length == 0) {
             $naturalResultNodes = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' SALvLe ')]", $node);
@@ -157,8 +250,14 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         \DomElement $node,
         IndexedResultSet $resultSet,
         $isMobile = false,
-        array $doNotRemoveSrsltidForDomains = []
+        array $doNotRemoveSrsltidForDomains = [],
+        $useDbRules = self::MODE_HARDCODED,
+        $additionalRule = null
     ) {
+        // version2 (alternate layout: sXtWJb / jsname="UWckNb" + outbound-link fallback chain)
+        // is intentionally LEFT HARDCODED — its fallback chain is the logic, not a single rule
+        // (see INTEGRATING_NEW_SERP_FEATURES.md §3 "what NOT to integrate"). Args accepted for
+        // signature compatibility with the step dispatch in parse().
         $results = [];
 
         $object = new \StdClass();

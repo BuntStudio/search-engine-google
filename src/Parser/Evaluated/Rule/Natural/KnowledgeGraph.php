@@ -6,14 +6,59 @@ use Serps\Core\Serp\BaseResult;
 use Serps\Core\Serp\IndexedResultSet;
 use Serps\SearchEngine\Google\NaturalResultType;
 use Serps\SearchEngine\Google\Page\GoogleDom;
+use SM\Backend\SerpParser\RuleLoaderService;
 
 class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
+    /**
+     * Parser mode constants for self-healing parser integration.
+     */
+    const MODE_HARDCODED = 0;
+    const MODE_DATABASE = 1;
+    const MODE_COMPARISON = 2;
+    const MODE_CANDIDATE_TESTING = 3;
+
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = true;
 
-    public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
+    /**
+     * Get the feature name based on the mobile flag.
+     * KnowledgeGraphMobile extends this class and runs the same match()/parse() with $isMobile=true.
+     */
+    protected static function getFeatureName($isMobile)
     {
+        return $isMobile ? 'knowledge_graph_mobile' : 'knowledge_graph';
+    }
+
+    public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node, $useDbRules = self::MODE_HARDCODED)
+    {
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            // Candidate testing (mode 3) consults the heal candidate so a renamed
+            // container can validate; mode 1 uses live rules as before.
+            // We query both the desktop and mobile match features because match() does not
+            // know $isMobile, and KnowledgeGraphMobile reuses this exact method.
+            //
+            // NOTE on axis: the parsable context node here is the SERP container that wraps the
+            // panel (#rhs on desktop, an osrp-blk container on mobile — see NaturalParser /
+            // MobileNaturalParser::getParsableItems), NOT the panel element itself. The live
+            // hardcoded path uses cssQuery('.kp-wholepage-osrp', $node), which is descendant-scoped
+            // relative to that container, so the seeded DB rule is the descendant-or-self::-form of
+            // the same selector. Do not "correct" it to plain self:: — it would never match.
+            $matchRules = ($useDbRules === self::MODE_CANDIDATE_TESTING)
+                ? RuleLoaderService::getCandidateMatchRulesForFeatures(['knowledge_graph_match', 'knowledge_graph_mobile_match'])
+                : array_unique(array_merge(
+                    RuleLoaderService::getRulesForFeature('knowledge_graph_match'),
+                    RuleLoaderService::getRulesForFeature('knowledge_graph_mobile_match')
+                ));
+
+            if (!empty($matchRules)) {
+                $matchXpath = implode(' | ', $matchRules);
+                $matchResult = $dom->getXpath()->query($matchXpath, $node);
+                return $matchResult->length > 0 ? self::RULE_MATCH_MATCHED : self::RULE_MATCH_NOMATCH;
+            }
+            // No DB rules — fall through to hardcoded.
+        }
+
         if (
             $dom->cssQuery('.kp-wholepage-osrp', $node)->length == 1
         ) {
@@ -21,6 +66,8 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
         }
 
         // Check for data-kpid attribute starting with "vise:"
+        // Left hardcoded: this is a conditional/exclusion branch (vise: prefix AND absence of the
+        // finance-summary panel) — too tied to flow control to heal in isolation.
         $dataKpid = $node->getAttribute('data-kpid');
         if (
             $dataKpid &&
@@ -38,18 +85,19 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
         return $isMobile ? NaturalResultType::KNOWLEDGE_GRAPH_MOBILE : NaturalResultType::KNOWLEDGE_GRAPH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
     {
         $data = [];
 
-
-
-
-        $links = $dom->cssQuery("a[data-attrid='visit_official_site']", $node);
-        if ($links->length > 0){
-            $data['link'] = $links->item(0)->getAttribute('href');
+        // Primary official-site link extraction — DB-backed (self-healing) with hardcoded fallback.
+        $primaryLink = $this->extractPrimaryLink($dom, $node, $useDbRules, $isMobile, $additionalRule);
+        $links = $primaryLink['nodeList'];
+        if ($primaryLink['href'] !== null) {
+            $data['link'] = $primaryLink['href'];
         }
 
+        // Link fallback chain — left hardcoded (fallback relationships are the logic, §3 "what NOT to
+        // integrate"). Each only fires when the prior selector found nothing.
         if ($links->length == 0) {
             $links = $dom->cssQuery("a[class='n1obkb mI8Pwc'], a[class='P6Deab']", $node);
             if ($links->length > 0){
@@ -104,6 +152,52 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
         }
 
         $resultSet->addItem(new BaseResult($this->getType($isMobile), $data, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
+    }
+
+    /**
+     * Extract the primary official-site link from the knowledge panel.
+     *
+     * Returns ['nodeList' => DomNodeList, 'href' => string|null] where nodeList is the matched
+     * element set (so the caller's `$links->length` fallback chain keeps working unchanged) and href
+     * is the first match's href (or null when nothing matched).
+     *
+     * DB-backed (self-healing) with the hardcoded `a[data-attrid='visit_official_site']` selector as
+     * fallback. This is the single primary extraction rule integrated for this feature.
+     */
+    protected function extractPrimaryLink($dom, $node, $useDbRules = self::MODE_HARDCODED, $isMobile = false, $additionalRule = null)
+    {
+        $featureName = self::getFeatureName($isMobile);
+        $linkFeature = $featureName . '_primary_link';
+
+        $rules = [];
+        if ($useDbRules === self::MODE_DATABASE) {
+            $rules = RuleLoaderService::getRulesForFeature($linkFeature);
+        } elseif ($useDbRules === self::MODE_CANDIDATE_TESTING) {
+            // A heal candidate for the primary-link child does not carry the parent feature id, so
+            // resolve it by the child feature name (parse-family resolution, §9.1). If the candidate
+            // isn't ours, fall back to the live DB rule, then to hardcoded.
+            if ($additionalRule !== null && is_array($additionalRule)) {
+                $rules = RuleLoaderService::getRulesByIdsForFeature($additionalRule, $linkFeature);
+            }
+            if (empty($rules)) {
+                $rules = RuleLoaderService::getRulesForFeature($linkFeature);
+            }
+        }
+
+        if (!empty($rules)) {
+            $xpath = implode(' | ', $rules);
+            $found = $dom->getXpath()->query($xpath, $node);
+            if ($found->length > 0) {
+                return ['nodeList' => $found, 'href' => $found->item(0)->getAttribute('href')];
+            }
+            // DB rule matched nothing — fall through to hardcoded so extraction degrades gracefully.
+        }
+
+        // Hardcoded fallback (always kept as safety net).
+        $found = $dom->cssQuery("a[data-attrid='visit_official_site']", $node);
+        $href = $found->length > 0 ? $found->item(0)->getAttribute('href') : null;
+
+        return ['nodeList' => $found, 'href' => $href];
     }
 
     protected function detectGeneralPresentationText(GoogleDom $googleDOM, \DomElement $group)

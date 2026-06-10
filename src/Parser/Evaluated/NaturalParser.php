@@ -111,7 +111,14 @@ class NaturalParser extends AbstractParser
         // When using DB rules, collect additional match xpaths to append
         $dbMatchConditions = '';
         if ($useDbRules > 0) {
-            $matchFeatures = ['images_match', 'natural_results_match', 'sge_widget_match'];
+            $matchFeatures = [
+                'images_match', 'natural_results_match', 'sge_widget_match',
+                // W22 batch (2026-06-10) — append these features' DB match rules so a renamed
+                // container is still selected as a parsable node, enabling end-to-end match-rule
+                // self-healing (the rule classes were wired, but the node must reach them first).
+                'maps_match', 'recipes_match', 'featured_snippet_match',
+                'definitions_match', 'flights_match', 'knowledge_graph_match',
+            ];
             $dbXpaths = [];
             foreach ($matchFeatures as $matchFeature) {
                 // Candidate testing (mode 3): include the heal candidate so a renamed
