@@ -112,7 +112,25 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
             // No DB rules for match — fall through to hardcoded
         }
 
+        // Modern Google wraps all organic results in an outer container (class "eqAnXb",
+        // e.g. <div id="gevUs" class="eqAnXb">) that holds #rso PLUS any result blocks that
+        // render OUTSIDE #rso (continuous-scroll batches / mid-page spillover). Scoping to #rso
+        // alone under-counts — investigation #1078: parser saw 23 of 29 because 6 results sat
+        // outside #rso. Parse from the eqAnXb wrapper instead, and defer #rso/#botstuff when
+        // they live inside one so every result is parsed exactly once (no duplicates).
+        $isEqWrapper = strpos(' ' . $node->getAttribute('class') . ' ', ' eqAnXb ') !== false;
+        if ($isEqWrapper) {
+            // Only the outermost eqAnXb parses; a (rare) nested wrapper defers to its ancestor.
+            $nestedEq = $dom->getXpath()->query("ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' eqAnXb ')]", $node);
+            return $nestedEq->length > 0 ? self::RULE_MATCH_NOMATCH : self::RULE_MATCH_MATCHED;
+        }
+
         if ($node->getAttribute('id') == 'rso' || $node->getAttribute('id') == 'botstuff') {
+            // Defer to the eqAnXb wrapper when present so results aren't parsed twice.
+            $insideEq = $dom->getXpath()->query("ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' eqAnXb ')]", $node);
+            if ($insideEq->length > 0) {
+                return self::RULE_MATCH_NOMATCH;
+            }
             return self::RULE_MATCH_MATCHED;
         }
 

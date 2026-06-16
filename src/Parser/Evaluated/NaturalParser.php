@@ -181,6 +181,7 @@ class NaturalParser extends AbstractParser
         return $googleDom->xpathQuery("//*[
             @id='rso' or
             @id='botstuff' or
+            contains(concat(' ', normalize-space(@class), ' '), ' eqAnXb ') or
             @id='rhs' or
             @id='iur' or
             @id='tads' or
