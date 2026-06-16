@@ -104,6 +104,14 @@ abstract class AbstractParser implements ParserInterface
                 continue;
             }
 
+            // A result group is always nested inside <body>; the <html> root (whose parentNode is
+            // the DOMDocument, not an element) can be pulled in when a DB `_match` rule uses a broad
+            // self::*[descendant::…] selector. Many hardcoded rules deref $group->parentNode without
+            // guarding, so skip any group whose parent is not an element.
+            if (!($group->parentNode instanceof \DOMElement)) {
+                continue;
+            }
+
             if(in_array($group->tagName, ['hr', 'g-more-link'])) {
                 continue;
             }
