@@ -118,6 +118,13 @@ class NaturalParser extends AbstractParser
                 // self-healing (the rule classes were wired, but the node must reach them first).
                 'maps_match', 'recipes_match', 'featured_snippet_match',
                 'definitions_match', 'flights_match', 'knowledge_graph_match',
+                // Desktop PLA (ids 65/66, wired 2026-06-11). Without this, a renamed
+                // cu-container / commercial-unit-desktop-top is never selected as a parsable
+                // node (the only desktop selectors for it are the hardcoded class conditions
+                // below), so the product_listing_match heal candidate never reaches the match
+                // gate and every candidate fails the initial test (disaster test #1120,
+                // ClickUp 869dnbxf4). The mobile parser already lists product_listing_mobile_match.
+                'product_listing_match',
             ];
             $dbXpaths = [];
             foreach ($matchFeatures as $matchFeature) {

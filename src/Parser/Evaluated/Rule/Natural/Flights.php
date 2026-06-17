@@ -13,7 +13,6 @@ use Serps\SearchEngine\Google\Page\GoogleDom;
 use Serps\SearchEngine\Google\Parser\ParsingRuleInterface;
 use Serps\SearchEngine\Google\NaturalResultType;
 use SM\Backend\SerpParser\RuleLoaderService;
-use SM\Backend\Log\Logger;
 
 class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
@@ -29,16 +28,6 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
     const MODE_DATABASE = 1;
     const MODE_COMPARISON = 2;
     const MODE_CANDIDATE_TESTING = 3;
-
-    /**
-     * Get the feature name based on the mobile flag.
-     * Flights shares one class for desktop and mobile (registered in both
-     * NaturalParser and MobileNaturalParser), so the name follows $isMobile.
-     */
-    protected static function getFeatureName($isMobile)
-    {
-        return $isMobile ? 'flights_mobile' : 'flights';
-    }
 
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node, $useDbRules = self::MODE_HARDCODED)
     {
@@ -91,44 +80,13 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
     {
-        $item = [];
-
-        if (!$this->isNewFlight && ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING)) {
-            // The bCOlv / g-accordion-expander exclusions are hardcoded flow control
-            // and still apply before DB extraction.
-            if ($dom->xpathQuery("ancestor::g-accordion-expander", $node)->length > 0) {
-                return false;
-            }
-            // bCOlv - this is a knowledge used in things to know/people also ask. these are not flights results
-            if ($dom->xpathQuery("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' bCOlv ')]", $node)->length > 0) {
-                return false;
-            }
-
-            $featureName = self::getFeatureName($isMobile);
-            $rules = [];
-
-            if ($useDbRules === self::MODE_CANDIDATE_TESTING) {
-                // Flights has no parse children, so resolve the heal candidate against
-                // this single feature only (no parse family). If the candidate doesn't
-                // belong to us, fall through to the hardcoded extraction.
-                if ($additionalRule !== null && is_array($additionalRule)) {
-                    $rules = RuleLoaderService::getRulesByIdsForFeature($additionalRule, $featureName);
-                } else {
-                    Logger::error('No rule IDs provided for Flights mode 3');
-                }
-            } else {
-                $rules = RuleLoaderService::getRulesForFeature($featureName);
-            }
-
-            if (!empty($rules)) {
-                $item = $this->parseWithDbRules($dom, $node, $rules);
-            } else {
-                // No usable DB rules — fall back to the hardcoded extraction below.
-                $item = $this->parseHardcoded($dom, $node);
-            }
-        } else {
-            $item = $this->parseHardcoded($dom, $node);
-        }
+        // Flights EXTRACTION is intentionally NOT part of the self-healing DB-rule system: the only
+        // DB rule it ever had was the generic `descendant::a` plain-link extractor, which carries no
+        // healable structure. Extraction is therefore always hardcoded. Container DETECTION still
+        // runs through the DB-driven `flights_match` / `flights_mobile_match` gate in match() above,
+        // which IS self-healing / disaster-testable. (Plain-link feature removed 2026-06-17 — see
+        // migrations/serp_parser_remove_flights_plainlink_feature_2026-06-17.sql.)
+        $item = $this->parseHardcoded($dom, $node);
 
         if ($item === false) {
             return false;
@@ -180,28 +138,4 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
         return $item;
     }
 
-    /**
-     * DB-rule-driven primary extraction: the {name, url} link list inside the
-     * matched Flights container. Mirrors the hardcoded descendant::a path but uses
-     * the rules loaded from serp_feature_rules.
-     */
-    protected function parseWithDbRules(GoogleDom $dom, \DomElement $node, array $rules)
-    {
-        $item = [];
-        $dynamicXpath = implode(' | ', $rules);
-
-        try {
-            $urls = $dom->getXpath()->query($dynamicXpath, $node->firstChild);
-
-            if ($urls->length > 0) {
-                foreach ($urls as $urlNode) {
-                    $item['flights_names'][] = ['name' => $urlNode->firstChild->textContent, 'url' => \SM_Rank_Service::getUrlFromGoogleTranslate($urlNode->getAttribute('href'))];
-                }
-            }
-        } catch (\Exception $e) {
-            Logger::error('Flights DB rule XPath failed', ['xpath' => $dynamicXpath, 'error' => $e->getMessage()]);
-        }
-
-        return $item;
-    }
 }
