@@ -95,6 +95,21 @@ class MobileNaturalParser extends AbstractParser
                 'maps_mobile_match', 'recipes_mobile_match', 'product_listing_mobile_match',
                 'featured_snippet_mobile_match', 'definitions_mobile_match',
                 'flights_mobile_match', 'knowledge_graph_mobile_match',
+                // Batch (2026-06-18). jobs_mobile is single-gate (bare top-level feature, no _match
+                // child); hotels/product_grid carry the gate on their mobile _match child. top_sights
+                // and stocks_box are desktop-only (their mobile rows are inert) and places has no
+                // mobile parser, so none of those are listed here.
+                'jobs_mobile', 'hotels_mobile_match', 'product_grid_mobile_match',
+                // Wave 2 batch (2026-06-18). visual_digest_mobile and directions_mobile are
+                // single-gate mobile features (bare top-level, no _match child) with their own
+                // mobile parser classes. currency_answer, things_to_know and places_sites are
+                // desktop-only (no mobile class parses them), so none of those are listed here.
+                'visual_digest_mobile', 'directions_mobile',
+                // Wave 3 batch (2026-06-18). questions_mobile is single-gate (bare top-level
+                // feature, no _match child); top_stories/videos carry the gate on their mobile
+                // _match child. flights_sites and flights_airlines are desktop-only (no mobile
+                // parser class), so neither is listed here.
+                'questions_mobile', 'top_stories_mobile_match', 'videos_mobile_match',
             ];
             $dbXpaths = [];
             foreach ($matchFeatures as $matchFeature) {

@@ -8,13 +8,51 @@ use Serps\Core\Serp\BaseResult;
 use Serps\Core\Serp\IndexedResultSet;
 use Serps\SearchEngine\Google\Page\GoogleDom;
 use Serps\SearchEngine\Google\NaturalResultType;
+use SM\Backend\SerpParser\RuleLoaderService;
 
 class TopStoriesMobile extends TopStories
 {
     protected $steps = ['version1', 'version2'];
 
-    public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
+    /**
+     * Mobile-only class — always resolves to the mobile feature.
+     */
+    protected static function getFeatureName($isMobile)
     {
+        return 'top_stories_mobile';
+    }
+
+    /**
+     * Mobile-only class — always resolves to the mobile match feature.
+     */
+    protected static function getMatchFeatureName($isMobile)
+    {
+        return 'top_stories_mobile_match';
+    }
+
+    public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node, $useDbRules = self::MODE_HARDCODED)
+    {
+        // DB rules path — replace the hardcoded positive container class gates (xSoq1 / lU8tTd).
+        // Union desktop + mobile match features so a renamed container still resolves (mirrors
+        // MapsMobile.php). The lU8tTd EXCLUSION logic (social-media / perspectives / "what people
+        // are saying") stays hardcoded below and only runs in the hardcoded fallback path.
+        // Candidate testing (mode 3) consults the heal candidate; mode 1 uses live rules.
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            $matchRules = ($useDbRules === self::MODE_CANDIDATE_TESTING)
+                ? RuleLoaderService::getCandidateMatchRulesForFeatures(['top_stories_match', 'top_stories_mobile_match'])
+                : array_unique(array_merge(
+                    RuleLoaderService::getRulesForFeature('top_stories_match'),
+                    RuleLoaderService::getRulesForFeature('top_stories_mobile_match')
+                ));
+
+            if (!empty($matchRules)) {
+                $matchXpath = implode(' | ', $matchRules);
+                $matchResult = $dom->getXpath()->query($matchXpath, $node);
+                return $matchResult->length > 0 ? self::RULE_MATCH_MATCHED : self::RULE_MATCH_NOMATCH;
+            }
+            // No DB rules — fall through to hardcoded
+        }
+
         if ($node->hasClass('xSoq1')) {
             return self::RULE_MATCH_MATCHED;
         }

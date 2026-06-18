@@ -6,15 +6,66 @@ use Serps\Core\Serp\IndexedResultSet;
 use Serps\SearchEngine\Google\NaturalResultType;
 use Serps\SearchEngine\Google\Page\GoogleDom;
 use Serps\SearchEngine\Google\Parser\ParsingRuleInterface;
+use SM\Backend\SerpParser\RuleLoaderService;
+use SM\Backend\Log\Logger;
 
+/**
+ * Mobile sibling of Videos.php — the "videos" widget on mobile results.
+ *
+ * Self-healing parser integration (2026-06-18, §9.6 shape (c) — separate mobile class wired):
+ * the container-detection (videos_mobile_match) and the primary video-link extraction
+ * (videos_mobile parent — the version2 video-voyager anchor walk) are mirrored into DB rules, with
+ * the 7-version hardcoded fallback chain kept intact behind them.
+ */
 class VideosMobile implements ParsingRuleInterface
 {
     protected $steps = ['version1', 'version2', 'version3', 'version4', 'version5', 'version6', 'version7'];
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
 
-    public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
+    /**
+     * Parser mode constants for self-healing parser integration
+     */
+    const MODE_HARDCODED = 0;
+    const MODE_DATABASE = 1;
+    const MODE_COMPARISON = 2;
+    const MODE_CANDIDATE_TESTING = 3;
+
+    /**
+     * Get the feature name based on mobile flag. This is the mobile-only class, so it resolves to
+     * the mobile feature regardless of the flag.
+     */
+    protected static function getFeatureName($isMobile)
     {
+        return 'videos_mobile';
+    }
+
+    /**
+     * Get the match feature name (mobile-only class).
+     */
+    protected static function getMatchFeatureName($isMobile)
+    {
+        return 'videos_mobile_match';
+    }
+
+    public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node, $useDbRules = self::MODE_HARDCODED)
+    {
+        // DB rules path — replace the hardcoded class-combo container checks. Mode 3 consults the
+        // heal candidate; mode 1 uses live rules. (Mobile-only class, so the videos_mobile_match
+        // feature alone.)
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            $matchRules = ($useDbRules === self::MODE_CANDIDATE_TESTING)
+                ? RuleLoaderService::getCandidateMatchRulesForFeatures(['videos_mobile_match'])
+                : RuleLoaderService::getRulesForFeature('videos_mobile_match');
+
+            if (!empty($matchRules)) {
+                $matchXpath = implode(' | ', $matchRules);
+                $matchResult = $dom->getXpath()->query($matchXpath, $node);
+                return $matchResult->length > 0 ? self::RULE_MATCH_MATCHED : self::RULE_MATCH_NOMATCH;
+            }
+            // No DB rules — fall through to hardcoded
+        }
+
         if ($node->hasClass('cawG4b') && $node->hasClass('OvQkSb')) {
             return self::RULE_MATCH_MATCHED;
         }
@@ -50,11 +101,73 @@ class VideosMobile implements ParsingRuleInterface
         return self::RULE_MATCH_NOMATCH;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false, array $doNotRemoveSrsltidForDomains = [])
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile=false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
     {
+        // DB rules path — the primary mobile video-link extraction (the version2 video-voyager
+        // anchor walk) lives in the 'videos_mobile' parent feature. VideosMobile has no parse
+        // children, so candidate rules resolve by this feature only. The 7-version hardcoded
+        // fallback chain below is preserved.
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            $featureName = self::getFeatureName($isMobile);
+
+            if ($useDbRules === self::MODE_CANDIDATE_TESTING) {
+                $rules = (is_array($additionalRule))
+                    ? RuleLoaderService::getRulesByIdsForFeature($additionalRule, $featureName)
+                    : [];
+            } else {
+                $rules = RuleLoaderService::getRulesForFeature($featureName);
+            }
+
+            if (!empty($rules)) {
+                if ($this->parseWithDbRules($dom, $node, $resultSet, $rules)) {
+                    return;
+                }
+                // DB rules matched nothing — fall through to hardcoded chain.
+            }
+            // No DB rules (or candidate not ours) — fall through to hardcoded chain.
+        }
+
         foreach ($this->steps as $functionName) {
             call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile]);
         }
+    }
+
+    /**
+     * Extract video-link anchors using DB rules (primary mobile extractor — the version2
+     * video-voyager anchor walk generalized to a DB selector). Returns true when at least one
+     * video item was added to the result set.
+     */
+    protected function parseWithDbRules(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, array $rules)
+    {
+        try {
+            $xpath = implode(' | ', $rules);
+            $aHrefs = $dom->getXpath()->query($xpath, $node);
+        } catch (\Exception $e) {
+            Logger::error('VideosMobile DB rule XPath failed', ['xpath' => implode(' | ', $rules), 'error' => $e->getMessage()]);
+            return false;
+        }
+
+        if ($aHrefs->length == 0) {
+            return false;
+        }
+
+        $data = [];
+
+        foreach ($aHrefs as $url) {
+            $href = $url->getAttribute('href');
+            if (empty($href)) {
+                continue;
+            }
+            $data[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($href)];
+        }
+
+        if (empty($data)) {
+            return false;
+        }
+
+        $resultSet->addItem(new BaseResult([NaturalResultType::VIDEOS_MOBILE], $data, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
+
+        return true;
     }
 
     protected function version1(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false)
