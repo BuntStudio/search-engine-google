@@ -120,6 +120,14 @@ class Maps implements ParsingRuleInterface
      */
     protected function parseWithDbRules(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, array $rules)
     {
+        // Mirror the hardcoded steps loop's "first MAP wins" guard: when several maps containers
+        // (e.g. multiple sibling Qq3Lb blocks) are selected as parsable nodes, only the first one
+        // contributes listings. Without this the DB path extracts from every container, over-counting
+        // maps_links vs hardcoded (mode-2 parity, site 335133 'food navan': hardcoded=3, DB=12).
+        if ($resultSet->hasType(NaturalResultType::MAP)) {
+            return true;
+        }
+
         try {
             $xpath = implode(' | ', $rules);
             $ratingStars = $dom->getXpath()->query($xpath, $node);
