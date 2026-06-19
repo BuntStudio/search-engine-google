@@ -70,6 +70,15 @@ class Flights implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
             return self::RULE_MATCH_MATCHED;
         }
 
+        // New Google flights-prices widget (jscontroller='es75Cc' / class 'mA0j1c'). Hardcoded had no
+        // branch for it, so the legacy path under-detected flights on flight-ticket queries while the
+        // DB rule (flights_match #552) detected it — mode-2 parity, site 336052
+        // 'ankara singapur uçak bileti'. Mirrors rule 552 so hardcoded and DB agree.
+        if ($node->getAttribute('jscontroller') === 'es75Cc'
+            || (!empty($class) && strpos($class, 'mA0j1c') !== false)) {
+            return self::RULE_MATCH_MATCHED;
+        }
+
         /*        if ($node->getAttribute('class') == 'IuoSj') {
                     return self::RULE_MATCH_MATCHED;
                 }*/

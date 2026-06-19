@@ -258,6 +258,9 @@ class NaturalParser extends AbstractParser
             contains(@class, 'EDblX') or
             @class='Ww4FFb' or
             @class='XNfAUb' or
+            @jscontroller='es75Cc' or
+            contains(concat(' ', normalize-space(@class), ' '), ' mA0j1c ') or
+            (contains(concat(' ', normalize-space(@class), ' '), ' kp-wholepage ') and .//div[@id='kp-wp-tab-cont-AIRFARES']) or
             @class='sATSHe'" .
             $dbMatchConditions . "
         ][not(self::script) and not(self::style)]");
