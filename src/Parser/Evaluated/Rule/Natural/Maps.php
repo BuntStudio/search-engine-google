@@ -120,6 +120,14 @@ class Maps implements ParsingRuleInterface
      */
     protected function parseWithDbRules(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, array $rules)
     {
+        // Mirror the hardcoded steps loop's "first MAP wins" guard: when several maps containers
+        // (e.g. multiple sibling Qq3Lb blocks) are selected as parsable nodes, only the first one
+        // contributes listings. Without this the DB path extracts from every container, over-counting
+        // maps_links vs hardcoded (mode-2 parity, site 335133 'food navan': hardcoded=3, DB=12).
+        if ($resultSet->hasType(NaturalResultType::MAP)) {
+            return true;
+        }
+
         try {
             $xpath = implode(' | ', $rules);
             $ratingStars = $dom->getXpath()->query($xpath, $node);
@@ -134,20 +142,34 @@ class Maps implements ParsingRuleInterface
 
         $spanElements = [];
 
+        // Mirror the hardcoded version2 -> version3 cascade so DB titles match hardcoded exactly.
+        // version2 wins outright when it yields anything (hardcoded breaks on the first MAP-producing
+        // step): title = the full details block (parentNode->childNodes[1]). Preferring childNodes[0]
+        // (the bare name) instead produced name-only titles that diverged from hardcoded's full-block
+        // titles whenever version2 applied (mode-2 parity, site 307261 'vestel yetkili servis iskenderun').
         foreach ($ratingStars as $ratingStarNode) {
-            if ($ratingStarNode->childNodes->length == 0) {
+            if (empty($ratingStarNode->parentNode->childNodes[1])) {
                 continue;
             }
 
-            $title = $ratingStarNode->childNodes->item(0)->textContent;
-            if (empty($title) && !empty($ratingStarNode->parentNode->childNodes[1])) {
-                $title = $ratingStarNode->parentNode->childNodes[1]->textContent;
-            }
-
             $spanElements[] = [
-                'title' => $title,
+                'title' => $ratingStarNode->parentNode->childNodes[1]->textContent,
                 'href' => null,
             ];
+        }
+
+        // version3 fallback: only when version2 produced nothing — title = first child (the name).
+        if (empty($spanElements)) {
+            foreach ($ratingStars as $ratingStarNode) {
+                if ($ratingStarNode->childNodes->length == 0) {
+                    continue;
+                }
+
+                $spanElements[] = [
+                    'title' => $ratingStarNode->childNodes->item(0)->textContent,
+                    'href' => null,
+                ];
+            }
         }
 
         if (!empty($spanElements)) {
