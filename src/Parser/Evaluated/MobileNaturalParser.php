@@ -113,7 +113,9 @@ class MobileNaturalParser extends AbstractParser
         }
 
         // [@id='iur'] = images
-        // @data-attrid='images universal' = images -- removed FIX IT!
+        // @data-attrid='images universal' = images (restored 2026-06-22: an images widget can render
+        //   as bare 'images universal' tiles with no iur/IZE3Td wrapper; without this hardcoded missed
+        //   it while the DB rule images_mobile_match id 81 caught it — mode-2 mismatch on site 19977)
         // [@id='sports-app'] = classical results
         // [contains(@class, 'scm-c')]  = maps
         // [contains(@class, 'qixVud')]  = maps
@@ -154,6 +156,7 @@ class MobileNaturalParser extends AbstractParser
         //@id='rso' or - desktop organic
         //@id='botstuff' - possibly desktop organic
         return $googleDom->xpathQuery("//*[@id='iur' or
+            @data-attrid='images universal' or
             (contains(@class, 'IZE3Td') and .//div[@data-attrid='images universal']) or
             @id='sports-app' or
             @id='center_col' or
