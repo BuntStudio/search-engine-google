@@ -94,7 +94,7 @@ class MobileNaturalParser extends AbstractParser
                 // product_listing_mobile is mobile-only, so it lives here (no desktop counterpart).
                 'maps_mobile_match', 'recipes_mobile_match', 'product_listing_mobile_match',
                 'featured_snippet_mobile_match', 'definitions_mobile_match',
-                'flights_mobile_match', 'knowledge_graph_mobile_match',
+                'flights_mobile_match',
                 // Batch (2026-06-18). jobs_mobile is single-gate (bare top-level feature, no _match
                 // child); hotels/product_grid carry the gate on their mobile _match child. top_sights
                 // and stocks_box are desktop-only (their mobile rows are inert) and places has no
@@ -128,7 +128,9 @@ class MobileNaturalParser extends AbstractParser
         }
 
         // [@id='iur'] = images
-        // @data-attrid='images universal' = images -- removed FIX IT!
+        // @data-attrid='images universal' = images (restored 2026-06-22: an images widget can render
+        //   as bare 'images universal' tiles with no iur/IZE3Td wrapper; without this hardcoded missed
+        //   it while the DB rule images_mobile_match id 81 caught it — mode-2 mismatch on site 19977)
         // [@id='sports-app'] = classical results
         // [contains(@class, 'scm-c')]  = maps
         // [contains(@class, 'qixVud')]  = maps
@@ -169,6 +171,7 @@ class MobileNaturalParser extends AbstractParser
         //@id='rso' or - desktop organic
         //@id='botstuff' - possibly desktop organic
         return $googleDom->xpathQuery("//*[@id='iur' or
+            @data-attrid='images universal' or
             (contains(@class, 'IZE3Td') and .//div[@data-attrid='images universal']) or
             @id='sports-app' or
             @id='center_col' or

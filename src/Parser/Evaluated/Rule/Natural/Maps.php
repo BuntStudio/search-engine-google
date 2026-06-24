@@ -142,20 +142,34 @@ class Maps implements ParsingRuleInterface
 
         $spanElements = [];
 
+        // Mirror the hardcoded version2 -> version3 cascade so DB titles match hardcoded exactly.
+        // version2 wins outright when it yields anything (hardcoded breaks on the first MAP-producing
+        // step): title = the full details block (parentNode->childNodes[1]). Preferring childNodes[0]
+        // (the bare name) instead produced name-only titles that diverged from hardcoded's full-block
+        // titles whenever version2 applied (mode-2 parity, site 307261 'vestel yetkili servis iskenderun').
         foreach ($ratingStars as $ratingStarNode) {
-            if ($ratingStarNode->childNodes->length == 0) {
+            if (empty($ratingStarNode->parentNode->childNodes[1])) {
                 continue;
             }
 
-            $title = $ratingStarNode->childNodes->item(0)->textContent;
-            if (empty($title) && !empty($ratingStarNode->parentNode->childNodes[1])) {
-                $title = $ratingStarNode->parentNode->childNodes[1]->textContent;
-            }
-
             $spanElements[] = [
-                'title' => $title,
+                'title' => $ratingStarNode->parentNode->childNodes[1]->textContent,
                 'href' => null,
             ];
+        }
+
+        // version3 fallback: only when version2 produced nothing — title = first child (the name).
+        if (empty($spanElements)) {
+            foreach ($ratingStars as $ratingStarNode) {
+                if ($ratingStarNode->childNodes->length == 0) {
+                    continue;
+                }
+
+                $spanElements[] = [
+                    'title' => $ratingStarNode->childNodes->item(0)->textContent,
+                    'href' => null,
+                ];
+            }
         }
 
         if (!empty($spanElements)) {

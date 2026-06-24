@@ -40,7 +40,16 @@ class ClassicalResultEngine
             } catch (\Throwable $exception) {
                 continue;
             }
-            if (!empty($organicResultObject->getDescription()) && !empty($organicResultObject->getLink()) && !empty($organicResultObject->getTitle())) {
+            // A still-wrapped Google goto link (/goto?url=<opaque-token>) is not a
+            // usable destination — the *Goto version rules resolve it from the
+            // result's cite/role=text breadcrumb. An earlier rule (e.g. MobileV8)
+            // can fill title+link+description with the goto link still in place;
+            // treat that as incomplete so the loop falls through to the goto rule
+            // instead of breaking and leaving google.com/goto as the result URL.
+            if (!empty($organicResultObject->getDescription())
+                && !empty($organicResultObject->getLink())
+                && !empty($organicResultObject->getTitle())
+                && strpos($organicResultObject->getLink(), '/goto?url=') === false) {
                 break;
             }
         }
@@ -54,6 +63,12 @@ class ClassicalResultEngine
         }
 
         if (strpos($organicResultObject->getLink(), 'google.') !== false && strpos($organicResultObject->getLink(), 'https://developers.google.') !== 0 && strpos($organicResultObject->getLink(), '/search') !== false ) {
+            return null;
+        }
+        // Backstop: a goto link the *Goto rule could not resolve (no usable
+        // breadcrumb) is still a google.com/goto?url=<token> wrapper, never a
+        // real competitor — drop it instead of storing google.com as the result.
+        if (strpos($organicResultObject->getLink(), '/goto?url=') !== false) {
             return null;
         }
         $imbricatorParent = $dom->xpathQuery("ancestor::*[@class='FxLDp']", $organicResult);

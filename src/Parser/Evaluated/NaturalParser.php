@@ -117,7 +117,12 @@ class NaturalParser extends AbstractParser
                 // container is still selected as a parsable node, enabling end-to-end match-rule
                 // self-healing (the rule classes were wired, but the node must reach them first).
                 'maps_match', 'recipes_match', 'featured_snippet_match',
-                'definitions_match', 'flights_match', 'knowledge_graph_match',
+                // knowledge_graph_match intentionally NOT widened: its osrp rule is container-scoped
+                // (descendant) and widening exposes inner single-osrp sub-panel wrappers + ancestors
+                // that the hardcoded static-container path never visits, over-detecting KG on composite
+                // entity panels (mode-2 parity, site 100747 'roast beef'). DB now evaluates the same
+                // static containers as hardcoded; the count==1 osrp match rules (387/389) gate them.
+                'definitions_match', 'flights_match',
                 // Desktop PLA (ids 65/66, wired 2026-06-11). Without this, a renamed
                 // cu-container / commercial-unit-desktop-top is never selected as a parsable
                 // node (the only desktop selectors for it are the hardcoded class conditions
@@ -268,6 +273,9 @@ class NaturalParser extends AbstractParser
             contains(@class, 'EDblX') or
             @class='Ww4FFb' or
             @class='XNfAUb' or
+            @jscontroller='es75Cc' or
+            contains(concat(' ', normalize-space(@class), ' '), ' mA0j1c ') or
+            (contains(concat(' ', normalize-space(@class), ' '), ' kp-wholepage ') and .//div[@id='kp-wp-tab-cont-AIRFARES']) or
             @class='sATSHe'" .
             $dbMatchConditions . "
         ][not(self::script) and not(self::style)]");
