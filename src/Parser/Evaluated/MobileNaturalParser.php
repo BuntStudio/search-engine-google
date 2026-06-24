@@ -94,7 +94,16 @@ class MobileNaturalParser extends AbstractParser
                 // product_listing_mobile is mobile-only, so it lives here (no desktop counterpart).
                 'maps_mobile_match', 'recipes_mobile_match', 'product_listing_mobile_match',
                 'featured_snippet_mobile_match', 'definitions_mobile_match',
-                'flights_mobile_match', 'knowledge_graph_mobile_match',
+                'flights_mobile_match',
+                // knowledge_graph_mobile_match intentionally NOT widened — completes the mobile half of
+                // the 2026-06-19 desktop fix (NaturalParser.php), which only shipped for desktop. Its osrp
+                // rule is container-scoped; widening it into the parsable selector exposes single-osrp
+                // ANCESTORS (html/body/#center_col) that the hardcoded static-container path never visits,
+                // so DB over-detects KG on finance/entity panels — each ancestor extracts the panel
+                // subtitle (mode-2 parity, site 127815 'intermediate capital group share price',
+                // 2026-06-24, DB='LON: ICG' vs hardcoded=''). DB now evaluates the same static containers
+                // as hardcoded; the osrp match rule 389 (rewritten to descendant-OR-self count==1 so it
+                // catches the kp-wholepage-osrp panel-self node like the hardcoded cssQuery) gates them.
             ];
             $dbXpaths = [];
             foreach ($matchFeatures as $matchFeature) {
