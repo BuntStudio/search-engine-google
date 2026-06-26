@@ -49,8 +49,13 @@ class StocksBox implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             // No DB rules found — fall through to hardcoded
         }
 
-        // Hardcoded fallback (always kept as safety net)
-        if ($node->getAttribute('class') == 'wDYxhc') {
+        // Hardcoded fallback (always kept as safety net). The stocks box is a `wDYxhc`
+        // container that wraps the stock-price quote (`data-attrid='Price'`). The bare
+        // class gate over-matches other `wDYxhc` web-answer blocks (and, since Google
+        // dropped the `data-attrid='Company Name'` span, parse() no longer disambiguates),
+        // so require the price node here — it is unique, one per box.
+        if ($node->getAttribute('class') == 'wDYxhc'
+            && $dom->getXpath()->query("descendant::*[@data-attrid='Price']", $node)->length > 0) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -72,13 +77,19 @@ class StocksBox implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             $companyNameNode = $dom->getXpath()->query(implode(' | ', $primaryRules), $node)->item(0);
         }
 
-        // Hardcoded fallback (always kept as safety net) — verbatim original selector.
+        // Hardcoded fallback (always kept as safety net). Google replaced the old
+        // `data-attrid='Company Name'` span with the finance stock-price module, so that
+        // selector matches nothing on current SERPs. The stable, unique per-box anchor is
+        // the stock-price quote (`data-attrid='Price'`); its presence is what makes this a
+        // stocks box. (Company name has no stable selector in the current markup; the
+        // extracted value is internal-only — TOP5_COMPARE_INTERNAL_ONLY — so the price
+        // label is sufficient to record presence.)
         if (empty($companyNameNode)) {
-            $companyNameNode = $dom->getXpath()->query('descendant::span[contains(concat(\' \', normalize-space(@data-attrid), \' \'), \' Company Name \')]', $node)->item(0);
+            $companyNameNode = $dom->getXpath()->query("descendant::*[@data-attrid='Price']", $node)->item(0);
         }
 
         if (!empty($companyNameNode)) {
-            $companyName = $companyNameNode->textContent;
+            $companyName = trim($companyNameNode->textContent);
             $resultSet->addItem(new BaseResult(NaturalResultType::STOCKS_BOX, [$companyName], $node, $this->hasSerpFeaturePosition));
         }
     }
