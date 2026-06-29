@@ -50,12 +50,15 @@ class StocksBox implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         }
 
         // Hardcoded fallback (always kept as safety net). The stocks box is a `wDYxhc`
-        // container that wraps the stock-price quote (`data-attrid='Price'`). The bare
-        // class gate over-matches other `wDYxhc` web-answer blocks (and, since Google
-        // dropped the `data-attrid='Company Name'` span, parse() no longer disambiguates),
-        // so require the price node here — it is unique, one per box.
-        if ($node->getAttribute('class') == 'wDYxhc'
-            && $dom->getXpath()->query("descendant::*[@data-attrid='Price']", $node)->length > 0) {
+        // container; emission is gated downstream by parse() finding the price node, so the
+        // gate keys ONLY on the container class — deliberately NOT on `data-attrid='Price'`.
+        // Coupling the gate to the same token parse() extracts on means a single token break
+        // (e.g. Google renaming `data-attrid`) disables BOTH rules at once, and the self-healer
+        // — which heals one rule at a time — can't restore detection (mode-D, stocks_box
+        // disaster test 2026-06-26_03). The bare class gate may match other `wDYxhc` answer
+        // blocks, but parse() emits nothing for those (no price node), so the result is the same
+        // and the feature stays self-healable.
+        if ($node->getAttribute('class') == 'wDYxhc') {
             return self::RULE_MATCH_MATCHED;
         }
 
