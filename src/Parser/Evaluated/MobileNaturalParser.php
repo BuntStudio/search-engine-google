@@ -95,15 +95,21 @@ class MobileNaturalParser extends AbstractParser
                 'maps_mobile_match', 'recipes_mobile_match', 'product_listing_mobile_match',
                 'featured_snippet_mobile_match', 'definitions_mobile_match',
                 'flights_mobile_match',
-                // knowledge_graph_mobile_match intentionally NOT widened — completes the mobile half of
-                // the 2026-06-19 desktop fix (NaturalParser.php), which only shipped for desktop. Its osrp
-                // rule is container-scoped; widening it into the parsable selector exposes single-osrp
-                // ANCESTORS (html/body/#center_col) that the hardcoded static-container path never visits,
-                // so DB over-detects KG on finance/entity panels — each ancestor extracts the panel
-                // subtitle (mode-2 parity, site 127815 'intermediate capital group share price',
-                // 2026-06-24, DB='LON: ICG' vs hardcoded=''). DB now evaluates the same static containers
-                // as hardcoded; the osrp match rule 389 (rewritten to descendant-OR-self count==1 so it
-                // catches the kp-wholepage-osrp panel-self node like the hardcoded cssQuery) gates them.
+                // Batch (2026-06-18). jobs_mobile is single-gate (bare top-level feature, no _match
+                // child); hotels/product_grid carry the gate on their mobile _match child. top_sights
+                // and stocks_box are desktop-only (their mobile rows are inert) and places has no
+                // mobile parser, so none of those are listed here.
+                'jobs_mobile', 'hotels_mobile_match', 'product_grid_mobile_match',
+                // Wave 2 batch (2026-06-18). visual_digest_mobile and directions_mobile are
+                // single-gate mobile features (bare top-level, no _match child) with their own
+                // mobile parser classes. currency_answer, things_to_know and places_sites are
+                // desktop-only (no mobile class parses them), so none of those are listed here.
+                'visual_digest_mobile', 'directions_mobile',
+                // Wave 3 batch (2026-06-18). questions_mobile is single-gate (bare top-level
+                // feature, no _match child); top_stories/videos carry the gate on their mobile
+                // _match child. flights_sites and flights_airlines are desktop-only (no mobile
+                // parser class), so neither is listed here.
+                'questions_mobile', 'top_stories_mobile_match', 'videos_mobile_match',
             ];
             $dbXpaths = [];
             foreach ($matchFeatures as $matchFeature) {

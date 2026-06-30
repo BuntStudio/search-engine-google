@@ -43,7 +43,6 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ThingsToKnow;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\TopSights;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\TopStories;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Videos;
-use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VideoCarousel;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VisualDigest;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VisualDigestMobile;
 use SM\Backend\SerpParser\RuleLoaderService;
@@ -81,7 +80,10 @@ class NaturalParser extends AbstractParser
             new Directions(),
             new MapsCoords(),
             new Misspelling(),
-            new VideoCarousel(),
+            // VideoCarousel removed (2026-06-29): its detection (vtSz8d / video-voyager containers,
+            // X5OiLe|rIRoqf links) is now folded into the DB-gated Videos rule above, so the video
+            // carousel is self-healable instead of being detected by an always-on hardcoded rule that
+            // masked DB-rule staleness. See migrations/serp_parser_videos_live_carousel_rules_2026-06-29.sql.
             new NoMoreResults(),
             new VisualDigest(),
             new HighlyLocalized(),
@@ -130,6 +132,21 @@ class NaturalParser extends AbstractParser
                 // gate and every candidate fails the initial test (disaster test #1120,
                 // ClickUp 869dnbxf4). The mobile parser already lists product_listing_mobile_match.
                 'product_listing_match',
+                // Batch (2026-06-18). jobs is single-gate (bare top-level feature, no _match child);
+                // the rest carry the container gate on their _match child. Append so a renamed
+                // container is still selected as a parsable node for end-to-end match-rule healing.
+                'jobs', 'hotels_match', 'product_grid_match', 'places_match',
+                'top_sights_match', 'stocks_box_match',
+                // Wave 2 batch (2026-06-18). currency_answer, visual_digest and directions are
+                // single-gate (bare top-level feature, no _match child); things_to_know and
+                // places_sites carry the container gate on their _match child. Desktop entries.
+                'currency_answer', 'things_to_know_match', 'visual_digest',
+                'places_sites_match', 'directions',
+                // Wave 3 batch (2026-06-18). questions is single-gate (bare top-level feature,
+                // no _match child); the rest carry the container gate on their _match child.
+                // flights_sites / flights_airlines are desktop-only (no mobile parser class).
+                'questions', 'top_stories_match', 'videos_match',
+                'flights_sites_match', 'flights_airlines_match',
             ];
             $dbXpaths = [];
             foreach ($matchFeatures as $matchFeature) {
