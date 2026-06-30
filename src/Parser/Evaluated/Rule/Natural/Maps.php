@@ -159,15 +159,31 @@ class Maps implements ParsingRuleInterface
         }
 
         // version3 fallback: only when version2 produced nothing — title = first child (the name).
+        // Mirror hardcoded version3's href-from-sibling extraction (the local-pack ad / "Sponsored"
+        // row carries an /aclk href on the sibling div.yYlJEf Q7PwXb L48Cpd brKmxb). Without this the
+        // DB path returned href=null while hardcoded returned the ad URL (mode-2 parity, site 40364
+        // 'best holiday home management companies in the west of cornwall' 2026-06-29). The
+        // instanceof guard keeps the DB loop (which, unlike the hardcoded steps, is not wrapped in a
+        // try/catch) safe when nextSibling is a text node.
         if (empty($spanElements)) {
             foreach ($ratingStars as $ratingStarNode) {
                 if ($ratingStarNode->childNodes->length == 0) {
                     continue;
                 }
 
+                $href = null;
+                $sibling = $ratingStarNode->parentNode->parentNode->parentNode->nextSibling;
+                if ($sibling instanceof \DOMElement &&
+                    $sibling->hasAttribute('href') &&
+                    $sibling->hasAttribute('class') &&
+                    $sibling->getAttribute('class') === 'yYlJEf Q7PwXb L48Cpd brKmxb'
+                ) {
+                    $href = $sibling->getAttribute('href');
+                }
+
                 $spanElements[] = [
                     'title' => $ratingStarNode->childNodes->item(0)->textContent,
-                    'href' => null,
+                    'href' => $href,
                 ];
             }
         }
