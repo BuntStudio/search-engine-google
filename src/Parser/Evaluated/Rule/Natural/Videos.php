@@ -74,8 +74,16 @@ class Videos implements ParsingRuleInterface
             // No DB rules — fall through to hardcoded
         }
 
-        // Hardcoded fallback (always kept as safety net)
-        if ($node->hasClass('e4xoPb')) {
+        // Hardcoded fallback (always kept as safety net). Mirrors the videos_match DB tokens —
+        // e4xoPb (legacy) + vtSz8d (current carousel container) + a <video-voyager> child (legacy
+        // custom element) — folded in from the former standalone VideoCarousel rule (no longer
+        // registered; it detected independently of the DB rules and masked their staleness). Because
+        // this fallback now keys on the SAME tokens as the DB videos_match rule, a real Google rename
+        // breaks BOTH together => detection drops to 0 => the self-healer sees it.
+        if ($node->hasClass('e4xoPb') || $node->hasClass('vtSz8d')) {
+            return self::RULE_MATCH_MATCHED;
+        }
+        if ($dom->getXpath()->query('child::video-voyager', $node)->length > 0) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -107,8 +115,14 @@ class Videos implements ParsingRuleInterface
             // No DB rules (or candidate not ours) — fall through to hardcoded.
         }
 
-        // Hardcoded fallback
-        $aHrefs = $dom->getXpath()->query('descendant::a[@class="X5OiLe"]', $node);
+        // Hardcoded fallback — mirrors the videos DB extraction tokens (X5OiLe legacy + rIRoqf current),
+        // folded in from the former VideoCarousel::parse(). Same tokens as the DB rule, so the two break
+        // together on a real Google rename.
+        $aHrefs = $dom->getXpath()->query(
+            'descendant::a[contains(concat(" ", normalize-space(@class), " "), " X5OiLe ")'
+            . ' or contains(concat(" ", normalize-space(@class), " "), " rIRoqf ")]',
+            $node
+        );
 
         if ($aHrefs->length == 0) {
             return;
@@ -117,13 +131,23 @@ class Videos implements ParsingRuleInterface
         $items = [];
 
         foreach ($aHrefs as $url) {
+            $href = $url->getAttribute('href');
+            if (trim($href) === '') {
+                continue;
+            }
             $items[] = [
-                'url'    => \SM_Rank_Service::getUrlFromGoogleTranslate($url->getAttribute('href')),
+                'url'    => \SM_Rank_Service::getUrlFromGoogleTranslate($href),
                 'height' => '',
             ];
         }
 
-        $resultSet->addItem(new BaseResult(NaturalResultType::VIDEOS, $items, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
+        if (empty($items)) {
+            return;
+        }
+
+        // See parseWithDbRules(): emit VIDEO_CAROUSEL so TranslateService keeps serpf_videos at 1
+        // (carousel = one occurrence). Position normalises to 'videos' either way.
+        $resultSet->addItem(new BaseResult(NaturalResultType::VIDEO_CAROUSEL, $items, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }
 
     /**
@@ -147,13 +171,25 @@ class Videos implements ParsingRuleInterface
         $items = [];
 
         foreach ($aHrefs as $url) {
+            $href = $url->getAttribute('href');
+            if (trim($href) === '') {
+                continue;
+            }
             $items[] = [
-                'url'    => \SM_Rank_Service::getUrlFromGoogleTranslate($url->getAttribute('href')),
+                'url'    => \SM_Rank_Service::getUrlFromGoogleTranslate($href),
                 'height' => '',
             ];
         }
 
-        $resultSet->addItem(new BaseResult(NaturalResultType::VIDEOS, $items, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
+        if (empty($items)) {
+            return false;
+        }
+
+        // Emit VIDEO_CAROUSEL (not VIDEOS): TranslateService folds a VIDEO_CAROUSEL into $page['videos']
+        // taking only the FIRST item, so a carousel counts as ONE occurrence (serpf_videos stays 1) —
+        // preserving the long-standing stored-count semantics while this DB-gated rule replaces the
+        // former always-on VideoCarousel detector. Position normalises to 'videos' either way.
+        $resultSet->addItem(new BaseResult(NaturalResultType::VIDEO_CAROUSEL, $items, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
 
         return true;
     }

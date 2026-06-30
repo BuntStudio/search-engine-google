@@ -43,7 +43,6 @@ use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\ThingsToKnow;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\TopSights;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\TopStories;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Videos;
-use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VideoCarousel;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VisualDigest;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\VisualDigestMobile;
 use SM\Backend\SerpParser\RuleLoaderService;
@@ -81,7 +80,10 @@ class NaturalParser extends AbstractParser
             new Directions(),
             new MapsCoords(),
             new Misspelling(),
-            new VideoCarousel(),
+            // VideoCarousel removed (2026-06-29): its detection (vtSz8d / video-voyager containers,
+            // X5OiLe|rIRoqf links) is now folded into the DB-gated Videos rule above, so the video
+            // carousel is self-healable instead of being detected by an always-on hardcoded rule that
+            // masked DB-rule staleness. See migrations/serp_parser_videos_live_carousel_rules_2026-06-29.sql.
             new NoMoreResults(),
             new VisualDigest(),
             new HighlyLocalized(),

@@ -89,10 +89,19 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
 
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
     {
-        // DB rules path — the primary story-card extraction (descendant::g-inner-card, the
-        // version1 walk) lives in the 'top_stories'/'top_stories_mobile' parent feature. The
-        // version2 (a.WlydOe / rq6B5b VDgVie icon gate), version3 (g-card + g-img) and version4
-        // (WlydOe with "what people are saying" exclusion) fallback chains stay hardcoded.
+        // DB rules path — the live story-link extraction variants are now ALL expressed as DB
+        // rules on the 'top_stories'/'top_stories_mobile' parent feature: version1 (g-inner-card
+        // card), version2/4 (a.WlydOe anchor — the layout Google currently serves) and version3
+        // (g-card+g-img card). parseWithDbRules() handles both card-level and anchor-level rules.
+        //
+        // STRICT: DB mode (and candidate testing) MUST NOT fall through to the hardcoded
+        // version1-4 chain. Falling through would let the legacy hardcoded path silently re-detect
+        // when the DB rule matches nothing, which (a) masks a dead/broken DB rule from mode-2
+        // parity, (b) lets a candidate rule that matches 0 nodes falsely "pass" validation
+        // (failure-mode-D), and (c) makes the feature impossible to disaster-test. The hardcoded
+        // version1-4 steps are retained below ONLY for hardcoded/comparison modes (0/2).
+        // See docs/self-healing-serp-parser/disaster-tests/DISASTER_TEST_top_stories_2026-06-29_01.md
+        // and ClickUp 869dwwa23.
         if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
             $featureName = self::getFeatureName($isMobile);
 
@@ -106,12 +115,13 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             }
 
             if (!empty($rules)) {
-                if ($this->parseWithDbRules($dom, $node, $resultSet, $rules, $isMobile)) {
-                    return;
-                }
-                // DB rules matched nothing — fall through to hardcoded steps below.
+                // Run the DB rules and return regardless of how many stories they matched — no
+                // fallthrough to the hardcoded chain (that is what STRICT means).
+                $this->parseWithDbRules($dom, $node, $resultSet, $rules, $isMobile);
+                return;
             }
-            // No DB rules (or candidate not ours) — fall through to hardcoded.
+            // Only when the feature has NO DB rules at all (not yet integrated) do we fall through
+            // to the hardcoded extraction below.
         }
 
         foreach ($this->steps as $functionName) {
@@ -120,8 +130,13 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
     }
 
     /**
-     * Extract story links using DB rules (primary version1 g-inner-card pattern).
-     * For each matched story card, take the first descendant anchor's href.
+     * Extract story links using DB rules.
+     *
+     * Each rule may select EITHER a story card (e.g. g-inner-card / g-card — take the first
+     * descendant anchor's href) OR the story anchor itself (e.g. a.WlydOe — take its own href).
+     * Results are de-duplicated by final URL so a union rule whose selectors overlap on the same
+     * story (a card and the anchor inside it) does not double-count.
+     *
      * Returns true when at least one story was added to the result set.
      */
     protected function parseWithDbRules(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, array $rules, $isMobile)
@@ -139,14 +154,27 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
         }
 
         $items = [];
+        $seen  = [];
 
         foreach ($stories as $story) {
-            $aNode = $dom->getXpath()->query('descendant::a', $story);
-
-            if ($aNode instanceof DomNodeList && $aNode->length > 0) {
+            // Anchor-level rule (a.WlydOe): the matched node IS the story link.
+            // Card-level rule (g-inner-card / g-card): take the first descendant anchor's href.
+            if (strtolower($story->tagName) === 'a') {
+                $link = $story->getAttribute('href');
+            } else {
+                $aNode = $dom->getXpath()->query('descendant::a', $story);
+                if (!($aNode instanceof DomNodeList) || $aNode->length === 0) {
+                    continue;
+                }
                 $link = $aNode->item(0)->getAttribute('href');
-                $items['news'][] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($link)];
             }
+
+            $url = \SM_Rank_Service::getUrlFromGoogleTranslate($link);
+            if ($url === '' || isset($seen[$url])) {
+                continue;
+            }
+            $seen[$url] = true;
+            $items['news'][] = ['url' => $url];
         }
 
         if (!empty($items)) {

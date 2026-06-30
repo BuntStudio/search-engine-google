@@ -48,7 +48,10 @@ class VisualDigestMobile implements \Serps\SearchEngine\Google\Parser\ParsingRul
             // No DB rules — fall through to hardcoded
         }
 
-        if ($dom->getXpath()->query(".//div[contains(@class, 'Enb9pe')]", $node)->length > 0) {
+        // Gate on the stable semantic token data-attrid="VisualDigest…" (the same marker parse()
+        // extracts on), NOT the presentational class `Enb9pe` which Google ships only in CSS /
+        // applies to a real element only intermittently on mobile — see ClickUp 869dx3tcv.
+        if ($dom->getXpath()->query(".//*[contains(@data-attrid, 'VisualDigest')]", $node)->length > 0) {
             return self::RULE_MATCH_MATCHED;
         }
 
