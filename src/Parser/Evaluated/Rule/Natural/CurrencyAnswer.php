@@ -47,10 +47,14 @@ class CurrencyAnswer implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
             // No DB rules — fall through to hardcoded
         }
 
-        $xpath = new \DOMXPath($node->ownerDocument);
-
-        if (($xpath->query('.//div[@id="knowledge-currency__updatable-data-column"]', $node))->length > 0
-            || $node->getAttribute('id') == 'knowledge-currency__updatable-data-column') {
+        // Match ONLY the currency node itself (self::), NOT any ancestor that merely contains it.
+        // The former descendant probe (`.//div[@id="knowledge-currency__updatable-data-column"]`)
+        // over-matched an ancestor wrapper that starts above the preceding organic result, so the
+        // serp feature position was computed from the wrapper (position 1) instead of the currency
+        // box's real location (position 2). Mirrors DB rule 598 (self::*[@id=...]). Operator-confirmed
+        // there is one organic result above the converter → position 2 is correct (mode-2 parity,
+        // site 125972 'nz forex' 2026-06-30). See project_shp_match_axis_position_overmatch.
+        if ($node->getAttribute('id') == 'knowledge-currency__updatable-data-column') {
             return self::RULE_MATCH_MATCHED;
         }
 
