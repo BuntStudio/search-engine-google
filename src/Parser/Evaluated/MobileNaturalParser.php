@@ -167,7 +167,10 @@ class MobileNaturalParser extends AbstractParser
         //@id='lud-ed' directions
         //@jscontroller='h7XEsd' directions
         //contains(@class, 'e8Ck0d') visual digest
-        //contains(@class, 'Enb9pe') - visual digest mobile
+        //contains(@data-attrid, 'VisualDigest') - visual digest mobile (was the CSS-only class
+        //  'Enb9pe', which Google ships in CSS but applies to a real element only intermittently →
+        //  hardcoded never surfaced the panel → 0 mobile positives. Now gates on the stable semantic
+        //  data-attrid, mirroring VisualDigestMobile::match() + DB rule 602. ClickUp 869dx3tcv.
         //@id='rso' or - desktop organic
         //@id='botstuff' - possibly desktop organic
         return $googleDom->xpathQuery("//*[@id='iur' or
@@ -225,7 +228,7 @@ class MobileNaturalParser extends AbstractParser
             @jsname='ZLxsqf' or
             @class='pxiwBd' or
             @jscontroller='wuEeed' or
-            contains(@class, 'Enb9pe') or
+            descendant::*[contains(@data-attrid, 'VisualDigest')] or
             starts-with(@data-kpid, 'vise:') or
 
             @id='rso' or

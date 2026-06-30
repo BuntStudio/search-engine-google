@@ -59,12 +59,16 @@ class Videos implements ParsingRuleInterface
         // features so a renamed container still resolves. Candidate testing (mode 3) consults the
         // heal candidate; mode 1 uses live rules.
         if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            // Desktop videos must NOT union the mobile videos_mobile_match rules. Those include
+            // mobile Shorts-shelf containers (e.g. EDblX HG5ZQb + oj7Mub eVNxY, rule 624 — the
+            // "Vídeos cortos" shelf) which DO render on desktop but are NOT the desktop videos
+            // widget. The hardcoded desktop match keys ONLY on e4xoPb / vtSz8d / <video-voyager>
+            // (== the videos_match rule), so unioning the mobile rules made the DB path over-detect
+            // a Short as a video (mode-2 parity, kw 'cobrar viudedad sin estar casados' Desktop
+            // 2026-06-30: hardcoded=0, DB=1). Mirror hardcoded exactly: desktop videos_match only.
             $matchRules = ($useDbRules === self::MODE_CANDIDATE_TESTING)
-                ? RuleLoaderService::getCandidateMatchRulesForFeatures(['videos_match', 'videos_mobile_match'])
-                : array_unique(array_merge(
-                    RuleLoaderService::getRulesForFeature('videos_match'),
-                    RuleLoaderService::getRulesForFeature('videos_mobile_match')
-                ));
+                ? RuleLoaderService::getCandidateMatchRulesForFeatures(['videos_match'])
+                : RuleLoaderService::getRulesForFeature('videos_match');
 
             if (!empty($matchRules)) {
                 $matchXpath = implode(' | ', $matchRules);

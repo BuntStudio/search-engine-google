@@ -154,7 +154,6 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
         }
 
         $items = [];
-        $seen  = [];
 
         foreach ($stories as $story) {
             // Anchor-level rule (a.WlydOe): the matched node IS the story link.
@@ -169,11 +168,14 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
                 $link = $aNode->item(0)->getAttribute('href');
             }
 
+            // NO URL de-duplication: the hardcoded version1-4 chain does not de-dup, so a story
+            // rendered twice in the block (e.g. across two lU8tTd sub-sections) is counted twice.
+            // De-duping here broke DB==hardcoded parity (mode-2, site 54706 'câncer' Mobile
+            // 2026-06-30: hardcoded=26, DB=22 — 4 stories listed twice in the DOM).
             $url = \SM_Rank_Service::getUrlFromGoogleTranslate($link);
-            if ($url === '' || isset($seen[$url])) {
+            if ($url === '') {
                 continue;
             }
-            $seen[$url] = true;
             $items['news'][] = ['url' => $url];
         }
 
