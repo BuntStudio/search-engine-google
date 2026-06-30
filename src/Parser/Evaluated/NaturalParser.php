@@ -144,9 +144,12 @@ class NaturalParser extends AbstractParser
                 'places_sites_match', 'directions',
                 // Wave 3 batch (2026-06-18). questions is single-gate (bare top-level feature,
                 // no _match child); the rest carry the container gate on their _match child.
-                // flights_sites / flights_airlines are desktop-only (no mobile parser class).
+                // flights_sites is desktop-only (no mobile parser class).
+                // flights_airlines / flights_airlines_match removed from SHP 2026-06-30 (never
+                // detected; selectors absent from real SERPs — see
+                // migrations/serp_parser_remove_flights_airlines_feature_2026-06-30.sql).
                 'questions', 'top_stories_match', 'videos_match',
-                'flights_sites_match', 'flights_airlines_match',
+                'flights_sites_match',
             ];
             $dbXpaths = [];
             foreach ($matchFeatures as $matchFeature) {

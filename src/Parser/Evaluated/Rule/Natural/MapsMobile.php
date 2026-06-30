@@ -95,9 +95,20 @@ class MapsMobile implements ParsingRuleInterface
             // No DB rules (or candidate not ours) — fall through to hardcoded.
         }
 
-        // Hardcoded fallback (version1 / version2 / version3 chain)
+        // Hardcoded fallback (version1 / version2 / version3 chain).
+        // Mirror the desktop "first MAP wins" intent, but scoped to THIS node only: once a step
+        // adds a MAP item, stop. Otherwise version3's broad span[@role='heading'] also scoops up
+        // the "Centrul meu de anunțuri" / "My Ad Center" (aria-level=1) ads-disclosure overlay that
+        // Google injects into the mobile local pack, over-counting maps_links vs the DB path
+        // (mode-2 parity, site 104785 'casa de expeditii transport' 2026-06-29: hardcoded=5, DB=4).
+        // Per-node scope (NOT the global hasType(MAP) guard desktop Maps uses) keeps multi-container
+        // mobile consistent with the DB path, which sums every container.
+        $beforeCount = $resultSet->count();
         foreach ($this->steps as $functionName) {
             call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile]);
+            if ($resultSet->count() > $beforeCount) {
+                break;
+            }
         }
     }
 
