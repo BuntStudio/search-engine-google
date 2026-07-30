@@ -173,10 +173,28 @@ class MapsMobile implements ParsingRuleInterface
         $spanElements = [];
 
         foreach ($ratingStars as $ratingStarNode) {
+            // `span[@role='heading']` is NOT restricted to aria-level=3 here, so this step also
+            // selects the local pack's structural heading spans (aria-level=2), whose text nodes are
+            // whitespace-only. Those produced junk maps_links entries (title "\n", url null) that the
+            // DB path never emits — it filters to aria-level=3 (rule 410) AND skips empty titles in
+            // parseWithDbRules(). The junk inflated getMapsBaseline()'s total_results and, worse,
+            // occupied the leading top_5_results slots (mode-2 parity, site 340663
+            // 'gourmet chutney pack' Mobile 2026-07-30: hardcoded=8, DB=6).
+            $title = $ratingStarNode->textContent;
+            if (trim($title) === '') {
+                continue;
+            }
+
             $spanElements[] = [
-                'title' => $ratingStarNode->textContent,
+                'title' => $title,
                 'href' => null, // TODO: find the href
             ];
+        }
+
+        // Mirror parseWithDbRules(): no listings extracted means no MAP item at all, rather than an
+        // empty one that would still flag the local pack as present.
+        if (empty($spanElements)) {
+            return;
         }
 
         $resultSet->addItem(new BaseResult(NaturalResultType::MAP, $spanElements, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));

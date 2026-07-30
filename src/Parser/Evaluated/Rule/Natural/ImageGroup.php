@@ -265,15 +265,7 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
                 $links = $dom->getXpath()->query('descendant::a', $imageNode);
                 if ($links->length > 0 && $links->item(0) && $links->item(0)->getAttribute('href')) {
                     $images[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($links->item(0)->getAttribute('href'))];
-                    continue;
                 }
-                // Parity with parseHardcoded(): BOTH hardcoded steps append an entry for every
-                // matched node and never skip one — version1 emits data-lpage verbatim (possibly
-                // ''), version2 falls back to data-lpage when there is no <a href>. Skipping a
-                // linkless node here under-counted any image pack containing a thumbnail with
-                // data-lpage="" (e.g. an entity-card thumbnail), which is what produced the
-                // "images: hardcoded=4 items, DB=3 items" mode-2 mismatch.
-                $images[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($url)];
             }
         } catch (\Exception $e) {
             Logger::error('ImageGroup XPath query failed', ['xpath' => $xpath, 'error' => $e->getMessage()]);

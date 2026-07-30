@@ -124,19 +124,8 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             // to the hardcoded extraction below.
         }
 
-        // version1-4 are ALTERNATIVE layout variants for the SAME container, not additive passes:
-        // version2 and version4 extract the identical `descendant::a[contains(@class,'WlydOe')]`
-        // set and differ only in their gate, so a container satisfying both gates had its stories
-        // added TWICE (version1 vs version4 collide the same way — both gate on 'e2BEnf q8U8x').
-        // TranslateService array_merges every TOP_STORIES item into `news`, so the block was
-        // reported at 2x its real size. version3 already encoded "first match wins" via its
-        // hasType() guard; this makes that intent explicit and per-node, which — unlike hasType()
-        // — stays correct when a page carries more than one top-stories container.
         foreach ($this->steps as $functionName) {
-            $added = call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile]);
-            if ($added === true) {
-                break;
-            }
+            call_user_func_array([$this, $functionName], [$dom, $node, $resultSet, $isMobile]);
         }
     }
 
@@ -204,14 +193,14 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
     {
         $storiesIcon = $googleDOM->getXpath()->query("descendant::div[contains(@class, 'e2BEnf q8U8x')]", $node);
         if ($storiesIcon->length == 0) {
-            return false;
+            return;
         }
 
         $stories = $googleDOM->getXpath()->query('descendant::g-inner-card', $node);
         $items   = [];
 
         if ($stories->length == 0) {
-            return false;
+            return;
         }
 
         foreach ($stories as $urlNode) {
@@ -227,10 +216,7 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             $resultSet->addItem(
                 new BaseResult($this->getType($isMobile), $items, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition)
             );
-            return true;
         }
-
-        return false;
     }
 
     protected function getType($isMobile)
@@ -242,16 +228,16 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
     {
         $storiesIcon = $googleDOM->getXpath()->query("descendant::span[contains(@class, 'rq6B5b VDgVie')]", $node);
         if (!$isMobile && $storiesIcon->length == 0) {
-            return false;
+            return;
         }
         $hrefsNodes = $googleDOM->getXpath()->query("descendant::a[contains(@class,'WlydOe')]", $node);
 
         if (!$hrefsNodes instanceof DomNodeList) {
-            return false;
+            return;
         }
 
         if ($hrefsNodes->length == 0) {
-            return false;
+            return;
         }
 
         $items = [];
@@ -263,10 +249,7 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
 
         if (!empty($items)) {
             $resultSet->addItem(new BaseResult($this->getType($isMobile), $items, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
-            return true;
         }
-
-        return false;
     }
 
     protected function version3(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile)
@@ -275,17 +258,17 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
         // It is possible to find results based on third condition by id "kp-wp-tab-cont-Latest" and identify urls with "version2" method
         // And it's not necessarily to add twice this type of results.
         if($resultSet->hasType($this->getType($isMobile))) {
-            return false;
+            return;
         }
 
         $cards = $googleDOM->getXpath()->query("descendant::g-card", $node);
 
         if (!$cards instanceof DomNodeList) {
-            return false;
+            return;
         }
 
         if ($cards->length == 0) {
-            return false;
+            return;
         }
 
         $items = [];
@@ -307,32 +290,29 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
 
         if (!empty($items)) {
             $resultSet->addItem(new BaseResult($this->getType($isMobile), $items, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
-            return true;
         }
-
-        return false;
     }
 
     protected function version4(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile)
     {
         $storiesIcon = $googleDOM->getXpath()->query("descendant::div[contains(@class, 'e2BEnf q8U8x')]", $node);
         if ($storiesIcon->length == 0) {
-            return false;
+            return;
         }
 
         $whatPeopleAreSaying = $googleDOM->getXpath()->query("descendant::div[contains(@class, 'OSrXXb rbYSKb LfVVr esJEyb')]", $node);
         if ($whatPeopleAreSaying->length > 0) {
-            return false;
+            return;
         }
 
         $hrefsNodes = $googleDOM->getXpath()->query("descendant::a[contains(@class,'WlydOe')]", $node);
 
         if (!$hrefsNodes instanceof DomNodeList) {
-            return false;
+            return;
         }
 
         if ($hrefsNodes->length == 0) {
-            return false;
+            return;
         }
 
         $items = [];
@@ -344,9 +324,6 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
 
         if (!empty($items)) {
             $resultSet->addItem(new BaseResult($this->getType($isMobile), $items, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
-            return true;
         }
-
-        return false;
     }
 }
