@@ -180,7 +180,16 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
 
             if ($images->length > 0) {
                 foreach ($images as $imageNode) {
-                    $allImages[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($this->parseItem($imageNode))];
+                    // Skip nodes that carry no usable link. Entity-card thumbnails render as
+                    // div[@data-lpage=""] with no <a> beneath, so appending unconditionally emitted
+                    // a junk ['url' => ''] entry and over-counted the image pack by one. The DB path
+                    // (queryImageNodes) has always guarded this; this restores parity on the correct
+                    // side. Produced "images: hardcoded=4 items, DB=3 items" mode-2 mismatches.
+                    $url = $this->parseItem($imageNode);
+                    if ($url === '' || $url === null) {
+                        continue;
+                    }
+                    $allImages[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($url)];
                 }
             }
         } catch (\Exception $e) {
@@ -197,7 +206,12 @@ class ImageGroup implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
                     if ($itemsImg->length !== 0 && $itemsImg->item(0) && $itemsImg->item(0)->getAttribute('href')) {
                         $allImages[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($itemsImg->item(0)->getAttribute('href'))];
                     } else {
-                        $allImages[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($this->parseItem($imageNode))];
+                        // Same guard as version1: never emit a linkless entry.
+                        $url = $this->parseItem($imageNode);
+                        if ($url === '' || $url === null) {
+                            continue;
+                        }
+                        $allImages[] = ['url' => \SM_Rank_Service::getUrlFromGoogleTranslate($url)];
                     }
                 }
             }

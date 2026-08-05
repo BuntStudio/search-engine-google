@@ -135,16 +135,23 @@ class MapsMobile implements ParsingRuleInterface
         $spanElements = [];
 
         foreach ($ratingStars as $ratingStarNode) {
-            // Mobile rllt__details layout: the business name sits two levels down (mirrors version2).
-            $title = '';
-            if ($ratingStarNode->firstChild && $ratingStarNode->firstChild->firstChild) {
-                $title = $ratingStarNode->firstChild->firstChild->textContent;
-            }
-            // Fallback: the matched node's own text content.
-            if ($title === '' || $title === null) {
+            // Mobile rllt__details layout: the business name sits two ELEMENT levels down
+            // (mirrors version2). Element-aware — see firstElementChild().
+            $title = $this->extractCardTitle($ratingStarNode);
+            // Fallback: the matched node's own text content. This exists for the HEADING-shaped
+            // rule (410, span[@role='heading' and @aria-level='3']), whose text content IS the
+            // business name. It must NOT be applied to the CARD-shaped rule (398,
+            // div[@class~='rllt__details']): a listing card's text content is the whole card
+            // (reviews + category + service options), never just the name. Google sometimes serves
+            // a card whose name span is empty (<div class="tNxQIb JIFdL lrl-obh"><span></span></div>),
+            // and the unrestricted fallback turned that into a fabricated title such as
+            // "Nicio recenzieMagazin de articole electriceCumparaturi in magazin·..." — a mode-2
+            // value mismatch against hardcoded version2's '' (site 299282
+            // 'magazin electrice constanta' Mobile 2026-08-05: hardcoded=6, DB=6, 3 titles differing).
+            if (($title === '' || $title === null) && $ratingStarNode->nodeName === 'span') {
                 $title = trim($ratingStarNode->textContent);
             }
-            if ($title === '') {
+            if ($title === '' || trim($title) === '') {
                 continue;
             }
 
@@ -164,7 +171,15 @@ class MapsMobile implements ParsingRuleInterface
 
     protected function version3(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile)
     {
-        $ratingStars = $googleDOM->getXpath()->query("./descendant::span[@role='heading']/text()", $node);
+        // Restricted to aria-level=3 to mirror DB rule 410 exactly. An unrestricted
+        // span[@role='heading'] also selects the "My Ad Centre" / "Centrul meu de anunțuri"
+        // (aria-level=1) ads-disclosure overlay Google injects into the mobile local pack, and the
+        // pack's structural heading spans (aria-level=2). The 2026-06-29 per-node break only
+        // suppresses that when an EARLIER step succeeds — on a pack with no g-review-stars and no
+        // rllt__details (version1 and version2 both select 0) the chain falls through to version3
+        // and the overlay leaks in as two extra listings (mode-2 parity, site 306047
+        // 'weekend craft outdoor furniture' Mobile 2026-08-04: hardcoded=10, DB=8).
+        $ratingStars = $googleDOM->getXpath()->query("./descendant::span[@role='heading' and @aria-level='3']/text()", $node);
 
         if ($ratingStars->length == 0) {
             return;
@@ -200,6 +215,64 @@ class MapsMobile implements ParsingRuleInterface
         $resultSet->addItem(new BaseResult(NaturalResultType::MAP, $spanElements, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }
 
+    /**
+     * First ELEMENT child of a node, skipping text/comment nodes.
+     *
+     * `firstChild` is whitespace-sensitive: whether it returns the name <div> or a "\n" text node
+     * depends on whether that markup carries inter-element whitespace. Most does not, which is why
+     * the old `firstChild->firstChild` walk worked for years — but where it DOES, the walk lands on
+     * a text node and yields NULL plus a "Trying to get property 'textContent' of non-object"
+     * notice for every listing in that pack, while the DB path's fallback degraded to the whole
+     * card's text (name + rating + category + address + hours). The names are in the DOM throughout.
+     *
+     * The whitespace varies **per container, within a single document** — site 334290
+     * 'unde sa mananci in lugano' Mobile 2026-08-04 has four identical
+     * `xxAJT eDSE7e Ww4FFb vt6azd` containers where the first two (6 cards each) are whitespace-
+     * separated and broken while the last two (3 cards each) are not: hardcoded returned 12 NULLs
+     * followed by 6 correct names. So this is a property of the individual markup block, NOT of the
+     * parse source and NOT of the render as a whole — never assume a sibling container is safe.
+     * Also seen on site 341587 'aile şirketi iletişimi' Mobile 2026-08-04 (3 of 3 cards).
+     *
+     * @param \DOMNode|null $node
+     * @return \DOMNode|null
+     */
+    private function firstElementChild($node)
+    {
+        if (!$node || !$node->childNodes) {
+            return null;
+        }
+
+        foreach ($node->childNodes as $child) {
+            if ($child->nodeType === XML_ELEMENT_NODE) {
+                return $child;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Business name for an rllt__details listing card: two ELEMENT levels down
+     * (div.rllt__details > div.tNxQIb > span). Returns '' when the name is genuinely absent, which
+     * callers treat as "skip this listing" rather than falling back to the card's full text
+     * (reviews + category + address + hours) — that fabricated a plausible-looking title on
+     * site 299282, 2026-08-05.
+     *
+     * @param \DOMNode $cardNode
+     * @return string
+     */
+    private function extractCardTitle($cardNode)
+    {
+        $nameWrapper = $this->firstElementChild($cardNode);
+        $nameNode    = $this->firstElementChild($nameWrapper);
+
+        if (!$nameNode) {
+            return '';
+        }
+
+        return (string) $nameNode->textContent;
+    }
+
     protected function version2(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile)
     {
         $ratingStars = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' rllt__details')]", $node);
@@ -211,10 +284,26 @@ class MapsMobile implements ParsingRuleInterface
         $spanElements = [];
 
         foreach ($ratingStars as $ratingStarNode) {
+            // Google sometimes serves a listing card whose name span is empty
+            // (<div class="tNxQIb JIFdL lrl-obh"><span></span></div>) — the name is never in the
+            // HTML for it. The unguarded walk turned those into ['title' => '', 'url' => null]
+            // listings, which inflate getMapsBaseline()'s total_results and occupy top_5_results
+            // slots with blanks. Same guard version3 already carries (2026-07-30).
+            $title = $this->extractCardTitle($ratingStarNode);
+            if (trim($title) === '') {
+                continue;
+            }
+
             $spanElements[] = [
-                'title' => $ratingStarNode->firstChild->firstChild->textContent,
+                'title' => $title,
                 'href' => null, // TODO: find the href
             ];
+        }
+
+        // Mirror parseWithDbRules()/version3(): no listings extracted means no MAP item at all,
+        // rather than an empty one that would still flag the local pack as present.
+        if (empty($spanElements)) {
+            return;
         }
 
         $resultSet->addItem(new BaseResult(NaturalResultType::MAP, $spanElements, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
