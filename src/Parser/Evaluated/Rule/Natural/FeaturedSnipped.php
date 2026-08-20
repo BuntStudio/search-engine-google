@@ -207,7 +207,10 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
                 continue;
             }
 
-            $aTag = $googleDOM->getXpath()->query("descendant::a", $featureSnippetNode);
+            // Entity-mention hover popups (div[@role="dialog"], display:none) contain an <a>
+            // that precedes the visible source link in DOM order and reuses its classes —
+            // never a visible result link, so exclude that subtree (869emj5zh).
+            $aTag = $googleDOM->getXpath()->query("descendant::a[not(ancestor::div[@role='dialog'])]", $featureSnippetNode);
             $h3Tag = $googleDOM->getXpath()->query("descendant::h3", $featureSnippetNode);//title
             // Description: prefer semantic data-attrid, fall back to CSS class
             $description = $googleDOM->getXpath()->query("preceding-sibling::div/descendant::div[@data-attrid='wa:/description']", $featureSnippetNode);
@@ -262,8 +265,11 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
 
         $object = new \StdClass();
 
-        // Try the primary source URL XPath (class-based)
-        $sourceUrls = $googleDOM->getXpath()->query('.//a[@class="sXtWJb"]/@href', $node);
+        // Try the primary source URL XPath (class-based). Google reuses sXtWJb/UWckNb on the
+        // <a> inside hidden entity-mention popups (div[@role="dialog"], display:none) that sit
+        // BEFORE the visible source link in DOM order, so dialog subtrees must be excluded or
+        // the popup target (e.g. a Wikipedia entity page) is stored as the snippet source (869emj5zh).
+        $sourceUrls = $googleDOM->getXpath()->query('.//a[@class="sXtWJb" and not(ancestor::div[@role="dialog"])]/@href', $node);
 
         // If not found, try the alternative XPath
         if ($sourceUrls->length == 0) {
@@ -278,7 +284,7 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         // Semantic fallback: first outbound link that isn't a Google-internal URL
         if ($sourceUrls->length == 0) {
             $sourceUrls = $googleDOM->getXpath()->query(
-                './/a[@href and not(contains(@href, "google.com")) and not(starts-with(@href, "/search"))]/@href',
+                './/a[@href and not(contains(@href, "google.com")) and not(starts-with(@href, "/search")) and not(ancestor::div[@role="dialog"])]/@href',
                 $node
             );
         }
@@ -292,7 +298,7 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
             );
 
             // Title: try class-based first, then semantic h3 fallback
-            $titleElements = $googleDOM->getXpath()->query('.//a[@class="sXtWJb" and @jsname="UWckNb"]', $node);
+            $titleElements = $googleDOM->getXpath()->query('.//a[@class="sXtWJb" and @jsname="UWckNb" and not(ancestor::div[@role="dialog"])]', $node);
             if ($titleElements->length == 0) {
                 $titleElements = $googleDOM->getXpath()->query('.//h3', $node);
             }

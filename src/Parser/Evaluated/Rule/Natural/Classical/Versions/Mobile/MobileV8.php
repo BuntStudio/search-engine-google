@@ -13,7 +13,10 @@ class MobileV8 implements ParsingRuleByVersionInterface
     public function parseNode(GoogleDom $dom, \DomElement $organicResult, OrganicResultObject $organicResultObject, array $doNotRemoveSrsltidForDomains = [])
     {
         /* @var $aTag \DOMElement */
-        $aTag = $dom->xpathQuery("descendant::a", $organicResult);
+        // Entity-mention hover popups (div[@role="dialog"], display:none) hold an <a> that
+        // precedes the visible result link in DOM order (e.g. a featured snippet whose text
+        // mentions a brand) — never a visible result link, so exclude that subtree (869emj5zh).
+        $aTag = $dom->xpathQuery("descendant::a[not(ancestor::div[@role='dialog'])]", $organicResult);
 
         if (empty($aTag) && $organicResultObject->getLink() === null) {
             throw new InvalidDOMException('Cannot parse a classical result.');
