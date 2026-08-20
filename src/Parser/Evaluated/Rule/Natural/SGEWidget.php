@@ -38,6 +38,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     protected $jslDhCallsCount = 0;
     protected $aioIdFound = false;
 
+    // Per-widget counters for /goto citation hrefs (flushed to Logger in extractWidgetData)
+    protected $gotoCitationLinksRecovered = 0;
+    protected $gotoCitationLinksDropped = 0;
+
     /**
      * Get the feature name based on mobile flag.
      */
@@ -205,6 +209,8 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         $this->jslDhCallsCount = 0;
         $this->aioIdFound = false;
+        $this->gotoCitationLinksRecovered = 0;
+        $this->gotoCitationLinksDropped = 0;
 
         // First, enrich the content with all dynamic data
         $this->enrichContentWithDynamicData($dom, $node, $originalDom);
@@ -276,6 +282,14 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['jsl_dh_calls_count'] = $this->jslDhCallsCount;
         $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['aio_id_found'] = $this->aioIdFound;
         $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['content_length'] = strlen($data[NaturalResultType::SGE_WIDGET_CONTENT]);
+
+        if ($this->gotoCitationLinksRecovered > 0 || $this->gotoCitationLinksDropped > 0) {
+            Logger::notice('AIO goto citation link detected - using visible domain link', [
+                'device' => $isMobile ? 'mobile' : 'desktop',
+                'recovered' => $this->gotoCitationLinksRecovered,
+                'dropped' => $this->gotoCitationLinksDropped,
+            ]);
+        }
 
         return $data;
     }
@@ -540,6 +554,63 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         }
     }
 
+    /**
+     * A /goto?url= href carries an encrypted token whose destination is not
+     * recoverable offline (unlike /url?, whose destination is a query param).
+     */
+    protected static function isGotoRedirect($url)
+    {
+        return is_string($url) && strpos($url, '/goto?url=') !== false;
+    }
+
+    /**
+     * On /goto SERP variants the citation card still renders the source's
+     * origin URL (div.XVWGNd) and bare domain label (div.R8BTeb), so we
+     * attribute the citation to its visible domain — the same trade-off the
+     * organic MobileV7Goto/DesktopV3Goto fallback already makes. $query is an
+     * xpath runner because callers hold different XPath objects ($dom vs a
+     * temp-document DOMXPath).
+     */
+    protected function resolveGotoVisibleUrl(callable $query, \DOMNode $context)
+    {
+        // Climb from the anchor/cage toward the card, requiring exactly ONE
+        // visible-URL element: more than one means we climbed past the card
+        // boundary and would borrow a neighbouring citation's domain.
+        $selectors = [
+            'descendant::div[@class="XVWGNd"]' => function ($text) {
+                return (strpos($text, 'http') === 0 && filter_var($text, FILTER_VALIDATE_URL)) ? $text : null;
+            },
+            'descendant::div[contains(concat(" ", normalize-space(@class), " "), " R8BTeb ")]' => function ($text) {
+                // Bare domain label — require something host-shaped before prefixing a scheme
+                return ($text !== '' && strpos($text, ' ') === false && strpos($text, '.') !== false)
+                    ? 'https://' . $text
+                    : null;
+            },
+        ];
+
+        foreach ($selectors as $selector => $validate) {
+            $node = $context;
+            for ($level = 0; $level < 4 && $node instanceof \DOMElement; $level++, $node = $node->parentNode) {
+                $hits = $query($selector, $node);
+                if ($hits === false || !($hits instanceof \Traversable || $hits instanceof \DOMNodeList)) {
+                    break;
+                }
+                if ($hits->length > 1) {
+                    break;
+                }
+                if ($hits->length === 1) {
+                    $resolved = $validate(trim($hits->item(0)->textContent));
+                    if ($resolved !== null) {
+                        return $resolved;
+                    }
+                    break;
+                }
+            }
+        }
+
+        return null;
+    }
+
     private function processLinkElements($dom, $elements, &$urls, &$data) {
         foreach ($elements as $cage) {
             // Skip if node has been removed from DOM
@@ -567,6 +638,20 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
                 // Clean URL hash to improve unique page identification
                 $url = $this->cleanUrlHash($url);
+
+                if (self::isGotoRedirect($url)) {
+                    $resolved = $this->resolveGotoVisibleUrl(function ($expr, $ctx) use ($dom) {
+                        return $dom->xpathQuery($expr, $ctx);
+                    }, $cage);
+                    if ($resolved === null) {
+                        // Storing the encrypted blob would create a phantom
+                        // csn_site ('goto') row — an absent link loses less.
+                        $this->gotoCitationLinksDropped++;
+                        continue;
+                    }
+                    $this->gotoCitationLinksRecovered++;
+                    $url = $resolved;
+                }
 
                 if (in_array($url, $urls)) {
                     continue;
@@ -1041,6 +1126,20 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                     continue;
                 }
 
+                if (self::isGotoRedirect($url)) {
+                    $resolved = $this->resolveGotoVisibleUrl(function ($expr, $ctx) use ($xpath) {
+                        return $xpath->query($expr, $ctx);
+                    }, $anchor);
+                    if ($resolved === null) {
+                        // In-answer inline anchors have no visible-URL sibling;
+                        // dropping them loses nothing the citation cards don't carry.
+                        $this->gotoCitationLinksDropped++;
+                        continue;
+                    }
+                    $this->gotoCitationLinksRecovered++;
+                    $url = $resolved;
+                }
+
                 $links[] = [
                     'url' => $url,
                     'title' => $title,
@@ -1063,11 +1162,11 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         // Regex pattern to match anchor tags with class="KEVENd" specifically
         $anchorPattern = '/<a\s+[^>]*class=["\']KEVENd["\'][^>]*href=["\']([^"\']+)["\'][^>]*(?:aria-label=["\']([^"\']*)["\'])?[^>]*>(.*?)<\/a>/is';
 
-        if (preg_match_all($anchorPattern, $htmlContent, $matches, PREG_SET_ORDER)) {
+        if (preg_match_all($anchorPattern, $htmlContent, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE)) {
             foreach ($matches as $match) {
-                $href = $match[1];
-                $ariaLabel = isset($match[2]) ? $match[2] : '';
-                $textContent = isset($match[3]) ? strip_tags($match[3]) : '';
+                $href = $match[1][0];
+                $ariaLabel = isset($match[2][0]) ? $match[2][0] : '';
+                $textContent = isset($match[3][0]) ? strip_tags($match[3][0]) : '';
 
                 // Use aria-label if available, otherwise use text content
                 $title = !empty($ariaLabel) ? $ariaLabel : trim($textContent);
@@ -1081,6 +1180,26 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 // Skip invalid URLs
                 if (empty($url) || $url === '#' || strpos($url, 'javascript:') === 0) {
                     continue;
+                }
+
+                if (self::isGotoRedirect($url)) {
+                    // No DOM here — the card renders the visible origin URL
+                    // (div.XVWGNd) AFTER its anchor and before the next card's
+                    // anchor, so a bounded forward search stays inside the card.
+                    $resolved = null;
+                    $segment = substr($htmlContent, $match[0][1], 4000);
+                    if (preg_match('/class=["\'][^"\']*XVWGNd[^"\']*["\'][^>]*>([^<]+)</', $segment, $visibleMatch)) {
+                        $candidate = trim(html_entity_decode($visibleMatch[1], ENT_QUOTES));
+                        if (strpos($candidate, 'http') === 0 && filter_var($candidate, FILTER_VALIDATE_URL)) {
+                            $resolved = $candidate;
+                        }
+                    }
+                    if ($resolved === null) {
+                        $this->gotoCitationLinksDropped++;
+                        continue;
+                    }
+                    $this->gotoCitationLinksRecovered++;
+                    $url = $resolved;
                 }
 
                 $links[] = [
