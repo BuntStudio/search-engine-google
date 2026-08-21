@@ -133,7 +133,14 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
             if($titleNode->length >0) {
                 $data['title'] = $titleNode->item(0)->firstChild->textContent;
             } else {
-                $titleNode = $dom->cssQuery("h2[data-attrid='title']", $node)->item(0);
+                // Widened from h2[...] to *[...] (2026-08-21, investigation #1242): Google moved the
+                // mobile KG entity title from <h2 data-attrid="title"> to
+                // <div data-attrid="title" role="heading" aria-level="2">. The h2 form matched 0 of the
+                // 12 stored KG corpus SERPs (desktop + mobile) — this tier had been dead everywhere and
+                // only surfaced when the div[data-attrid='subtitle'] tier above also missed (keyword
+                // "nelson", site 306147), leaving $data['title'] empty -> page['knowledge_graph'] = ''
+                // -> getKnowledgeGraphPresenceBaseline() reported 0 while the panel was plainly present.
+                $titleNode = $dom->cssQuery("*[data-attrid='title']", $node)->item(0);
                 if ($titleNode instanceof \DomElement) {
                     $data['title'] = $titleNode->textContent;
                 }
