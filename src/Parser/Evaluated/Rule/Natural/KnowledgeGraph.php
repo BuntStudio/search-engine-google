@@ -147,6 +147,42 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
             }
         }
 
+        // Tier 5 (2026-08-25, investigation #1304): on a COMPOSITE entity panel Google renders the
+        // entity header in an osrp node OUTSIDE #rhs, while #rhs carries only the sub-panels
+        // (About / Profiles / Nutrition / Configurations). Tiers 1-4 above are all scoped to $node
+        // (#rhs on desktop), so every one of them misses and $data['title'] stays empty ->
+        // page['knowledge_graph'] = '' -> getKnowledgeGraphPresenceBaseline() reports 0 even though
+        // the panel is plainly there and the match gate fired (rule 826). Measured on the corpus:
+        // 4 of 11 correctly-gated panels were lost here (keywords "mazare", "seela sella",
+        // "q4 e tron sportback", "kahvi").
+        //
+        // Re-run the SAME selectors, scoped to whatever element carries this panel's data-kpid, so
+        // the title can only ever come from the SAME entity - never from an unrelated panel.
+        if (empty($data['title'])) {
+            $kpidNode = $dom->getXpath()
+                ->query("descendant-or-self::*[starts-with(@data-kpid, 'vise:')]", $node)->item(0);
+            $kpid = ($kpidNode instanceof \DomElement) ? $kpidNode->getAttribute('data-kpid') : '';
+
+            // Guard the interpolation: kpid comes from the document.
+            if ($kpid !== '' && preg_match('#^vise:[A-Za-z0-9/_.-]+$#', $kpid)) {
+                $scope = "//*[@data-kpid='" . $kpid . "']";
+
+                $entityNode = $dom->getXpath()->query($scope . "//div[@data-attrid='subtitle']")->item(0);
+                if ($entityNode instanceof \DomElement) {
+                    $data['title'] = $entityNode->textContent;
+                    $subtitle = $dom->cssQuery("*[class='E5BaQ']", $entityNode);
+                    if ($subtitle->length > 0) {
+                        $data['title'] = $subtitle->item(0)->textContent;
+                    }
+                } else {
+                    $entityNode = $dom->getXpath()->query($scope . "//*[@data-attrid='title']")->item(0);
+                    if ($entityNode instanceof \DomElement) {
+                        $data['title'] = $entityNode->textContent;
+                    }
+                }
+            }
+        }
+
         // Has no definition -> take "general presentation" text
         if(empty($data)) {
             $data['title']= $this->detectGeneralPresentationText($dom, $node);
