@@ -23,6 +23,14 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
     protected $currentUseDbRules = 0;
 
     /**
+     * Node paths already emitted during this document parse, used only when
+     * result-node de-duplication is enabled.
+     *
+     * @var array
+     */
+    protected $seenResultPaths = [];
+
+    /**
      * Parser mode constants for self-healing parser integration
      */
     const MODE_HARDCODED = 0;           // Production default - uses hardcoded XPath
@@ -44,6 +52,18 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
     ];
 
     /**
+     * When true, a result node already emitted for this document is skipped.
+     *
+     * The natural-results XPaths are document-absolute, so every `#center_col`
+     * container re-scans the whole document. Live crawls parse one page per
+     * ParseHtmlEvent (one container), which is why this stays off by default and
+     * the rank pipeline is unaffected. Callers that parse a merged multi-page
+     * snapshot — the self-healing parser — turn it on to avoid counting every
+     * result once per page.
+     */
+    protected static $dedupeResultNodes = false;
+
+    /**
      * Set the current site ID for XPath selection
      *
      * @param int|null $siteId
@@ -51,6 +71,22 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
     public static function setCurrentSiteId(?int $siteId): void
     {
         self::$currentSiteId = $siteId;
+    }
+
+    /**
+     * Enable result-node de-duplication for merged multi-page SERP snapshots
+     */
+    public static function enableResultNodeDedupe(): void
+    {
+        self::$dedupeResultNodes = true;
+    }
+
+    /**
+     * Restore the live-crawl default
+     */
+    public static function disableResultNodeDedupe(): void
+    {
+        self::$dedupeResultNodes = false;
     }
 
     /**
@@ -221,6 +257,14 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         $k = 0;
 
         foreach ($naturalResults as $organicResult) {
+
+            if (self::$dedupeResultNodes) {
+                $nodePath = $organicResult->getNodePath();
+                if (isset($this->seenResultPaths[$nodePath])) {
+                    continue;
+                }
+                $this->seenResultPaths[$nodePath] = true;
+            }
 
             if ($this->skiResult($dom, $organicResult)) {
                 continue;
