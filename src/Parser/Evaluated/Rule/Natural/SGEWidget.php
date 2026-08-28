@@ -444,8 +444,13 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $privacyNotice = $dom->xpathQuery('descendant::span[@jsname="q9irQd"]', $node);
         foreach ($privacyNotice as $notice) $notice->parentNode->removeChild($notice);
 
-        // Remove the overlay div
-        $overlayDiv = $dom->xpathQuery('//div[contains(@class, "RDmXvc")]', $node);
+        // Remove the overlay div. 'descendant::' for the same detached-clone reason
+        // as <style>/<script> above: $node is a clone whose ownerDocument is still
+        // the full page, so an absolute '//div[...]' resolves against the whole
+        // document and removes the PAGE's overlay divs - twice, once per pass -
+        // while the clone's own overlay (the one that matters here) is reached
+        // either way. Anything reading the DOM after the parse saw a mutated tree.
+        $overlayDiv = $dom->xpathQuery('descendant::div[contains(@class, "RDmXvc")]', $node);
         foreach ($overlayDiv as $overlay) $overlay->parentNode->removeChild($overlay);
 
         // Return the node
