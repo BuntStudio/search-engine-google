@@ -87,7 +87,10 @@ abstract class AbstractParser implements ParserInterface
     }
 
     /**
-     * @param DomNodeList $elementGroups
+     * @param DomNodeList|\DOMElement[] $elementGroups either the legacy XPath
+     *        result wrapper or FastParsableItemsSelector's plain array — both
+     *        iterate \DOMElement nodes in document order, which is all this
+     *        method relies on.
      * @param IndexedResultSet $resultSet
      * @param $googleDom
      * @param array $doNotRemoveSrsltidForDomains
@@ -95,7 +98,7 @@ abstract class AbstractParser implements ParserInterface
      * @param array|int|null $additionalRule Rule ID(s) to test. Mode 3: array of all rule IDs to use. Modes 1/2: single rule ID to prepend.
      * @return IndexedResultSet
      */
-    protected function parseGroups(DomNodeList $elementGroups, IndexedResultSet $resultSet, $googleDom, array $doNotRemoveSrsltidForDomains = [], $useDbRules = 0, $additionalRule = null)
+    protected function parseGroups($elementGroups, IndexedResultSet $resultSet, $googleDom, array $doNotRemoveSrsltidForDomains = [], $useDbRules = 0, $additionalRule = null)
     {
         $rules = $this->getRules();
 

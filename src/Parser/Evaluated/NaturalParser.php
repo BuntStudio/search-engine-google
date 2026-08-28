@@ -112,6 +112,7 @@ class NaturalParser extends AbstractParser
     {
         // When using DB rules, collect additional match xpaths to append
         $dbMatchConditions = '';
+        $dbXpaths = [];
         if ($useDbRules > 0) {
             $matchFeatures = [
                 'images_match', 'natural_results_match', 'sge_widget_match',
@@ -151,7 +152,6 @@ class NaturalParser extends AbstractParser
                 'questions', 'top_stories_match', 'videos_match',
                 'flights_sites_match',
             ];
-            $dbXpaths = [];
             foreach ($matchFeatures as $matchFeature) {
                 // Candidate testing (mode 3): include the heal candidate so a renamed
                 // container is still selected as a parsable node. Other modes unchanged.
@@ -165,6 +165,24 @@ class NaturalParser extends AbstractParser
             if (!empty($dbXpaths)) {
                 $dbMatchConditions = ' or ' . implode(' or ', $dbXpaths);
             }
+        }
+
+        // Same node set as the catch-all XPath below, at a fraction of the cost.
+        // That query is ~85 or-branches (the static list below plus the DB rules
+        // just collected) and libxml evaluates every branch against every element
+        // of the page, so it costs branches x nodes: measured on parsedc1 over 380
+        // live SERPs, 141ms mobile / 187ms desktop, about half of the whole parse.
+        //
+        // The static branches are mirrored by the selector's config (see the
+        // PARSABLE_ITEMS_SYNC note below); the DB rules are compiled from the very
+        // strings collected above, so self-healing keeps working and nothing here
+        // has to be kept in sync with them.
+        //
+        // null = a probed rare feature is present and the legacy query below is the
+        // fallback. See FastParsableItemsSelector and DbMatchRuleCompiler.
+        $fast = FastParsableItemsSelector::select($googleDom, false, $dbXpaths);
+        if ($fast !== null) {
+            return $fast;
         }
 
         // [@id='rso'] = results in position
@@ -217,6 +235,10 @@ class NaturalParser extends AbstractParser
         //@id= 'knowledge-currency__updatable-data-column' or -> currency answer
         //@class = 'zJUuqf' // sites
         //@jscontroller = 'hKbgK' // flight airline options
+        // PARSABLE_ITEMS_SYNC: any selector added below must also be added to
+        // FastParsableItemsSelector's desktop config, or it will silently stop
+        // selecting that container in every mode. DB match rules need no such
+        // care - they are compiled from their own text at runtime.
         return $googleDom->xpathQuery("//*[
             @id='rso' or
             @id='botstuff' or
