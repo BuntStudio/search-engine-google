@@ -97,7 +97,12 @@ class ClassicalResultEngine
                 'imbricated'  => ($imbricatorParent->length > 0),
                 'reviewsAndPricing' => $reviewsAndPricing,
                 'hasPricing' => $hasPricing,
-                'articleDate' => $hasArticleDate
+                'articleDate' => $hasArticleDate,
+                // 869ep2aja: a *Goto rule resolved this result's /goto?url= href from the
+                // visible cite, which only carries the DOMAIN — the path is a "/" guess.
+                // Carry the tell so downstream landing-page writers can refuse to
+                // overwrite a real deep LP with this domain-root guess.
+                'used_goto_domain_link' => $organicResultObject->hasUsedGotoDomainLink()
             ],
             $organicResult
         ));

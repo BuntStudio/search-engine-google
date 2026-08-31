@@ -246,7 +246,10 @@ class TranslateService
             "node_path"         => method_exists($item, 'getNodePath') ? $item->getNodePath() : $item->nodePath,
             "reviews_and_pricing" => $item->reviewsAndPricing??false,
             "has_pricing"       =>  $item->hasPricing??false,
-            "article_date"       =>  $item->articleDate??false
+            "article_date"       =>  $item->articleDate??false,
+            // 869ep2aja: from ClassicalResultEngine — true when the URL was recovered
+            // from the cite of a /goto?url= anchor and is therefore domain-only.
+            "used_goto_domain_link" => $item->used_goto_domain_link ?? false
         ];
 
         $this->response['competition'][(string)$rank] = $competitionData;
