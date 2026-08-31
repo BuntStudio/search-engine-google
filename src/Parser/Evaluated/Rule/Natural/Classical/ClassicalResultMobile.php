@@ -248,8 +248,25 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         }
 
         if ($naturalResults->length == 0) {
-            $resultSet->addItem(new BaseResult(NaturalResultType::EXCEPTIONS, [], $node));
-            $this->monolog->error('Cannot identify results in html page', ['class' => self::class]);
+            // Google's end-of-results page (trailing page of an exhausted
+            // result set): the omitted-results notice in a div#ofr wrapper
+            // with a filter=0 "repeat the search" link, an rso holding only
+            // "People also search for". Zero organic is EXPECTED there — a
+            // legitimate page shape, not parser blindness — so it must not
+            // feed the 'Cannot identify results' error stream. Both markers
+            // are language-independent; the flag rides on the EXCEPTIONS
+            // item so TranslateService's rank==0 check can tell the two
+            // apart as well.
+            $endOfResults = $dom->xpathQuery('//*[@id="ofr"]')->length > 0
+                || $dom->xpathQuery('//a[contains(@href, "filter=0")]')->length > 0;
+
+            $resultSet->addItem(new BaseResult(NaturalResultType::EXCEPTIONS, ['end_of_results' => $endOfResults], $node));
+
+            if ($endOfResults) {
+                $this->monolog->notice('End-of-results page - omitted-results notice, no organic expected', ['class' => self::class]);
+            } else {
+                $this->monolog->error('Cannot identify results in html page', ['class' => self::class]);
+            }
 
             return;
         }

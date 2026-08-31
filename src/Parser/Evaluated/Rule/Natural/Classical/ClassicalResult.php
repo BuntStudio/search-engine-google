@@ -243,7 +243,17 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
 
         if ($naturalResults->length == 0) {
             if ($node->getAttribute('id') == 'rso') {
-                $resultSet->addItem(new BaseResult(NaturalResultType::EXCEPTIONS, [], $node));
+                // Google's end-of-results page (omitted-results notice in
+                // div#ofr with a filter=0 "repeat the search" link, both
+                // language-independent) legitimately carries zero organic.
+                // Same marker as ClassicalResultMobile; TranslateService's
+                // rank==0 check reads it (alongside the NoMoreResults item)
+                // to keep these pages out of the 'Cannot identify results'
+                // error stream.
+                $endOfResults = $dom->xpathQuery('//*[@id="ofr"]')->length > 0
+                    || $dom->xpathQuery('//a[contains(@href, "filter=0")]')->length > 0;
+
+                $resultSet->addItem(new BaseResult(NaturalResultType::EXCEPTIONS, ['end_of_results' => $endOfResults], $node));
             }
 
             return;

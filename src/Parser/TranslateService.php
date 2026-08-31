@@ -588,7 +588,28 @@ class TranslateService
         }
 
         if ($rank === 0) {
-            $this->monolog->error('Cannot identify results in html page', ['class' => self::class, 'keyword' => $options['keyword_name'] ?? 'N/A']);
+            // A recognized end-of-results page carries zero organic BY
+            // DESIGN (trailing page of an exhausted result set: the
+            // omitted-results notice, an rso with only related searches) —
+            // not parser blindness, so it must not feed this error stream.
+            // Two independent detections: the NoMoreResults rule's item
+            // (both devices), and the ofr marker ClassicalResultMobile puts
+            // on its EXCEPTIONS item.
+            $endOfResults = $results->hasType([NaturalResultType::NO_MORE_RESULTS]);
+            if (!$endOfResults) {
+                foreach ($results->getItems() as $item) {
+                    if ($item->is(NaturalResultType::EXCEPTIONS) && !empty($item->getDataValue('end_of_results'))) {
+                        $endOfResults = true;
+                        break;
+                    }
+                }
+            }
+
+            if ($endOfResults) {
+                $this->monolog->notice('End-of-results page - omitted-results notice, no organic expected', ['class' => self::class, 'keyword' => $options['keyword_name'] ?? 'N/A']);
+            } else {
+                $this->monolog->error('Cannot identify results in html page', ['class' => self::class, 'keyword' => $options['keyword_name'] ?? 'N/A']);
+            }
         }
 
         if (!empty($processLast)) {
