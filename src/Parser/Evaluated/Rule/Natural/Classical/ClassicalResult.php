@@ -16,7 +16,6 @@ use SM\Backend\Log\Logger;
 
 class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterface
 {
-    protected $gotoDomainLinkCount = 0;
     protected $currentUseDbRules = 0;
 
     /**
@@ -139,11 +138,14 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
 
     protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, array $doNotRemoveSrsltidForDomains = [])
     {
-        $organicResultObject = $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
-
-        if ($organicResultObject !== null && $organicResultObject->hasUsedGotoDomainLink()) {
-            $this->gotoDomainLinkCount++;
-        }
+        // 869ep2aja: goto-fallback results are no longer tallied or logged at
+        // this level — the rule knows nothing about the crawl, so its old
+        // notice carried only device + count. Each affected result rides a
+        // `used_goto_domain_link` flag (ClassicalResultEngine ->
+        // TranslateService) and DynamicSerpConsumer counts + logs them per
+        // page with the full event identity (type=dc_goto_domain_links, plus
+        // dc_page_decision.goto_link_count).
+        $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
 
         // Sitelinks detection — hardcoded rules
         $sitelinksBigXpath = "descendant::table[@class='jmjoTe']";
@@ -202,7 +204,6 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
      */
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
     {
-        $this->gotoDomainLinkCount = 0;
         $this->currentUseDbRules = $useDbRules;
 
         if ($useDbRules === self::MODE_DATABASE) {
@@ -269,13 +270,6 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
 
             $k++;
             $this->parseNode($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
-        }
-
-        if ($this->gotoDomainLinkCount > 0) {
-            $this->monolog->notice('Google goto link detected - using base domain link', [
-                'device' => 'desktop',
-                'count' => $this->gotoDomainLinkCount,
-            ]);
         }
     }
 

@@ -19,7 +19,6 @@ use SM\Backend\Log\Logger;
 class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInterface
 {
     protected $resultType = NaturalResultType::CLASSICAL_MOBILE;
-    protected $gotoDomainLinkCount = 0;
     protected $currentUseDbRules = 0;
 
     /**
@@ -163,11 +162,14 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
 
     protected function parseNode(GoogleDom $dom, \DomElement $organicResult, IndexedResultSet $resultSet, $k, array $doNotRemoveSrsltidForDomains = [])
     {
-        $organicResultObject = $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
-
-        if ($organicResultObject !== null && $organicResultObject->hasUsedGotoDomainLink()) {
-            $this->gotoDomainLinkCount++;
-        }
+        // 869ep2aja: goto-fallback results are no longer tallied or logged at
+        // this level — the rule knows nothing about the crawl, so its old
+        // notice carried only device + count. Each affected result rides a
+        // `used_goto_domain_link` flag (ClassicalResultEngine ->
+        // TranslateService) and DynamicSerpConsumer counts + logs them per
+        // page with the full event identity (type=dc_goto_domain_links, plus
+        // dc_page_decision.goto_link_count).
+        $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
 
         // Sitelinks detection — hardcoded rules
         $sitelinksXpath1 = "descendant::div[@class='MUxGbd v0nnCb lyLwlc']";
@@ -208,7 +210,6 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
      */
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
     {
-        $this->gotoDomainLinkCount = 0;
         $this->currentUseDbRules = $useDbRules;
 
         if ($useDbRules === self::MODE_DATABASE) {
@@ -299,13 +300,6 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
 
                 continue;
             }
-        }
-
-        if ($this->gotoDomainLinkCount > 0) {
-            $this->monolog->notice('Google goto link detected - using base domain link', [
-                'device' => 'mobile',
-                'count' => $this->gotoDomainLinkCount,
-            ]);
         }
     }
 
