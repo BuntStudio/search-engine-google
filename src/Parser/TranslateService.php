@@ -115,6 +115,31 @@ class TranslateService
      *
      * @return array
      */
+    /**
+     * preg_quote, NOT str_replace('.', '\.').
+     *
+     * These patterns are built from site data (siteHost / urlAlias) with '/' as the
+     * delimiter. str_replace only escaped dots, so any '/' in the value TERMINATED the
+     * pattern and the next character was read as a modifier:
+     *
+     *   urlAlias "example.com/shop"
+     *     -> /m\.example\.com/shop/
+     *     -> PHP Warning: preg_match(): Unknown modifier 'h'
+     *
+     * Sentry turns that warning into an ErrorException, which unwinds through
+     * MultiSiteMatcher::matchSites into DynamicSerpConsumer's parse catch — and that
+     * catch REPUBLISHES the keyword to its crawl queue for a fresh crawl, up to
+     * DC_DEFAULT_RETRY_LIMIT (5). So one unescaped slash costs up to five extra paid
+     * SERP fetches per affected keyword.
+     *
+     * Path-bearing aliases are an expected shape here: MultiSiteMatcher passes
+     * track_url_folder_path alongside these sites.
+     *
+     * '/' was the only character that threw. '+', '(', '[', '?' all produced VALID but
+     * semantically wrong patterns that silently mis-matched — preg_quote fixes those too.
+     *
+     * Normal hosts are unaffected: preg_quote escapes '.' exactly as the old code did.
+     */
     protected function matchSubdomainsOrUrlAlias($item)
     {
         $matchedSubdomains = [];
@@ -122,17 +147,17 @@ class TranslateService
         $url = $this->removeProtocolAndPath($item->url);
         if ($this->crawlSubdomains || $this->mobile || $this->urlAlias) {
             if ($this->crawlSubdomains === false) {
-                preg_match('/m\.' . str_replace('.', '\.', $this->siteHost) . '/', $url, $matchedSubdomains);
+                preg_match('/m\.' . preg_quote($this->siteHost, '/') . '/', $url, $matchedSubdomains);
 
                 if (empty($matchedSubdomains[0]) && $this->urlAlias) {
-                    preg_match('/m\.' . str_replace('.', '\.', $this->urlAlias) . '/', $url, $matchedSubdomains);
+                    preg_match('/m\.' . preg_quote($this->urlAlias, '/') . '/', $url, $matchedSubdomains);
                 }
 
             } else {
-                preg_match('/.*\.' . str_replace('.', '\.', $this->siteHost) . '/', $url, $matchedSubdomains);
+                preg_match('/.*\.' . preg_quote($this->siteHost, '/') . '/', $url, $matchedSubdomains);
 
                 if (empty($matchedSubdomains[0]) && $this->urlAlias) {
-                    preg_match('/.*\.' . str_replace('.', '\.', $this->urlAlias) . '/', $url,
+                    preg_match('/.*\.' . preg_quote($this->urlAlias, '/') . '/', $url,
                         $matchedSubdomains);
                 }
             }
