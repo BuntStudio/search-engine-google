@@ -212,6 +212,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $this->gotoCitationLinksRecovered = 0;
         $this->gotoCitationLinksDropped = 0;
 
+        // Citation headlines live on the sources-panel cards, a different surface
+        // than the anchors walked below; index them from the untouched page.
+        $this->headlineIndex = $this->indexHeadlines($originalDom->saveHTML());
+
         // First, enrich the content with all dynamic data
         $this->enrichContentWithDynamicData($dom, $node, $originalDom);
 
@@ -616,6 +620,135 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         return null;
     }
 
+    /**
+     * Google appends an accessibility suffix to the citation headline's
+     * aria-label ("Six of the Very Best Running Shoes. Opens in new tab.").
+     */
+    public static function stripHeadlineSuffix($text)
+    {
+        $text = html_entity_decode(trim((string) $text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace('~[\s.,]*opens in (a )?new tab\.?\s*$~iu', '', $text);
+
+        return trim($text);
+    }
+
+    /**
+     * Index of the citation HEADLINES on the page, built once per widget from
+     * the raw page string (plain and JS-escaped copies alike):
+     *   by_href: href (deep URL or /goto blob) => headline
+     *   by_host: host without www. => headline, or false when several
+     *            different headline cards share the host (ambiguous)
+     *
+     * Why an index and not the card itself: the citation anchors this parser
+     * walks are the sources-carousel cards (li.LLtSOc > a.KEVENd, no
+     * aria-label, only the R8BTeb host label). The headline is rendered on a
+     * DIFFERENT surface — the sources-panel cards (a.vIWmYe, aria-label
+     * "<headline>. Opens in new tab.") — whose /goto blobs differ per surface,
+     * so the two can only be paired by an exact href (resolved pages) or,
+     * failing that, by a host that appears exactly once among the headline
+     * cards. A repeated host (three YouTube videos) stays headline-less: a
+     * wrong headline would make the enrichment matcher pick the wrong page.
+     *
+     * `title` keeps carrying the site label on purpose: AioBrandMentionParserOUT
+     * feeds it to the brand-mention prompt, and a headline there would read
+     * brand names out of page titles (the 869e8j95u false-mention class).
+     *
+     * @var array{by_href: array<string,string>, by_host: array<string,string|false>}
+     */
+    protected $headlineIndex = ['by_href' => [], 'by_host' => []];
+
+    protected function indexHeadlines($pageContent)
+    {
+        $index = ['by_href' => [], 'by_host' => []];
+        if (!is_string($pageContent) || $pageContent === '' || stripos($pageContent, 'opens in') === false) {
+            // Cheap pre-check: no headline card anywhere, skip the full-page pass.
+            return $index;
+        }
+
+        // jsl.dh templates carry the same cards JS-escaped; fold them onto the plain form.
+        $content = str_replace(['\\"', '\\/', '\\u003d', '\\u0026', "\\'"], ['"', '/', '=', '&', "'"], $pageContent);
+
+        if (!preg_match_all(
+            '~<a\b[^>]*\baria-label="([^"]*?)[\s.,]*opens in (?:a )?new tab\.?"[^>]*>~i',
+            $content,
+            $matches,
+            PREG_SET_ORDER | PREG_OFFSET_CAPTURE
+        )) {
+            return $index;
+        }
+
+        foreach ($matches as $match) {
+            $tag = $match[0][0];
+            $headline = self::stripHeadlineSuffix($match[1][0]);
+            if ($headline === '') {
+                continue;
+            }
+
+            $href = preg_match('~\bhref="([^"]*)"~i', $tag, $hrefMatch) ? html_entity_decode($hrefMatch[1], ENT_QUOTES) : '';
+            if ($href !== '' && !isset($index['by_href'][$href])) {
+                $index['by_href'][$href] = $headline;
+            }
+
+            $host = '';
+            if (strpos($href, 'http') === 0) {
+                $host = (string) parse_url($href, PHP_URL_HOST);
+            }
+            if ($host === '') {
+                // Unresolved cards: the favicon request in the same card names the site.
+                $window = substr($content, $match[0][1], 3000);
+                if (preg_match('~faviconV2\?url=(https?://[^&"\'\s]+)~i', $window, $faviconMatch)) {
+                    $host = (string) parse_url($faviconMatch[1], PHP_URL_HOST);
+                }
+            }
+            $host = self::hostKey($host);
+            if ($host === '') {
+                continue;
+            }
+            if (!isset($index['by_host'][$host])) {
+                $index['by_host'][$host] = $headline;
+            } elseif ($index['by_host'][$host] !== $headline) {
+                $index['by_host'][$host] = false;
+            }
+        }
+
+        return $index;
+    }
+
+    /**
+     * Headline for one citation: a title-anchor aria-label on the anchor
+     * itself wins, then an exact href hit (raw href or final URL), then the
+     * host when it is unique among the headline cards. Null otherwise.
+     */
+    protected function headlineFor($rawHref, $url, $ariaLabel = '')
+    {
+        if (is_string($ariaLabel) && preg_match('~opens in (a )?new tab~i', $ariaLabel)) {
+            $direct = self::stripHeadlineSuffix($ariaLabel);
+            if ($direct !== '') {
+                return $direct;
+            }
+        }
+
+        foreach ([$rawHref, $url] as $key) {
+            if (is_string($key) && $key !== '' && isset($this->headlineIndex['by_href'][$key])) {
+                return $this->headlineIndex['by_href'][$key];
+            }
+        }
+
+        $host = self::hostKey(is_string($url) ? (string) parse_url($url, PHP_URL_HOST) : '');
+        if ($host !== '' && !empty($this->headlineIndex['by_host'][$host])) {
+            return $this->headlineIndex['by_host'][$host];
+        }
+
+        return null;
+    }
+
+    protected static function hostKey($host)
+    {
+        $host = strtolower(trim((string) $host));
+
+        return preg_replace('~^www\d*\.~', '', $host);
+    }
+
     private function processLinkElements($dom, $elements, &$urls, &$data) {
         foreach ($elements as $cage) {
             // Skip if node has been removed from DOM
@@ -639,11 +772,14 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                     }
                 }
 
-                $url = \SM_Rank_Service::getUrlFromGoogleTranslate($link->getAttribute('href'));
+                $rawHref = $link->getAttribute('href');
+
+                $url = \SM_Rank_Service::getUrlFromGoogleTranslate($rawHref);
 
                 // Clean URL hash to improve unique page identification
                 $url = $this->cleanUrlHash($url);
 
+                $domainOnly = false;
                 if (self::isGotoRedirect($url)) {
                     $resolved = $this->resolveGotoVisibleUrl(function ($expr, $ctx) use ($dom) {
                         return $dom->xpathQuery($expr, $ctx);
@@ -656,6 +792,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                     }
                     $this->gotoCitationLinksRecovered++;
                     $url = $resolved;
+                    $domainOnly = true;
                 }
 
                 if (in_array($url, $urls)) {
@@ -668,6 +805,8 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                     'title' => $title,
                     'url' => $url,
                     'html' => $cage->ownerDocument->saveHTML($cage),
+                    'headline' => $this->headlineFor($rawHref, $url, $link->getAttribute('aria-label')),
+                    'domain_only' => $domainOnly,
                 ];
             } catch (\Exception $e) {
                 // Skip this element if any DOM operation fails
@@ -694,10 +833,13 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                     }
 
                     $urls[] = $url;
+                    $title = rawurldecode($overviewMatches[2][$key]); // TODO: Maybe detect this, too?
                     $data[NaturalResultType::SGE_WIDGET_LINKS][] = [
-                        'title' => rawurldecode($overviewMatches[2][$key]), // TODO: Maybe detect this, too?
+                        'title' => $title,
                         'url' => $url,
                         'html' => '',
+                        'headline' => null,
+                        'domain_only' => false,
                     ];
                 }
             } else {
@@ -750,6 +892,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 'title' => $title,
                 'url' => $url,
                 'html' => '',
+                // MAGI records carry a resolved URL and no card anchor.
+                'headline' => null,
+                'domain_only' => false,
             ];
         }
     }
@@ -1078,6 +1223,8 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 'title' => $title,
                 'url' => $url,
                 'html' => '',
+                'headline' => isset($aioLink['headline']) ? $aioLink['headline'] : null,
+                'domain_only' => !empty($aioLink['domain_only']),
             ];
         }
     }
@@ -1131,6 +1278,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                     continue;
                 }
 
+                $domainOnly = false;
                 if (self::isGotoRedirect($url)) {
                     $resolved = $this->resolveGotoVisibleUrl(function ($expr, $ctx) use ($xpath) {
                         return $xpath->query($expr, $ctx);
@@ -1143,11 +1291,14 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                     }
                     $this->gotoCitationLinksRecovered++;
                     $url = $resolved;
+                    $domainOnly = true;
                 }
 
                 $links[] = [
                     'url' => $url,
                     'title' => $title,
+                    'headline' => $this->headlineFor($href, $url, $anchor->getAttribute('aria-label')),
+                    'domain_only' => $domainOnly,
                 ];
             }
 
@@ -1176,6 +1327,15 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 // Use aria-label if available, otherwise use text content
                 $title = !empty($ariaLabel) ? $ariaLabel : trim($textContent);
 
+                // The pattern only captures aria-label when it FOLLOWS href; on
+                // real markup it usually precedes it, so for the HEADLINE lookup
+                // read it from the whole tag. Never fed into $title, which must
+                // keep its site-label semantics (brand-mention prompt input).
+                $headlineLabel = $ariaLabel;
+                if ($headlineLabel === '' && preg_match('/aria-label=["\']([^"\']*)["\']/i', $match[0][0], $ariaMatch)) {
+                    $headlineLabel = $ariaMatch[1];
+                }
+
                 // Process the URL through Google's translation service
                 $url = \SM_Rank_Service::getUrlFromGoogleTranslate($href);
 
@@ -1187,6 +1347,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                     continue;
                 }
 
+                $domainOnly = false;
                 if (self::isGotoRedirect($url)) {
                     // No DOM here — the card renders the visible origin URL
                     // (div.XVWGNd) AFTER its anchor and before the next card's
@@ -1205,11 +1366,15 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                     }
                     $this->gotoCitationLinksRecovered++;
                     $url = $resolved;
+                    $domainOnly = true;
                 }
 
                 $links[] = [
                     'url' => $url,
                     'title' => $title,
+                    // index keys are entity-decoded; the regex href is raw
+                    'headline' => $this->headlineFor(html_entity_decode($href, ENT_QUOTES), $url, $headlineLabel),
+                    'domain_only' => $domainOnly,
                 ];
             }
         }
