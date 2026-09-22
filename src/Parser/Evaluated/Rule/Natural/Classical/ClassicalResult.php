@@ -148,7 +148,9 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
 
         // Sitelinks detection — hardcoded rules
-        $sitelinksBigXpath = "descendant::table[@class='jmjoTe']";
+        // jmjoTe is the pre-2026 sitelinks table; Google now renders it as `SwU7oc wHYlTd`.
+        // Token-safe contains() so a second class on the node can't break the gate again.
+        $sitelinksBigXpath = "descendant::table[contains(concat(' ', normalize-space(@class), ' '), ' jmjoTe ') or contains(concat(' ', normalize-space(@class), ' '), ' SwU7oc ')]";
         $sitelinksSmallXpath = "descendant::div[@class='HiHjCd']";
 
         if ($dom->xpathQuery($sitelinksBigXpath, $organicResult)->length > 0) {
