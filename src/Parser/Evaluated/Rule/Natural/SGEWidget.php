@@ -319,6 +319,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             'muU3oe' => 'descendant::*[@class="muU3oe"]',
             'ZZh6Vb' => 'descendant::*[@class="ZZh6Vb"]',
             'target_self' => 'descendant::*[@target="_self"]',
+            // Last on purpose: the class-token rules above win dedup where they still
+            // match. Binds on the attrbind id, which survived the muU3oe -> PMDqCb rename.
+            'attrbind_bOjMyf' => "descendant::a[contains(@data-wiz-attrbind,'bOjMyf')]",
         ];
     }
 
