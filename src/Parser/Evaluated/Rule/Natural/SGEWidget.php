@@ -204,6 +204,8 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 'link_selectors_matched' => [],
                 'content_length' => 0,
                 'aio_id_found' => false,
+                'goto_citation_links_recovered' => 0,
+                'goto_citation_links_dropped' => 0,
             ],
         ];
 
@@ -286,6 +288,13 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['jsl_dh_calls_count'] = $this->jslDhCallsCount;
         $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['aio_id_found'] = $this->aioIdFound;
         $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['content_length'] = strlen($data[NaturalResultType::SGE_WIDGET_CONTENT]);
+
+        // Published, not just logged: SHP scores the citation features on whether the RULES found
+        // citation anchors, and a dropped /goto anchor was still found. Without this the baseline
+        // cannot tell "no citations on the SERP" from "citations found and then discarded here",
+        // and the second case reads as a rule failure the AI screenshot can never agree with.
+        $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['goto_citation_links_recovered'] = $this->gotoCitationLinksRecovered;
+        $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['goto_citation_links_dropped'] = $this->gotoCitationLinksDropped;
 
         if ($this->gotoCitationLinksRecovered > 0 || $this->gotoCitationLinksDropped > 0) {
             Logger::notice('AIO goto citation link detected - using visible domain link', [
