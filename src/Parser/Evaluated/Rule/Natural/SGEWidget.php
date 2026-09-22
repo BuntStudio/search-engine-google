@@ -42,6 +42,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     protected $gotoCitationLinksRecovered = 0;
     protected $gotoCitationLinksDropped = 0;
 
+    // 869f03u8a: google-internal hrefs dropped instead of stored as citations
+    protected $googleInternalLinksDropped = 0;
+
     /**
      * Get the feature name based on mobile flag.
      */
@@ -206,9 +209,11 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 'aio_id_found' => false,
                 'goto_citation_links_recovered' => 0,
                 'goto_citation_links_dropped' => 0,
+                'google_internal_links_dropped' => 0,
             ],
         ];
 
+        $this->googleInternalLinksDropped = 0;
         $this->jslDhCallsCount = 0;
         $this->aioIdFound = false;
         $this->gotoCitationLinksRecovered = 0;
@@ -296,11 +301,23 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['goto_citation_links_recovered'] = $this->gotoCitationLinksRecovered;
         $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['goto_citation_links_dropped'] = $this->gotoCitationLinksDropped;
 
+        // Same reason as the /goto counters above (869f0rerj): this guard also FINDS a citation
+        // anchor and then discards it, so leaving it logged-only gives SHP the identical blind
+        // spot for google-internal hrefs.
+        $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['google_internal_links_dropped'] = $this->googleInternalLinksDropped;
+
         if ($this->gotoCitationLinksRecovered > 0 || $this->gotoCitationLinksDropped > 0) {
             Logger::notice('AIO goto citation link detected - using visible domain link', [
                 'device' => $isMobile ? 'mobile' : 'desktop',
                 'recovered' => $this->gotoCitationLinksRecovered,
                 'dropped' => $this->gotoCitationLinksDropped,
+            ]);
+        }
+
+        if ($this->googleInternalLinksDropped > 0) {
+            Logger::notice('AIO google-internal citation link dropped', [
+                'device' => $isMobile ? 'mobile' : 'desktop',
+                'dropped' => $this->googleInternalLinksDropped,
             ]);
         }
 
@@ -585,6 +602,68 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     }
 
     /**
+     * 869f03u8a: a href that never left Google — an unresolved redirect
+     * (/url?url=<protobuf blob>, /search?ibp=oshop, /goto?), or the search
+     * property itself. Stored verbatim these become citation rows that shift
+     * every real citation's aio_citations_rank down by one. Scoped to
+     * [www.]google.<tld> on purpose: ads./admin./research.google and deep
+     * about.google paths are real cited sources — don't widen this.
+     */
+    protected static function isGoogleInternalUrl($url)
+    {
+        if (!is_string($url) || $url === '') {
+            return false;
+        }
+
+        // Still relative => relative to google.<tld>; no SERP citation is.
+        if ($url[0] === '/') {
+            return true;
+        }
+
+        if (!preg_match('~^https?://(?:www\.)?google\.[a-z.]{2,}(/[^?#]*)?~i', $url, $m)) {
+            return false;
+        }
+
+        $path = isset($m[1]) ? $m[1] : '';
+        if ($path === '' || $path === '/') {
+            return true;
+        }
+
+        foreach (['/search', '/url', '/imgres', '/goto', '/shopping', '/travel'] as $internalPath) {
+            if (strncmp($path, $internalPath, strlen($internalPath)) === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 869f03u8a: Google Shopping product cards inside the AIO citation strip.
+     * These ARE legitimate citations whose source is Google, so normalise to an
+     * absolute google.com URL instead of dropping — relative paths otherwise
+     * resolve against app.seomonitor.com. Gate on the ibp=oshop query shape,
+     * not the container class: the class churns, the product-viewer URL does not.
+     * Distinct prds => distinct URLs, so the dedup below keeps both cards.
+     */
+    protected static function googleProductViewerUrl($url)
+    {
+        if (!is_string($url) || strpos($url, 'ibp=oshop') === false) {
+            return null;
+        }
+
+        if (preg_match('~^https?://(?:www\.)?google\.[a-z.]{2,}/search\?~i', $url)) {
+            return $url;
+        }
+
+        if (strncmp($url, '/search?', 8) === 0) {
+            return 'https://www.google.com' . $url;
+        }
+
+        return null;
+    }
+
+    /**
      * On /goto SERP variants the citation card still renders the source's
      * origin URL (div.XVWGNd) and bare domain label (div.R8BTeb), so we
      * attribute the citation to its visible domain — the same trade-off the
@@ -805,6 +884,15 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                     $this->gotoCitationLinksRecovered++;
                     $url = $resolved;
                     $domainOnly = true;
+                }
+
+                $productViewer = self::googleProductViewerUrl($url);
+                if ($productViewer !== null) {
+                    $url = $productViewer;
+                    $domainOnly = false;
+                } elseif (self::isGoogleInternalUrl($url)) {
+                    $this->googleInternalLinksDropped++;
+                    continue;
                 }
 
                 if (in_array($url, $urls)) {
@@ -1306,6 +1394,15 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                     $domainOnly = true;
                 }
 
+                $productViewer = self::googleProductViewerUrl($url);
+                if ($productViewer !== null) {
+                    $url = $productViewer;
+                    $domainOnly = false;
+                } elseif (self::isGoogleInternalUrl($url)) {
+                    $this->googleInternalLinksDropped++;
+                    continue;
+                }
+
                 $links[] = [
                     'url' => $url,
                     'title' => $title,
@@ -1379,6 +1476,15 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                     $this->gotoCitationLinksRecovered++;
                     $url = $resolved;
                     $domainOnly = true;
+                }
+
+                $productViewer = self::googleProductViewerUrl($url);
+                if ($productViewer !== null) {
+                    $url = $productViewer;
+                    $domainOnly = false;
+                } elseif (self::isGoogleInternalUrl($url)) {
+                    $this->googleInternalLinksDropped++;
+                    continue;
                 }
 
                 $links[] = [
