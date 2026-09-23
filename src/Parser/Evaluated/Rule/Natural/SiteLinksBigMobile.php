@@ -13,20 +13,34 @@ class SiteLinksBigMobile implements \Serps\SearchEngine\Google\Parser\ParsingRul
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
 
+    /**
+     * Mobile sitelink cell. `MUxGbd v0nnCb lyLwlc` is the pre-2026 form; Google now renders the cell
+     * as `Va3FIb EE3Upf lVm3ye` (the leading `DkX4ue` of the old quad is gone). Token-safe contains()
+     * so a further class drift can't break the gate the way the exact-equality form did.
+     */
+    const SITELINK_CELL_XPATH = "descendant::div["
+        . "(contains(concat(' ', normalize-space(@class), ' '), ' MUxGbd ')"
+        . " and contains(concat(' ', normalize-space(@class), ' '), ' v0nnCb ')"
+        . " and contains(concat(' ', normalize-space(@class), ' '), ' lyLwlc '))"
+        . " or (contains(concat(' ', normalize-space(@class), ' '), ' Va3FIb ')"
+        . " and contains(concat(' ', normalize-space(@class), ' '), ' EE3Upf ')"
+        . " and contains(concat(' ', normalize-space(@class), ' '), ' lVm3ye '))]";
+
     public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
     {
         return self::RULE_MATCH_MATCHED;
     }
 
-    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [])
+    /**
+     * @param string|null $cellXpath Cell selector resolved by the caller (live DB rules or a heal candidate);
+     *                               null uses the hardcoded SITELINK_CELL_XPATH.
+     */
+    public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $cellXpath = null)
     {
-        $siteLinksNodes = $dom->xpathQuery("descendant::div[@class='MUxGbd v0nnCb lyLwlc']", $node);
+        $siteLinksNodes = $dom->xpathQuery($cellXpath ?: self::SITELINK_CELL_XPATH, $node);
 
         if ($siteLinksNodes->length == 0) {
-            $siteLinksNodes = $dom->xpathQuery("descendant::div[@class='DkX4ue Va3FIb EE3Upf lVm3ye']", $node);
-            if ($siteLinksNodes->length == 0) {
-                return;
-            }
+            return;
         }
 
         $items = [];

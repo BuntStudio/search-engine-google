@@ -111,6 +111,11 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
      *
      * @return string
      */
+    protected static function getBigLinksFeatureName()
+    {
+        return 'big_links_mobile_match';
+    }
+
     protected function getNaturalResultsXPath(): string
     {
         $defaultXPath = "(
@@ -172,7 +177,20 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         $this->parseNodeWithRules($dom, $organicResult, $resultSet, $k, $doNotRemoveSrsltidForDomains);
 
         // Sitelinks detection — hardcoded rules
-        $sitelinksXpath1 = "descendant::div[@class='MUxGbd v0nnCb lyLwlc']";
+        $sitelinksXpath1 = SiteLinksBigMobile::SITELINK_CELL_XPATH;
+
+        // Self-healing: `big_links_mobile_match` owns this selector when running with DB rules.
+        // Candidate testing (mode 3) consults the heal candidate; mode 1 uses live rules.
+        if ($this->currentUseDbRules === self::MODE_DATABASE
+            || $this->currentUseDbRules === self::MODE_CANDIDATE_TESTING
+        ) {
+            $bigLinksRules = ($this->currentUseDbRules === self::MODE_CANDIDATE_TESTING)
+                ? RuleLoaderService::getCandidateMatchRulesForFeatures([self::getBigLinksFeatureName()])
+                : RuleLoaderService::getRulesForFeature(self::getBigLinksFeatureName());
+            if (!empty($bigLinksRules)) {
+                $sitelinksXpath1 = implode(' | ', $bigLinksRules);
+            }
+        }
         $sitelinksXpath2 = "descendant::form[@class='xBIiEf']";
 
         if (
@@ -181,7 +199,7 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
                 $organicResult->parentNode->parentNode
             )->length > 0
         ) {
-            (new SiteLinksBigMobile())->parse($dom, $organicResult->parentNode->parentNode, $resultSet, false, $doNotRemoveSrsltidForDomains);
+            (new SiteLinksBigMobile())->parse($dom, $organicResult->parentNode->parentNode, $resultSet, false, $doNotRemoveSrsltidForDomains, $sitelinksXpath1);
         }
 
 
@@ -192,7 +210,7 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
             )->length > 0 &&
             $organicResult->parentNode->parentNode->parentNode->getAttribute('class') === 'BYM4Nd'
         ) {
-            (new SiteLinksBigMobile())->parse($dom, $organicResult->parentNode->parentNode->parentNode, $resultSet, false);
+            (new SiteLinksBigMobile())->parse($dom, $organicResult->parentNode->parentNode->parentNode, $resultSet, false, [], $sitelinksXpath1);
         }
     }
 
