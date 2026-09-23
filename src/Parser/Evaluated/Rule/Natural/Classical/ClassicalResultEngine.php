@@ -88,6 +88,7 @@ class ClassicalResultEngine
         if ($hasArticleNodes->length > 0) {
             $hasArticleDate = $hasArticleNodes->getNodeAt(0)->textContent;
         }
+        $breadcrumb = $this->extractBreadcrumb($dom, $organicResult);
         $resultSet->addItem(new BaseResult(
             [$this->resultType],
             [
@@ -102,11 +103,31 @@ class ClassicalResultEngine
                 // visible cite, which only carries the DOMAIN — the path is a "/" guess.
                 // Carry the tell so downstream landing-page writers can refuse to
                 // overwrite a real deep LP with this domain-root guess.
-                'used_goto_domain_link' => $organicResultObject->hasUsedGotoDomainLink()
+                'used_goto_domain_link' => $organicResultObject->hasUsedGotoDomainLink(),
+                'breadcrumb_text' => $breadcrumb['text'],
+                'breadcrumb_segments' => $breadcrumb['segments']
             ],
             $organicResult
         ));
 
         return $organicResultObject;
+    }
+
+    /** Display labels, not a reconstructed destination URL. Segment zero is the displayed site. */
+    protected function extractBreadcrumb(GoogleDom $dom, \DOMElement $organicResult)
+    {
+        $nodes = $dom->xpathQuery(
+            "descendant::cite | descendant::span[@role='text' and (starts-with(normalize-space(.), 'https://') or starts-with(normalize-space(.), 'http://'))]",
+            $organicResult
+        );
+        if (!$nodes->length) {
+            return ['text' => null, 'segments' => []];
+        }
+
+        $text = trim(preg_replace('/\s+/u', ' ', $nodes->getNodeAt(0)->textContent));
+        return [
+            'text' => $text === '' ? null : $text,
+            'segments' => $text === '' ? [] : array_map('trim', explode('›', $text)),
+        ];
     }
 }
