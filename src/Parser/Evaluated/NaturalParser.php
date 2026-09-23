@@ -214,7 +214,8 @@ class NaturalParser extends AbstractParser
         //@class='lr_container yc7KLc mBNN3d' - definitions
         // [contains(@class, 'LQQ1Bd')] - flights
         // [@class='BNeawe DwrKqd'] - new flights
-        //@id = 'oFNiHe' - misspelings
+        //@id = 'oFNiHe' - misspelings (empty stub on some pages since 2026-09)
+        //class QRYxYe - misspelings, both layouts and devices (869f3z5qr)
         //@id = 'result-stats' - no of results
         //@id = 'lud-ed' - directions
         //@jscontroller='h7XEsd' - directions
@@ -272,6 +273,7 @@ class NaturalParser extends AbstractParser
             self::g-section-with-header[contains(@class, 'yG4QQe TBC9ub')] or
             @id='kp-wp-tab-cont-Latest' or
             @id = 'oFNiHe' or
+            contains(concat(' ', normalize-space(@class), ' '), ' QRYxYe ') or
             @id='result-stats' or
             @id='kp-wp-tab-Latest' or
             @id = 'lud-ed' or

@@ -181,7 +181,8 @@ class MobileNaturalParser extends AbstractParser
         //jscontroller='dGwZHb' = hotels
         //div[@class='lr_container wDYxhc yc7KLc'] = definitions
         // @jsname='MGJTwe'  = recipes
-        //@id='oFNiHe' - misspelings
+        //@id='oFNiHe' - misspelings (desktop only since 2026-09; mobile dropped it)
+        //class QRYxYe - misspelings, both layouts and devices (869f3z5qr)
         //@id='lud-ed' directions
         //@jscontroller='h7XEsd' directions
         //contains(@class, 'e8Ck0d') visual digest
@@ -240,6 +241,7 @@ class MobileNaturalParser extends AbstractParser
             @data-attrid='SupercatRecipeClusterTitle' or
             contains(@class, 'kp-wholepage') or
             @id = 'oFNiHe' or
+            contains(concat(' ', normalize-space(@class), ' '), ' QRYxYe ') or
             @id='lud-ed' or
             @jscontroller='h7XEsd' or
             video-voyager or

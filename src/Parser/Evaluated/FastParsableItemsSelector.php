@@ -97,7 +97,7 @@ class FastParsableItemsSelector
                 . '|gws-plugins-horizon-jobs__li-ed|L5NwLd|LQQ1Bd|uVMCKf Ww4FFb|HD8Pae mnr-c'
                 . '|YJpHnb mnr-c|vtSz8d Ww4FFb vt6azd|EDblX HG5ZQb|hNKF2b'
                 . '|lr_container wDYxhc yc7KLc|lr_container yc7KLc mBNN3d|kp-wholepage|e8Ck0d/S';
-            $classWordRe = null;
+            $classWordRe = '/(?:^|[ \t\r\n])QRYxYe(?:[ \t\r\n]|$)/S';
             $checkKpid = true;
             $checkGSection = false;
             $checkIze = true;
@@ -131,7 +131,7 @@ class FastParsableItemsSelector
                 . '|gws-plugins-horizon-jobs__li-ed|L5NwLd|e8Ck0d|vtSz8d|zJUuqf|KYLHhb|EDblX/S';
             // XPath contains(concat(' ', normalize-space(@class), ' '), ' X ') = whole-word
             // match with XPath whitespace (space/tab/CR/LF) as the delimiter set.
-            $classWordRe = '/(?:^|[ \t\r\n])(?:eqAnXb|mA0j1c)(?:[ \t\r\n]|$)/S';
+            $classWordRe = '/(?:^|[ \t\r\n])(?:eqAnXb|mA0j1c|QRYxYe)(?:[ \t\r\n]|$)/S';
             $checkKpid = false;
             $checkGSection = true;
             $checkIze = false;
