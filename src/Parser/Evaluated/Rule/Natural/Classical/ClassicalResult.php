@@ -153,8 +153,24 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         $sitelinksBigXpath = "descendant::table[contains(concat(' ', normalize-space(@class), ' '), ' jmjoTe ') or contains(concat(' ', normalize-space(@class), ' '), ' SwU7oc ')]";
         $sitelinksSmallXpath = "descendant::div[@class='HiHjCd']";
 
-        if ($dom->xpathQuery($sitelinksBigXpath, $organicResult)->length > 0) {
+        $bigFoundOnResult = $dom->xpathQuery($sitelinksBigXpath, $organicResult)->length > 0;
+        if ($bigFoundOnResult) {
             (new SiteLinksBig())->parse($dom, $organicResult, $resultSet, false);
+        }
+
+        // Layout variant: when the node matching getNaturalResultsXPath() is the inner `tF2Cxc`
+        // (it carries wHYlTd) rather than the outer `Ww4FFb vt6azd` wrapper, the sitelinks table is
+        // a SIBLING under `kbSIic`, so descendant:: from the result can never reach it.
+        if (!$bigFoundOnResult) {
+            $sitelinksContainer = $dom->xpathQuery(
+                "ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' kbSIic ')]",
+                $organicResult
+            );
+            if ($sitelinksContainer->length > 0
+                && $dom->xpathQuery($sitelinksBigXpath, $sitelinksContainer->item(0))->length > 0
+            ) {
+                (new SiteLinksBig())->parse($dom, $sitelinksContainer->item(0), $resultSet, false);
+            }
         }
 
         $parentWithSameClass = $dom->xpathQuery("ancestor::div[@class='g']", $organicResult);
