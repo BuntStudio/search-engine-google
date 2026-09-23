@@ -26,6 +26,12 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
     const MODE_COMPARISON = 2;          // Comparison mode - validates DB rules vs hardcoded
     const MODE_CANDIDATE_TESTING = 3;   // Isolated testing - tests single candidate rule
 
+    /** Desktop sitelinks ("big links") table. Seeded verbatim into `big_links_match` (guide §9.3). */
+    const BIG_LINKS_TABLE_XPATH = "descendant::table["
+        . "contains(concat(' ', normalize-space(@class), ' '), ' jmjoTe ')"
+        . " or contains(concat(' ', normalize-space(@class), ' '), ' SwU7oc ')]";
+
+
     /**
      * Current site ID for context-aware XPath selection
      */
@@ -72,6 +78,11 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
      *
      * @return string
      */
+    protected static function getBigLinksFeatureName()
+    {
+        return 'big_links_match';
+    }
+
     protected function getNaturalResultsXPath(): string
     {
         $defaultXPath = "descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' g ') or
@@ -150,7 +161,21 @@ class ClassicalResult extends AbstractRuleDesktop implements ParsingRuleInterfac
         // Sitelinks detection — hardcoded rules
         // jmjoTe is the pre-2026 sitelinks table; Google now renders it as `SwU7oc wHYlTd`.
         // Token-safe contains() so a second class on the node can't break the gate again.
-        $sitelinksBigXpath = "descendant::table[contains(concat(' ', normalize-space(@class), ' '), ' jmjoTe ') or contains(concat(' ', normalize-space(@class), ' '), ' SwU7oc ')]";
+        $sitelinksBigXpath = self::BIG_LINKS_TABLE_XPATH;
+
+        // Self-healing: when running with DB rules, the `big_links_match` feature owns this selector.
+        // Hardcoded value above stays as the fallback when the feature has no live rules (guide §7.3).
+        // Candidate testing (mode 3) consults the heal candidate; mode 1 uses live rules.
+        if ($this->currentUseDbRules === self::MODE_DATABASE
+            || $this->currentUseDbRules === self::MODE_CANDIDATE_TESTING
+        ) {
+            $bigLinksRules = ($this->currentUseDbRules === self::MODE_CANDIDATE_TESTING)
+                ? RuleLoaderService::getCandidateMatchRulesForFeatures([self::getBigLinksFeatureName()])
+                : RuleLoaderService::getRulesForFeature(self::getBigLinksFeatureName());
+            if (!empty($bigLinksRules)) {
+                $sitelinksBigXpath = implode(' | ', $bigLinksRules);
+            }
+        }
         $sitelinksSmallXpath = "descendant::div[@class='HiHjCd']";
 
         $bigFoundOnResult = $dom->xpathQuery($sitelinksBigXpath, $organicResult)->length > 0;
