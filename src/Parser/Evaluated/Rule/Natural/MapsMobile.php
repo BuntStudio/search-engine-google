@@ -12,7 +12,7 @@ use SM\Backend\Log\Logger;
 
 class MapsMobile implements ParsingRuleInterface
 {
-    protected $steps = ['version1', 'version2', 'version3'];
+    protected $steps = ['version1', 'version2', 'version3', 'version4'];
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
 
@@ -63,6 +63,14 @@ class MapsMobile implements ParsingRuleInterface
 
         // Hardcoded fallback (always kept as safety net)
         if (str_contains($node->getAttribute('class'),  'scm-c')|| str_contains($node->getAttribute('class'),  'qixVud') ||  str_contains($node->getAttribute('class'),  'xxAJT')) {
+            return self::RULE_MATCH_MATCHED;
+        }
+
+        // B2KMT layout (2026-09-24, investigation 2178): the pack container lost xxAJT and is a bare
+        // Ww4FFb wrapper, so it is only a local pack when it holds B2KMT listing cards. Mirrors the
+        // maps_mobile_match DB rule exactly.
+        if (str_contains($node->getAttribute('class'), 'Ww4FFb')
+            && $dom->getXpath()->query(".//div[contains(concat(' ', normalize-space(@class), ' '), ' B2KMT ')]", $node)->length > 0) {
             return self::RULE_MATCH_MATCHED;
         }
 
@@ -167,6 +175,36 @@ class MapsMobile implements ParsingRuleInterface
         }
 
         return false;
+    }
+
+    /**
+     * B2KMT listing-card layout (2026-09-24, investigation 2178): the business name is the ZhosBf div
+     * inside each B2KMT card. Mirrors the maps_mobile DB rule, which selects the name's grandparent
+     * so parseWithDbRules()'s two-level walk lands on the same ZhosBf text.
+     */
+    protected function version4(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile)
+    {
+        $names = $googleDOM->getXpath()->query("descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' B2KMT ')]//div[contains(concat(' ', normalize-space(@class), ' '), ' ZhosBf ')]", $node);
+
+        $spanElements = [];
+
+        foreach ($names as $nameNode) {
+            $title = (string) $nameNode->textContent;
+            if (trim($title) === '') {
+                continue;
+            }
+
+            $spanElements[] = [
+                'title' => $title,
+                'href' => null,
+            ];
+        }
+
+        if (empty($spanElements)) {
+            return;
+        }
+
+        $resultSet->addItem(new BaseResult(NaturalResultType::MAP, $spanElements, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
     }
 
     protected function version3(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile)

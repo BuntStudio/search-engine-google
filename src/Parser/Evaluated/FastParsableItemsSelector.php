@@ -101,6 +101,7 @@ class FastParsableItemsSelector
             $checkKpid = true;
             $checkGSection = false;
             $checkIze = true;
+            $checkB2kmt = true;
             $baseChildTags = array('product-viewer-group', 'video-voyager', 'inline-video');
             $baseAttrs = array('id', 'class', 'jscontroller', 'jsname', 'data-attrid', 'data-kpid');
         } else {
@@ -135,6 +136,7 @@ class FastParsableItemsSelector
             $checkKpid = false;
             $checkGSection = true;
             $checkIze = false;
+            $checkB2kmt = false;
             $baseChildTags = array('video-voyager');
             $baseAttrs = array('id', 'class', 'jscontroller', 'jsname', 'data-attrid');
         }
@@ -277,6 +279,10 @@ class FastParsableItemsSelector
                     $hit = true;
                 } elseif ($checkIze && strpos($class, 'IZE3Td') !== false
                     && $xpath->query(".//div[@data-attrid='images universal']", $el)->length > 0
+                ) {
+                    $hit = true;
+                } elseif ($checkB2kmt && strpos($class, 'Ww4FFb') !== false
+                    && $xpath->query(".//div[contains(concat(' ', normalize-space(@class), ' '), ' B2KMT ')]", $el)->length > 0
                 ) {
                     $hit = true;
                 } elseif ($checkGSection && $tag === 'g-section-with-header'

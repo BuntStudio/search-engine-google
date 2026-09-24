@@ -153,6 +153,7 @@ class MobileNaturalParser extends AbstractParser
         // [contains(@class, 'scm-c')]  = maps
         // [contains(@class, 'qixVud')]  = maps
         // [contains(@class, 'xxAJT')]  = maps
+        // Ww4FFb holding B2KMT cards = maps (xxAJT-less local pack, 2026-09-24, investigation 2178)
         // [contains(@class, 'related-question-pair')] = questions
         // [@class='C7r6Ue']  = maps
         // [@class='qixVud']  = maps
@@ -199,6 +200,7 @@ class MobileNaturalParser extends AbstractParser
         return $googleDom->xpathQuery("//*[@id='iur' or
             @data-attrid='images universal' or
             (contains(@class, 'IZE3Td') and .//div[@data-attrid='images universal']) or
+            (contains(@class, 'Ww4FFb') and .//div[contains(concat(' ', normalize-space(@class), ' '), ' B2KMT ')]) or
             @id='sports-app' or
             @id='center_col' or
             @id='tads' or
