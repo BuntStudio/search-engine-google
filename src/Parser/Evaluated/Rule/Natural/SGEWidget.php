@@ -200,7 +200,6 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             NaturalResultType::SGE_WIDGET_LOADED  => false,
             NaturalResultType::SGE_WIDGET_LINKS   => [],
             NaturalResultType::SGE_WIDGET_BASE    => '',
-            NaturalResultType::SGE_WIDGET_CONTENT => '',
             NaturalResultType::SGE_WIDGET_DIAGNOSTICS => [
                 'jsl_dh_calls_count' => 0,
                 'widget_not_loaded_reason' => null,
@@ -268,6 +267,13 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         // would not un-hide it there.
         $this->neutralizeAnimationInitialState($dom, $node);
 
+        // The widget's own jsl.dh() scripts are payloads already injected above (read from
+        // $originalDom). Kept whole since GoogleDom::escapeJslScriptBodies(), they would ride
+        // along in BASE as up to ~250KB of script text that nothing executes.
+        foreach (iterator_to_array($dom->xpathQuery('descendant::script[contains(., "jsl.dh(")]', $node)) as $jslScript) {
+            $jslScript->parentNode->removeChild($jslScript);
+        }
+
         // Now save the base content with all enrichments but before style/script removal
         $baseNode = $this->transformNode($dom, clone($node), false, false, $useDbRules, $isMobile);
         $data[NaturalResultType::SGE_WIDGET_BASE] = $baseNode->ownerDocument->saveHTML($baseNode);
@@ -275,8 +281,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         // Now remove styles and scripts for the processed content
         $node = $this->transformNode($dom, $node, $this->removeStyles, $this->removeScripts, $useDbRules, $isMobile);
 
-        // Save the processed content after style/script removal
-        $data[NaturalResultType::SGE_WIDGET_CONTENT] = $node->ownerDocument->saveHTML($node);
+        // The stripped variant is no longer shipped next to BASE (it doubled every AIO message):
+        // readers derive it from SGE_WIDGET_BASE via SM\Backend\sge\SgeWidgetHtml. Its length is
+        // still recorded for the diagnostics.
+        $contentLength = strlen($node->ownerDocument->saveHTML($node));
 
         // Collect link elements AFTER AIO enrichment and node removal
         $this->extractLinkElements($dom, $node, $urls, $data, $useDbRules, $isMobile);
@@ -292,7 +300,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         // Populate final diagnostics
         $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['jsl_dh_calls_count'] = $this->jslDhCallsCount;
         $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['aio_id_found'] = $this->aioIdFound;
-        $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['content_length'] = strlen($data[NaturalResultType::SGE_WIDGET_CONTENT]);
+        $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['content_length'] = $contentLength;
 
         // Published, not just logged: SHP scores the citation features on whether the RULES found
         // citation anchors, and a dropped /goto anchor was still found. Without this the baseline
@@ -1048,8 +1056,13 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
             // Look for matching jsl.dh() call
             if (isset($jslCalls[$elementId])) {
-                $htmlContent = $jslCalls[$elementId];
-                $this->injectHtmlContent($dom, $element, $htmlContent);
+                // Google now also server-renders many of these blocks and ships the jsl.dh()
+                // payload for hydration only. Injecting on top appended a second copy (13-33% of
+                // the widget), and the server-rendered copy is the more faithful one
+                // (decodeJslHtml()'s urldecode turns "+" into " "). Inject into empty targets only.
+                if (!$this->hasVisibleText($dom, $element)) {
+                    $this->injectHtmlContent($dom, $element, $jslCalls[$elementId]);
+                }
                 $newlyProcessedIds[] = $elementId;
             }
         }
@@ -1704,6 +1717,21 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     }
 
     /**
+     * Whether the element already renders text, ignoring <style>/<script> bodies (a target
+     * holding only a style block is still an empty placeholder).
+     */
+    protected function hasVisibleText($dom, $element)
+    {
+        foreach ($dom->xpathQuery('descendant::text()[not(ancestor::style) and not(ancestor::script)]', $element) as $text) {
+            if (trim($text->nodeValue) !== '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Remove non-content wrappers from the node.
      *
      * Carousels and visibility-control elements are never answer content and are removed outright.
@@ -1716,6 +1744,11 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
      * So we UNWRAP content-bearing buttons — promote their children in place and drop the tag —
      * and delete only bare control buttons (Close / expand toggles / icons). Innermost-first so
      * the nested accordion flattens completely.
+     *
+     * Inline citation chips (<button data-icl-uuid> holding the source favicon, name and count,
+     * e.g. "Panda London 2") are short by nature but part of the answer as Google shows it, so
+     * they are unwrapped too. Brand detection strips their labels separately (QNca8b spans, see
+     * SGEGenerateEventHelper::stripAioCitationChipLabels).
      */
     protected function removeElements($dom, $node)
     {
@@ -1735,8 +1768,10 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 if (!$button->parentNode) {
                     continue;
                 }
-                // Content button: lift its children out so they render as flow, then drop the tag.
-                if ($this->meaningfulTextLength($button) >= self::MIN_CONTENT_TEXT_LENGTH) {
+                // Content button or citation chip: lift its children out so they render as flow,
+                // then drop the tag.
+                if ($button->hasAttribute('data-icl-uuid')
+                    || $this->meaningfulTextLength($button) >= self::MIN_CONTENT_TEXT_LENGTH) {
                     while ($button->firstChild) {
                         $button->parentNode->insertBefore($button->firstChild, $button);
                     }
