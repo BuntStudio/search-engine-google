@@ -1059,8 +1059,16 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 // Google now also server-renders many of these blocks and ships the jsl.dh()
                 // payload for hydration only. Injecting on top appended a second copy (13-33% of
                 // the widget), and the server-rendered copy is the more faithful one
-                // (decodeJslHtml()'s urldecode turns "+" into " "). Inject into empty targets only.
-                if (!$this->hasVisibleText($dom, $element)) {
+                // (decodeJslHtml()'s urldecode turns "+" into " "). So: fill empty targets, and
+                // replace a target only when the payload carries clearly more text (a partial
+                // server render) - replacing is what jsl.dh() does in the browser.
+                $existingLength = $this->visibleTextLength($dom, $element);
+                if ($existingLength === 0) {
+                    $this->injectHtmlContent($dom, $element, $jslCalls[$elementId]);
+                } elseif (self::textLength($jslCalls[$elementId]) > $existingLength * 1.1 + 20) {
+                    while ($element->firstChild) {
+                        $element->removeChild($element->firstChild);
+                    }
                     $this->injectHtmlContent($dom, $element, $jslCalls[$elementId]);
                 }
                 $newlyProcessedIds[] = $elementId;
@@ -1717,18 +1725,43 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     }
 
     /**
-     * Whether the element already renders text, ignoring <style>/<script> bodies (a target
-     * holding only a style block is still an empty placeholder).
+     * Visible text length of an element, ignoring <style>/<script> bodies (a target holding
+     * only a style block is still an empty placeholder).
      */
-    protected function hasVisibleText($dom, $element)
+    protected function visibleTextLength($dom, $element)
     {
+        $length = 0;
         foreach ($dom->xpathQuery('descendant::text()[not(ancestor::style) and not(ancestor::script)]', $element) as $text) {
-            if (trim($text->nodeValue) !== '') {
-                return true;
-            }
+            $length += self::textLength($text->nodeValue, false);
         }
 
-        return false;
+        return $length;
+    }
+
+    /**
+     * Length of the visible text, with all whitespace removed - including the non-breaking and
+     * zero-width spaces trim() keeps, so an "&nbsp;"-only placeholder counts as empty.
+     *
+     * @param string $text
+     * @param bool $isHtml strip <style>/<script>, tags and entities first
+     * @return int
+     */
+    protected static function textLength($text, $isHtml = true)
+    {
+        if ($isHtml) {
+            $text = html_entity_decode(
+                strip_tags(preg_replace('~<(style|script)\b[\s\S]*?</\1\s*>~i', '', $text) ?? $text),
+                ENT_QUOTES | ENT_HTML5,
+                'UTF-8'
+            );
+        }
+        $stripped = preg_replace('/[\s\x{00A0}\x{200B}\x{FEFF}]+/u', '', $text);
+        if ($stripped === null) {
+            // Not valid UTF-8: fall back to plain whitespace.
+            $stripped = preg_replace('/\s+/', '', $text);
+        }
+
+        return mb_strlen($stripped, 'UTF-8');
     }
 
     /**
