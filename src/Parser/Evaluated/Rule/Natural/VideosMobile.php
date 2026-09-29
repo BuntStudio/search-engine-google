@@ -111,9 +111,7 @@ class VideosMobile implements ParsingRuleInterface
             $featureName = self::getFeatureName($isMobile);
 
             if ($useDbRules === self::MODE_CANDIDATE_TESTING) {
-                $rules = (is_array($additionalRule))
-                    ? RuleLoaderService::getRulesByIdsForFeature($additionalRule, $featureName)
-                    : [];
+                $rules = RuleLoaderService::getCandidateRulesForFeature($additionalRule, $featureName);
             } else {
                 $rules = RuleLoaderService::getRulesForFeature($featureName);
             }
@@ -124,7 +122,7 @@ class VideosMobile implements ParsingRuleInterface
                 }
                 // DB rules matched nothing — fall through to hardcoded chain.
             }
-            // No DB rules (or candidate not ours) — fall through to hardcoded chain.
+            // No DB rules — fall through to hardcoded chain.
         }
 
         foreach ($this->steps as $functionName) {

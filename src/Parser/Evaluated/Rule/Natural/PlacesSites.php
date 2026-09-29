@@ -81,10 +81,8 @@ class PlacesSites implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterf
             $featureName = self::getFeatureName($isMobile);
 
             if ($useDbRules === self::MODE_CANDIDATE_TESTING) {
-                // Places Sites has no parse children — resolve candidate rules by this feature only.
-                $rules = (is_array($additionalRule))
-                    ? RuleLoaderService::getRulesByIdsForFeature($additionalRule, $featureName)
-                    : [];
+                // Places Sites has no parse children — candidate rules for this feature, else its live rules.
+                $rules = RuleLoaderService::getCandidateRulesForFeature($additionalRule, $featureName);
             } else {
                 $rules = RuleLoaderService::getRulesForFeature($featureName);
             }
@@ -95,7 +93,7 @@ class PlacesSites implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterf
                 }
                 // DB rules matched nothing — fall through to hardcoded below.
             }
-            // No DB rules (or candidate not ours) — fall through to hardcoded.
+            // No DB rules — fall through to hardcoded.
         }
 
         // Hardcoded fallback

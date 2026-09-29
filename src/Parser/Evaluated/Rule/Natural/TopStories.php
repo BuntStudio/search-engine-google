@@ -106,10 +106,8 @@ class TopStories implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfa
             $featureName = self::getFeatureName($isMobile);
 
             if ($useDbRules === self::MODE_CANDIDATE_TESTING) {
-                // Top Stories has no parse children — resolve candidate rules by this feature only.
-                $rules = (is_array($additionalRule))
-                    ? RuleLoaderService::getRulesByIdsForFeature($additionalRule, $featureName)
-                    : [];
+                // Top Stories has no parse children — candidate rules for this feature, else its live rules.
+                $rules = RuleLoaderService::getCandidateRulesForFeature($additionalRule, $featureName);
             } else {
                 $rules = RuleLoaderService::getRulesForFeature($featureName);
             }

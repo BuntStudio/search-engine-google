@@ -104,9 +104,7 @@ class HotelsMobile implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
             $featureName = self::getFeatureName($isMobile);
 
             if ($useDbRules === self::MODE_CANDIDATE_TESTING) {
-                $rules = (is_array($additionalRule))
-                    ? RuleLoaderService::getRulesByIdsForFeature($additionalRule, $featureName)
-                    : [];
+                $rules = RuleLoaderService::getCandidateRulesForFeature($additionalRule, $featureName);
             } else {
                 $rules = RuleLoaderService::getRulesForFeature($featureName);
             }
@@ -117,7 +115,7 @@ class HotelsMobile implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
                 }
                 // DB rules matched nothing — fall through to hardcoded below.
             }
-            // No DB rules (or candidate not ours) — fall through to hardcoded.
+            // No DB rules — fall through to hardcoded.
         }
 
         // Hardcoded fallback

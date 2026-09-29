@@ -152,15 +152,13 @@ class FeaturedSnipped implements \Serps\SearchEngine\Google\Parser\ParsingRuleIn
         $featureName = self::getFeatureName($isMobile);
 
         if ($useDbRules === self::MODE_CANDIDATE_TESTING) {
-            $rules = (is_array($additionalRule))
-                ? RuleLoaderService::getRulesByIdsForFeature($additionalRule, $featureName)
-                : [];
+            $rules = RuleLoaderService::getCandidateRulesForFeature($additionalRule, $featureName);
         } else {
             $rules = RuleLoaderService::getRulesForFeature($featureName);
         }
 
         if (empty($rules)) {
-            // Candidate isn't ours / no DB rules — let the caller use the hardcoded fallback.
+            // No DB rules — let the caller use the hardcoded fallback.
             return null;
         }
 
