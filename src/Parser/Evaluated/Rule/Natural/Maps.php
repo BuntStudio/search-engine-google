@@ -13,7 +13,7 @@ use SM\Backend\Log\Logger;
 
 class Maps implements ParsingRuleInterface
 {
-    protected $steps = ['version1', 'version2', 'version3'];
+    protected $steps = ['version1', 'version2', 'version3', 'version4'];
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
 
@@ -148,6 +148,15 @@ class Maps implements ParsingRuleInterface
         // (the bare name) instead produced name-only titles that diverged from hardcoded's full-block
         // titles whenever version2 applied (mode-2 parity, site 307261 'vestel yetkili servis iskenderun').
         foreach ($ratingStars as $ratingStarNode) {
+            // lcl-place-tile layout (no rllt__details): title = the tile's heading, mirrors hardcoded version4.
+            if ($ratingStarNode instanceof \DOMElement && $ratingStarNode->getAttribute('data-ssid') === 'lcl-place-tile') {
+                $title = $this->getPlaceTileTitle($dom, $ratingStarNode);
+                if ($title !== null) {
+                    $spanElements[] = ['title' => $title, 'href' => null];
+                }
+                continue;
+            }
+
             if (empty($ratingStarNode->parentNode->childNodes[1])) {
                 continue;
             }
@@ -257,6 +266,49 @@ class Maps implements ParsingRuleInterface
         }
     }
 
+
+    protected function version4(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile)
+    {
+        $tiles = $googleDOM->getXpath()->query("descendant::*[@data-ssid='lcl-place-tile']", $node);
+
+        if ($tiles->length == 0) {
+            return;
+        }
+
+        $spanElements = [];
+
+        foreach ($tiles as $tile) {
+            $title = $this->getPlaceTileTitle($googleDOM, $tile);
+            if ($title === null) {
+                continue;
+            }
+
+            $spanElements[] = [
+                'title' => $title,
+                'href' => null,
+            ];
+        }
+
+        if (!empty($spanElements)) {
+            $resultSet->addItem(new BaseResult(NaturalResultType::MAP, $spanElements, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
+        }
+    }
+
+    /**
+     * Business name of an lcl-place-tile listing: its role=heading node (excludes the A./B. letter marker).
+     */
+    protected function getPlaceTileTitle(GoogleDom $googleDOM, \DOMElement $tile)
+    {
+        $heading = $googleDOM->getXpath()->query("descendant::*[@role='heading'][1]", $tile);
+
+        if ($heading->length == 0) {
+            return null;
+        }
+
+        $title = trim($heading->item(0)->textContent);
+
+        return $title === '' ? null : $title;
+    }
 
     protected function version1(GoogleDom $googleDOM, \DomElement $node, IndexedResultSet $resultSet, $isMobile)
     {
