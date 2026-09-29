@@ -111,6 +111,8 @@ class MobileNaturalParser extends AbstractParser
                 // _match child. flights_sites and flights_airlines are desktop-only (no mobile
                 // parser class), so neither is listed here.
                 'questions_mobile', 'top_stories_mobile_match', 'videos_mobile_match',
+                // 869f8c5k4 - spelling-correction block ("Did you mean" / "These are results for").
+                'misspelling_mobile_match',
             ];
             foreach ($matchFeatures as $matchFeature) {
                 // Candidate testing (mode 3): include the heal candidate so a renamed

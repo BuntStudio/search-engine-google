@@ -12,12 +12,35 @@ use Serps\Core\UrlArchive;
 use Serps\SearchEngine\Google\Page\GoogleDom;
 use Serps\SearchEngine\Google\Parser\ParsingRuleInterface;
 use Serps\SearchEngine\Google\NaturalResultType;
+use SM\Backend\SerpParser\RuleLoaderService;
 
 class MisspellingMobile implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
+    const MODE_HARDCODED         = 0;
+    const MODE_DATABASE          = 1;
+    const MODE_CANDIDATE_TESTING = 3;
 
-    public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node)
+    protected static function getFeatureName()
     {
+        return 'misspelling_mobile_match';
+    }
+
+    public function match(GoogleDom $dom, \Serps\Core\Dom\DomElement $node, $useDbRules = self::MODE_HARDCODED)
+    {
+        $useDbRules = (int) $useDbRules;
+        // 869f8c5k4: the self-healing feature owns the gate; the seeded rules mirror the hardcoded
+        // pair below (QRYxYe, then the guarded #oFNiHe fallback). No DB rules -> hardcoded.
+        if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
+            $matchRules = ($useDbRules === self::MODE_CANDIDATE_TESTING)
+                ? RuleLoaderService::getCandidateMatchRulesForFeatures([self::getFeatureName()])
+                : RuleLoaderService::getRulesForFeature(self::getFeatureName());
+
+            if (!empty($matchRules)) {
+                $matchResult = $dom->getXpath()->query(implode(' | ', $matchRules), $node);
+                return $matchResult->length > 0 ? self::RULE_MATCH_MATCHED : self::RULE_MATCH_NOMATCH;
+            }
+        }
+
         // 869f3z5qr: the block's own class is the gate - Google dropped #oFNiHe from mobile.
         // The id stays as a fallback for other layouts and older stored SERPs, but only when
         // it does NOT wrap a QRYxYe element, or both gates fire and parse() runs twice.

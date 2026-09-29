@@ -151,6 +151,8 @@ class NaturalParser extends AbstractParser
                 // migrations/serp_parser_remove_flights_airlines_feature_2026-06-30.sql).
                 'questions', 'top_stories_match', 'videos_match',
                 'flights_sites_match',
+                // 869f8c5k4 - spelling-correction block ("Did you mean" / "These are results for").
+                'misspelling_match',
             ];
             foreach ($matchFeatures as $matchFeature) {
                 // Candidate testing (mode 3): include the heal candidate so a renamed
