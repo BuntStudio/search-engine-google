@@ -117,10 +117,20 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
                 $data['link'] = $links->item(0)->getAttribute('href');
             }
         }
+        // Entity name first (2026-10-01, #869f83wkf): div[data-attrid='subtitle'] is the entity TYPE
+        // line ("Fruit", "4-star hotel"), so preferring it stored the type on ~78% of panels. The
+        // subtitle chain below stays as the fallback, so presence never regresses.
+        $nameNode = $dom->cssQuery("*[data-attrid='title']", $node)->item(0);
+        if ($nameNode instanceof \DomElement && trim($nameNode->textContent) !== '') {
+            $data['title'] = $nameNode->textContent;
+        }
+
         /** @var \DomElement $titleNode */
         $titleNode = $dom->cssQuery("div[data-attrid='subtitle']", $node)->item(0);
 
-        if ($titleNode instanceof \DomElement) {
+        if (!empty($data['title'])) {
+            // Fallback chain below only runs when the panel has no entity name.
+        } elseif ($titleNode instanceof \DomElement) {
             $data['title'] = $titleNode->textContent;
             $subtitle = $dom->cssQuery("*[class='E5BaQ']", $titleNode);
             if ($subtitle->length >0) {
@@ -167,8 +177,14 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
             if ($kpid !== '' && preg_match('#^vise:[A-Za-z0-9/_.-]+$#', $kpid)) {
                 $scope = "//*[@data-kpid='" . $kpid . "']";
 
+                $entityNode = $dom->getXpath()->query($scope . "//*[@data-attrid='title']")->item(0);
+                if ($entityNode instanceof \DomElement && trim($entityNode->textContent) !== '') {
+                    $data['title'] = $entityNode->textContent;
+                }
                 $entityNode = $dom->getXpath()->query($scope . "//div[@data-attrid='subtitle']")->item(0);
-                if ($entityNode instanceof \DomElement) {
+                if (!empty($data['title'])) {
+                    // Fallback chain below only runs when the panel has no entity name.
+                } elseif ($entityNode instanceof \DomElement) {
                     $data['title'] = $entityNode->textContent;
                     $subtitle = $dom->cssQuery("*[class='E5BaQ']", $entityNode);
                     if ($subtitle->length > 0) {
