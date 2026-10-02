@@ -1,7 +1,8 @@
 # Google basic (no-JS) layout, as Oxylabs returned it for a RO request, page 2
 # (start=10), on 2026-10-01. See basic-invoice-factoring-uk-p1.yml for the
-# layout notes. Non-organic cards on this page: AI Overview, two "Alții caută
-# și", the footer. Every result link carried a srsltid parameter that
+# layout notes. Non-organic cards on this page: the AI Overview (second card,
+# 5 citations behind "Afișează mai mult"), two "Alții caută și" cards (merged
+# into one RELATED_SEARCHES item, emitted last), the footer. Every result link carried a srsltid parameter that
 # BasicV1 strips (Utils::removeParamFromUrl). No inline sitelinks here.
 url: https://www.google.ro/search?q=butisan&hl=ro&gl=ro&start=10
 file: test/resources/pages-basic/butisan-ro-p2.html
@@ -17,6 +18,13 @@ results:
     data:
       title: Butisan S - Erbicid pentru buruieni cu actiune reziduala - agro.basf.ro
       url: https://www.agro.basf.ro/ro/produse/overview/Erbicide/Butisan-S.html
+
+  - types:
+      - SGE_WIDGET_MOBILE
+    data:
+      sge_widget_content_loaded: true
+    data-count:
+      sge_widget_links: 5
 
   - types:
       - CLASSICAL_MOBILE
@@ -65,3 +73,9 @@ results:
     data:
       title: Erbicid Butisan Avant, 10 l la 1.614,80 lei - FitoMag
       url: https://fitomag.ro/magazin-brasov/produse-gradina/erbicid-butisan-avant-10-l/
+
+  - types:
+      - RELATED_SEARCHES
+    data:
+      0: Butisan Duo
+      1: Butisan avant

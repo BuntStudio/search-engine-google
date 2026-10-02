@@ -8,7 +8,10 @@
 # CLASSICAL_MOBILE there. Cards that are NOT organic on this page: the AI
 # Overview card, the Places card (two h3), two "People also search for"
 # cards, the footer. Inline sitelinks ("What is invoice finance? · ...") are
-# emitted as SITE_LINKS_SMALL right after their organic.
+# emitted as SITE_LINKS_SMALL right after their organic; the AI Overview card
+# (10 citations behind "Show more", injected from its jsl.dh payload), the
+# Places card (2 listings) and the two "People also search for" cards (merged
+# into one RELATED_SEARCHES item, emitted last) are the page's features.
 url: https://www.google.co.uk/search?q=invoice+factoring&hl=en-gb&gl=gb
 file: test/resources/pages-basic/invoice-factoring-uk-p1.html
 
@@ -17,6 +20,13 @@ test-methods:
   isMobile: true
 
 results:
+
+  - types:
+      - SGE_WIDGET_MOBILE
+    data:
+      sge_widget_content_loaded: true
+    data-count:
+      sge_widget_links: 10
 
   - types:
       - CLASSICAL_MOBILE
@@ -63,6 +73,14 @@ results:
         url: https://gocardless.com/guides/posts/what-is-invoice-factoring#advantages-of-invoice-factoring
 
   - types:
+      - MAP_MOBILE
+    data:
+      0:
+        title: The UK Factoring & Invoice Discounting Helpline
+      1:
+        title: My Invoice Finance
+
+  - types:
       - CLASSICAL_MOBILE
     data:
       title: "Invoice factoring finance: differences guide | Allianz Trade UK"
@@ -91,3 +109,9 @@ results:
     data:
       title: What is invoice factoring? | Sage Advice UK
       url: https://www.sage.com/en-gb/blog/invoice-factoring/
+
+  - types:
+      - RELATED_SEARCHES
+    data:
+      0: Invoice factoring example
+      1: Invoice discounting vs factoring

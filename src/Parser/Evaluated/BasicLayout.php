@@ -42,6 +42,60 @@ class BasicLayout
     const CARD_XPATH = "ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' Gx5Zad ')][1]";
 
     /**
+     * Every outermost card of a container, in document order. The footer is a
+     * Gx5Zad too and is skipped by its tag.
+     */
+    const CARDS_XPATH = "descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' Gx5Zad ')][not(ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' Gx5Zad ')])][not(ancestor::footer)]";
+
+    // Card kinds, see classifyCard(). Markers are structural where Google
+    // offers one; the AIO card has none, its ids/classes were identical on the
+    // UK and RO samples (NwHcK = the "can't generate" notice, frRrnc = the
+    // answer, accdef_* = the collapsed remainder filled by jsl.dh).
+    const CARD_ORGANIC = 'organic';
+    const CARD_AIO = 'aio';
+    const CARD_PLACES = 'places';
+    const CARD_RELATED = 'related';
+    const CARD_OTHER = 'other';
+
+    const AIO_CARD_TEST = "descendant::*[@id='NwHcK' or contains(concat(' ', normalize-space(@class), ' '), ' frRrnc ') or starts-with(@id, 'accdef_')]";
+    // Local listings: /searchviewer/ links each holding an h3 (the business name).
+    const PLACES_LISTING_XPATH = "descendant::a[starts-with(@href, '/searchviewer/')][descendant::h3]";
+    // Query pills of the "People also search for" card: plain /search? links,
+    // no h3. The hidden search-tools card (#st-card: "Past hour", "Verbatim",
+    // language filter) is /search? links too, all carrying source=lnt.
+    const RELATED_QUERY_XPATH = "descendant::a[starts-with(@href, '/search?')][not(contains(@href, 'source=lnt'))][not(descendant::h3)]";
+
+    /**
+     * @param GoogleDom $googleDom
+     * @param \DOMElement $card
+     * @return string one of the CARD_* constants
+     */
+    public static function classifyCard(GoogleDom $googleDom, \DOMElement $card)
+    {
+        $xpath = $googleDom->getXpath();
+
+        if ($card->getAttribute('id') === 'st-card' || preg_match('/display\s*:\s*none/i', $card->getAttribute('style')) === 1) {
+            return self::CARD_OTHER;
+        }
+        if ($xpath->query(self::PLACES_LISTING_XPATH, $card)->length > 0) {
+            return self::CARD_PLACES;
+        }
+        if ($xpath->query(self::AIO_CARD_TEST, $card)->length > 0) {
+            return self::CARD_AIO;
+        }
+        if ($xpath->query(self::TITLE_ANCHOR_XPATH, $card)->length > 0) {
+            return self::CARD_ORGANIC;
+        }
+        if ($xpath->query('descendant::h3', $card)->length === 0
+            && $xpath->query(self::RELATED_QUERY_XPATH, $card)->length >= 2
+        ) {
+            return self::CARD_RELATED;
+        }
+
+        return self::CARD_OTHER;
+    }
+
+    /**
      * A div#main holding basic-layout organic cards and no #rso. Per container,
      * not per document: a stitched multi-page archive (one DOM on the rank path)
      * repeats #main once per page and can mix layouts, e.g. a JS page 1 with a
