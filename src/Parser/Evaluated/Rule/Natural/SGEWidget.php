@@ -848,7 +848,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         return preg_replace('~^www\d*\.~', '', $host);
     }
 
-    private function processLinkElements($dom, $elements, &$urls, &$data) {
+    protected function processLinkElements($dom, $elements, &$urls, &$data) {
         foreach ($elements as $cage) {
             // Skip if node has been removed from DOM
             if (!$cage->parentNode) {
