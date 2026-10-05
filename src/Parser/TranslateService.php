@@ -274,7 +274,9 @@ class TranslateService
             "article_date"       =>  $item->articleDate??false,
             // 869ep2aja: from ClassicalResultEngine — true when the URL was recovered
             // from the cite of a /goto?url= anchor and is therefore domain-only.
-            "used_goto_domain_link" => $item->used_goto_domain_link ?? false
+            "used_goto_domain_link" => $item->used_goto_domain_link ?? false,
+            "breadcrumb_text" => $item->breadcrumb_text ?? null,
+            "breadcrumb_segments" => $item->breadcrumb_segments ?? []
         ];
 
         $this->response['competition'][(string)$rank] = $competitionData;
