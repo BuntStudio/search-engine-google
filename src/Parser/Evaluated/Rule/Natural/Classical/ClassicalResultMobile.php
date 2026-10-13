@@ -193,24 +193,30 @@ class ClassicalResultMobile extends AbstractRuleMobile implements ParsingRuleInt
         }
         $sitelinksXpath2 = "descendant::form[@class='xBIiEf']";
 
+        // Merged multi-page snapshots hoist results to just under <html>, so an ancestor can be the DOMDocument.
+        $sitelinksScope1 = $organicResult->parentNode->parentNode;
+        $sitelinksScope2 = $sitelinksScope1 instanceof \DOMElement ? $sitelinksScope1->parentNode : null;
+
         if (
+            $sitelinksScope1 instanceof \DOMElement &&
             $dom->xpathQuery(
                 $sitelinksXpath1,
-                $organicResult->parentNode->parentNode
+                $sitelinksScope1
             )->length > 0
         ) {
-            (new SiteLinksBigMobile())->parse($dom, $organicResult->parentNode->parentNode, $resultSet, false, $doNotRemoveSrsltidForDomains, $sitelinksXpath1);
+            (new SiteLinksBigMobile())->parse($dom, $sitelinksScope1, $resultSet, false, $doNotRemoveSrsltidForDomains, $sitelinksXpath1);
         }
 
 
         if (
+            $sitelinksScope2 instanceof \DOMElement &&
             $dom->xpathQuery(
                 $sitelinksXpath2,
-                $organicResult->parentNode->parentNode->parentNode
+                $sitelinksScope2
             )->length > 0 &&
-            $organicResult->parentNode->parentNode->parentNode->getAttribute('class') === 'BYM4Nd'
+            $sitelinksScope2->getAttribute('class') === 'BYM4Nd'
         ) {
-            (new SiteLinksBigMobile())->parse($dom, $organicResult->parentNode->parentNode->parentNode, $resultSet, false, [], $sitelinksXpath1);
+            (new SiteLinksBigMobile())->parse($dom, $sitelinksScope2, $resultSet, false, [], $sitelinksXpath1);
         }
     }
 
