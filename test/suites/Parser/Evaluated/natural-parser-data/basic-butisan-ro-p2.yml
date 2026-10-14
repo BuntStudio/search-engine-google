@@ -1,0 +1,81 @@
+# Google basic (no-JS) layout, as Oxylabs returned it for a RO request, page 2
+# (start=10), on 2026-10-01. See basic-invoice-factoring-uk-p1.yml for the
+# layout notes. Non-organic cards on this page: the AI Overview (second card,
+# 5 citations behind "Afișează mai mult"), two "Alții caută și" cards (merged
+# into one RELATED_SEARCHES item, emitted last), the footer. Every result link carried a srsltid parameter that
+# BasicV1 strips (Utils::removeParamFromUrl). No inline sitelinks here.
+url: https://www.google.ro/search?q=butisan&hl=ro&gl=ro&start=10
+file: test/resources/pages-basic/butisan-ro-p2.html
+
+test-methods:
+  javascriptIsEvaluated: true
+  isMobile: true
+
+results:
+
+  - types:
+      - CLASSICAL_MOBILE
+    data:
+      title: Butisan S - Erbicid pentru buruieni cu actiune reziduala - agro.basf.ro
+      url: https://www.agro.basf.ro/ro/produse/overview/Erbicide/Butisan-S.html
+
+  - types:
+      - SGE_WIDGET_MOBILE
+    data:
+      sge_widget_content_loaded: true
+    data-count:
+      sge_widget_links: 5
+
+  - types:
+      - CLASSICAL_MOBILE
+    data:
+      title: Butisan Duo erbicid rapiță toamnă BASF - Horticola
+      url: https://horticola.ro/7783-erbicid-butisan-duo.html
+
+  - types:
+      - CLASSICAL_MOBILE
+    data:
+      title: Butisan Avant - Erbicid pentru cultura de rapita - agro.basf.ro
+      url: https://www.agro.basf.ro/ro/produse/overview/Erbicide/Butisan-Avant.html
+
+  - types:
+      - CLASSICAL_MOBILE
+    data:
+      title: BUTISAN S - ALCEDO
+      url: https://alcedo.ro/produs/butisan-s/
+
+  - types:
+      - CLASSICAL_MOBILE
+    data:
+      title: "[PDF] BUTISAN® S Conţine: 500 g/l metazaclor 2-cloro-N-(pirazol-1 ..."
+      url: https://www.nexles.com/uploads/Eticheta_Basf_Butisan_S.pdf
+
+  - types:
+      - CLASSICAL_MOBILE
+    data:
+      title: Erbicid Butisan Avant - Pesticid.ro
+      url: https://www.pesticid.ro/pesticide/erbicid-butisan-avant.html
+
+  - types:
+      - CLASSICAL_MOBILE
+    data:
+      title: Erbicid cu acțiune reziduală și de contact preemergent BUTISAN DUO
+      url: https://www.culturiagricole.ro/produse-pentru-culturi-conven%C8%9Bionale/erbicid-cu-ac%C8%9Biune-rezidual%C4%83-%C8%99i-de-contact-preemergent-butisan-duo.html
+
+  - types:
+      - CLASSICAL_MOBILE
+    data:
+      title: Butisan Avant erbicid rapiță - Horticola.ro
+      url: https://horticola.ro/5708-erbicid-butisan-avant.html
+
+  - types:
+      - CLASSICAL_MOBILE
+    data:
+      title: Erbicid Butisan Avant, 10 l la 1.614,80 lei - FitoMag
+      url: https://fitomag.ro/magazin-brasov/produse-gradina/erbicid-butisan-avant-10-l/
+
+  - types:
+      - RELATED_SEARCHES
+    data:
+      0: Butisan Duo
+      1: Butisan avant

@@ -13,6 +13,7 @@ use Serps\SearchEngine\Google\Exception\InvalidDOMException;
 use Serps\SearchEngine\Google\GoogleUrlInterface;
 use Serps\SearchEngine\Google\NaturalResultType;
 use Serps\SearchEngine\Google\Parser\Evaluated\AdwordsParser;
+use Serps\SearchEngine\Google\Parser\Evaluated\BasicLayout;
 use Serps\SearchEngine\Google\Parser\Evaluated\MobileNaturalParser;
 use Serps\SearchEngine\Google\Parser\Evaluated\NaturalParser;
 use Serps\SearchEngine\Google\Parser\Evaluated\MobileAdwordsParser;
@@ -155,6 +156,13 @@ class GoogleSerp extends GoogleDom
         }
 
         if (strstr($class, 'srp') || strstr($class, 'qs-i')) {
+            return true;
+        }
+
+        // Google's basic (no-JS) layout: <body> carries no class at all, but its
+        // organic cards are parsed by both natural parsers (ClassicalResultBasic),
+        // so let the device pick the parser as on any evaluated page.
+        if (BasicLayout::isBasicLayout($this)) {
             return true;
         }
 

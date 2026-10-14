@@ -7,6 +7,7 @@ namespace Serps\SearchEngine\Google\Parser\Evaluated;
 
 use Serps\SearchEngine\Google\Page\GoogleDom;
 use Serps\SearchEngine\Google\Parser\AbstractParser;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\ClassicalResultBasic;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\AdsTop;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\ClassicalResult;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\CurrencyAnswer;
@@ -60,6 +61,8 @@ class NaturalParser extends AbstractParser
     protected function generateRules()
     {
         return [
+            // Basic (no-JS) layout organics - first, see ClassicalResultBasic.
+            new ClassicalResultBasic($this->logger),
             new ClassicalResult($this->logger),
             new ImageGroup(),
             new Videos(),
@@ -183,8 +186,11 @@ class NaturalParser extends AbstractParser
         // null = a probed rare feature is present and the legacy query below is the
         // fallback. See FastParsableItemsSelector and DbMatchRuleCompiler.
         $fast = FastParsableItemsSelector::select($googleDom, false, $dbXpaths);
+        // Basic (no-JS) layout containers are merged OUTSIDE the selector and
+        // the catch-all XPath below on purpose (both return paths): not a
+        // PARSABLE_ITEMS_SYNC omission. See BasicLayout.
         if ($fast !== null) {
-            return $fast;
+            return BasicLayout::withMainContainers($googleDom, $fast);
         }
 
         // [@id='rso'] = results in position
@@ -242,7 +248,7 @@ class NaturalParser extends AbstractParser
         // FastParsableItemsSelector's desktop config, or it will silently stop
         // selecting that container in every mode. DB match rules need no such
         // care - they are compiled from their own text at runtime.
-        return $googleDom->xpathQuery("//*[
+        return BasicLayout::withMainContainers($googleDom, $googleDom->xpathQuery("//*[
             @id='rso' or
             @id='botstuff' or
             contains(concat(' ', normalize-space(@class), ' '), ' eqAnXb ') or
@@ -309,7 +315,7 @@ class NaturalParser extends AbstractParser
             (contains(concat(' ', normalize-space(@class), ' '), ' kp-wholepage ') and .//div[@id='kp-wp-tab-cont-AIRFARES']) or
             @class='sATSHe'" .
             $dbMatchConditions . "
-        ][not(self::script) and not(self::style)]");
+        ][not(self::script) and not(self::style)]"));
     }
 }
 

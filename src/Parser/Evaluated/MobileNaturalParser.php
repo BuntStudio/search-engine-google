@@ -4,6 +4,7 @@ namespace Serps\SearchEngine\Google\Parser\Evaluated;
 use Monolog\Logger;
 use Serps\SearchEngine\Google\Page\GoogleDom;
 use Serps\SearchEngine\Google\Parser\AbstractParser;
+use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\ClassicalResultBasic;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\AdsTopMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\AppPackMobile;
 use Serps\SearchEngine\Google\Parser\Evaluated\Rule\Natural\Classical\ClassicalResultMobile;
@@ -49,6 +50,8 @@ class MobileNaturalParser extends AbstractParser
     protected function generateRules()
     {
         return [
+            // Basic (no-JS) layout organics - first, see ClassicalResultBasic.
+            new ClassicalResultBasic($this->logger),
             new ClassicalResultMobile($this->logger),
             new ClassicalResultMobileV2($this->logger),
             new ImageGroup(),
@@ -143,8 +146,11 @@ class MobileNaturalParser extends AbstractParser
         // null = a probed rare feature is present and the legacy query below is the
         // fallback. See FastParsableItemsSelector and DbMatchRuleCompiler.
         $fast = FastParsableItemsSelector::select($googleDom, true, $dbXpaths);
+        // Basic (no-JS) layout containers are merged OUTSIDE the selector and
+        // the catch-all XPath below on purpose (both return paths): not a
+        // PARSABLE_ITEMS_SYNC omission. See BasicLayout.
         if ($fast !== null) {
-            return $fast;
+            return BasicLayout::withMainContainers($googleDom, $fast);
         }
 
         // [@id='iur'] = images
@@ -199,7 +205,7 @@ class MobileNaturalParser extends AbstractParser
         // FastParsableItemsSelector's mobile config, or it will silently stop
         // selecting that container in every mode. DB match rules need no such
         // care - they are compiled from their own text at runtime.
-        return $googleDom->xpathQuery("//*[@id='iur' or
+        return BasicLayout::withMainContainers($googleDom, $googleDom->xpathQuery("//*[@id='iur' or
             @data-attrid='images universal' or
             (contains(@class, 'IZE3Td') and .//div[@data-attrid='images universal']) or
             (contains(@class, 'Ww4FFb') and .//div[contains(concat(' ', normalize-space(@class), ' '), ' B2KMT ')]) or
@@ -262,6 +268,6 @@ class MobileNaturalParser extends AbstractParser
             @id='rso' or
             @id='botstuff'" .
             $dbMatchConditions . "
-        ][not(self::script) and not(self::style)]");
+        ][not(self::script) and not(self::style)]"));
     }
 }
