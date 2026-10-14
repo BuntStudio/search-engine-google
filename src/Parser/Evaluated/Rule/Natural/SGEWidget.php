@@ -716,7 +716,86 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             }
         }
 
+        return $this->resolveGotoFaviconUrl($query, $context);
+    }
+
+    /**
+     * Last /goto fallback: the site the favicon request names. The JS-rendered
+     * mobile AIO (2026-10) shows no visible URL or domain label — the source
+     * chips (a.H23r4e) carry only the site NAME, the sources-panel cards
+     * (a.a59Tlf) a favicon whose url= is the site's origin. A chip shares its
+     * exact /goto blob with the panel card of the same source, so when the
+     * anchor's own card has no favicon, the anchors carrying the same blob
+     * are asked instead. Exactly one site or nothing — a blob or card naming
+     * two sites is never guessed.
+     */
+    protected function resolveGotoFaviconUrl(callable $query, \DOMNode $context)
+    {
+        $host = $this->faviconHostAround($query, $context);
+        if ($host !== null) {
+            return 'https://' . $host;
+        }
+
+        $anchor = $context;
+        if (!($anchor instanceof \DOMElement) || strtolower($anchor->nodeName) !== 'a') {
+            $anchors = $query('descendant::a[@href]', $context);
+            $anchor = self::isNodeList($anchors) && $anchors->length > 0 ? $anchors->item(0) : null;
+        }
+        if (!($anchor instanceof \DOMElement)
+            || !preg_match('~/goto\?url=([A-Za-z0-9_-]{20,})~', $anchor->getAttribute('href'), $blobMatch)
+        ) {
+            return null;
+        }
+
+        $hosts = [];
+        $twins = $query('//a[contains(@href, "/goto?url=' . $blobMatch[1] . '")]', $context);
+        if (self::isNodeList($twins)) {
+            foreach ($twins as $twin) {
+                $twinHost = $this->faviconHostAround($query, $twin);
+                if ($twinHost !== null) {
+                    $hosts[$twinHost] = true;
+                }
+            }
+        }
+
+        return count($hosts) === 1 ? 'https://' . key($hosts) : null;
+    }
+
+    /**
+     * Host of the favicon in the card around $node: climbs like
+     * resolveGotoVisibleUrl and stops at the first level showing any favicon,
+     * returning null when that level shows more than one site.
+     */
+    protected function faviconHostAround(callable $query, \DOMNode $node)
+    {
+        for ($level = 0; $level < 4 && $node instanceof \DOMElement; $level++, $node = $node->parentNode) {
+            $carriers = $query('descendant-or-self::*[@*[contains(., "faviconV2")]]', $node);
+            if (!self::isNodeList($carriers) || $carriers->length === 0) {
+                continue;
+            }
+
+            $hosts = [];
+            foreach ($carriers as $carrier) {
+                foreach ($carrier->attributes as $attribute) {
+                    if (preg_match('~faviconV2\?[^"\s]*?\burl=(https?(?::|%3A)[^&"\s)]+)~i', $attribute->value, $faviconMatch)) {
+                        $host = self::hostKey(parse_url(rawurldecode($faviconMatch[1]), PHP_URL_HOST));
+                        if ($host !== '' && strpos($host, '.') !== false && !self::isGoogleInternalUrl('https://' . $host . '/')) {
+                            $hosts[$host] = true;
+                        }
+                    }
+                }
+            }
+
+            return count($hosts) === 1 ? key($hosts) : null;
+        }
+
         return null;
+    }
+
+    /** xpath runners return a DOMNodeList or the Serps wrapper around one. */
+    protected static function isNodeList($result)
+    {
+        return $result instanceof \Traversable || $result instanceof \DOMNodeList;
     }
 
     /**
