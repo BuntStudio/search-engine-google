@@ -45,6 +45,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     // 869f03u8a: google-internal hrefs dropped instead of stored as citations
     protected $googleInternalLinksDropped = 0;
 
+    // Rule ids under test in MODE_CANDIDATE_TESTING (live + candidate − replaced), set per parse()
+    protected $additionalRule = null;
+
     /**
      * Get the feature name based on mobile flag.
      */
@@ -95,6 +98,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
     {
         $localNode = clone $node;
+        $this->additionalRule = $additionalRule;
 
         if (!empty($resultSet->getResultsByType($this->getType($isMobile))->getItems())) { return; }
         $resultSet->addItem(new BaseResult($this->getType($isMobile), $this->extractWidgetData($dom, $localNode, $useDbRules, $isMobile), $localNode, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
@@ -360,6 +364,20 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     }
 
     /**
+     * DB rules for one of this widget's child features. In candidate testing the heal validates the
+     * rule-id set it was handed, not the live rules — reading live rules here meant no
+     * _link_selectors / _aio_link_class candidate was ever applied, so every such heal failed 4/4
+     * (investigation #3249). Same lookup as Hotels/Maps; falls back to live rules when no id in the
+     * set belongs to $featureName.
+     */
+    protected function getChildFeatureRules($featureName, $useDbRules)
+    {
+        return ($useDbRules === self::MODE_CANDIDATE_TESTING)
+            ? RuleLoaderService::getCandidateRulesForFeature($this->additionalRule, $featureName)
+            : RuleLoaderService::getRulesForFeature($featureName);
+    }
+
+    /**
      * Extract link elements using either DB rules or hardcoded selectors.
      * Each rule is run individually (not union) because order matters for deduplication.
      */
@@ -369,7 +387,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
             $featurePrefix = self::getFeatureName($isMobile);
-            $linkRules = RuleLoaderService::getRulesForFeature($featurePrefix . '_link_selectors');
+            $linkRules = $this->getChildFeatureRules($featurePrefix . '_link_selectors', $useDbRules);
 
             if (!empty($linkRules)) {
                 // Build a reverse map from XPath to diagnostic label for consistency
@@ -1362,7 +1380,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         if ($useDbRules === self::MODE_DATABASE || $useDbRules === self::MODE_CANDIDATE_TESTING) {
             $featurePrefix = self::getFeatureName($isMobile);
-            $dbRules = RuleLoaderService::getRulesForFeature($featurePrefix . '_aio_link_class');
+            $dbRules = $this->getChildFeatureRules($featurePrefix . '_aio_link_class', $useDbRules);
 
             if (!empty($dbRules)) {
                 $aioLinkXpath = implode(' | ', $dbRules);
