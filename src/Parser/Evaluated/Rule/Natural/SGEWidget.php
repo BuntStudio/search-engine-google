@@ -213,10 +213,13 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 'goto_citation_links_recovered' => 0,
                 'goto_citation_links_dropped' => 0,
                 'google_internal_links_dropped' => 0,
+                'source_card_fallback_links' => 0,
+                'chip_payload_fallback_links' => 0,
             ],
         ];
 
         $this->googleInternalLinksDropped = 0;
+        $this->redirectTokenUrls = [];
         $this->jslDhCallsCount = 0;
         $this->aioIdFound = false;
         $this->gotoCitationLinksRecovered = 0;
@@ -224,7 +227,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         // Citation headlines live on the sources-panel cards, a different surface
         // than the anchors walked below; index them from the untouched page.
-        $this->headlineIndex = $this->indexHeadlines($originalDom->saveHTML());
+        $pageHtml = $originalDom->saveHTML();
+        $this->headlineIndex = $this->indexHeadlines($pageHtml);
+        $this->redirectTokenUrls = $this->indexRedirectTokenPayloads($pageHtml);
 
         // First, enrich the content with all dynamic data
         $this->enrichContentWithDynamicData($dom, $node, $originalDom);
@@ -292,6 +297,29 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         // Collect link elements AFTER AIO enrichment and node removal
         $this->extractLinkElements($dom, $node, $urls, $data, $useDbRules, $isMobile);
+
+        // Sep 2026 mobile source cards (div[data-crb-el=kXllB] > a.POYEld, /goto href) match no link
+        // rule. Fallback on an empty rule pass ONLY: as a normal rule it appends to and reorders healthy lists.
+        if (empty($data[NaturalResultType::SGE_WIDGET_LINKS])) {
+            $sourceCards = $dom->xpathQuery('descendant::div[@data-crb-el="kXllB"]', $node);
+            if ($sourceCards->length > 0) {
+                $this->processLinkElements($dom, $sourceCards, $urls, $data, true);
+                $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['source_card_fallback_links'] = count($data[NaturalResultType::SGE_WIDGET_LINKS]);
+            }
+        }
+
+        // No sources carousel at all: the inline chips (a.H23r4e, /url?url=CAES… blob) name their
+        // destination in the TgQPHd payload that follows them. Same empty-only rule as above.
+        if (empty($data[NaturalResultType::SGE_WIDGET_LINKS]) && !empty($this->redirectTokenUrls)) {
+            $chips = [];
+            foreach ($dom->xpathQuery('descendant::a[starts-with(@href, "/url?") or starts-with(@href, "/goto?")]', $node) as $anchor) {
+                if ($this->redirectTokenUrl($anchor->getAttribute('href')) !== null) {
+                    $chips[] = $anchor;
+                }
+            }
+            $this->processLinkElements($dom, $chips, $urls, $data, true);
+            $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['chip_payload_fallback_links'] = count($data[NaturalResultType::SGE_WIDGET_LINKS]);
+        }
 
 //        if (!empty($urls)) {
 //            $this->processScriptElements($originalDom, $urls, $data);
@@ -738,6 +766,32 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
     }
 
     /**
+     * a.POYEld source cards have no XVWGNd/R8BTeb; the anchor's FIRST img is the faviconV2 whose url=
+     * names the origin. First img only — a favicon-less card (YouTube) must not borrow the next one's.
+     */
+    protected function resolveGotoFaviconUrl($dom, \DOMNode $link)
+    {
+        $img = $dom->xpathQuery('(descendant::img)[1]', $link);
+        if (!$img || $img->length === 0) {
+            return null;
+        }
+
+        foreach (['data-src', 'src'] as $attr) {
+            $src = html_entity_decode((string) $img->item(0)->getAttribute($attr), ENT_QUOTES);
+            if (strpos($src, 'faviconV2?') === false) {
+                continue;
+            }
+            parse_str((string) parse_url($src, PHP_URL_QUERY), $query);
+            $origin = isset($query['url']) && is_string($query['url']) ? $query['url'] : '';
+            if (preg_match('~^https?://[^/?#\s]+~i', $origin, $m) && !self::isGoogleInternalUrl($m[0])) {
+                return $m[0];
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Google appends an accessibility suffix to the citation headline's
      * aria-label ("Six of the Very Best Running Shoes. Opens in new tab.").
      */
@@ -773,6 +827,51 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
      * @var array{by_href: array<string,string>, by_host: array<string,string|false>}
      */
     protected $headlineIndex = ['by_href' => [], 'by_host' => []];
+
+    /** @var array<string, string> CAES redirect token (40-char prefix) => deep URL */
+    protected $redirectTokenUrls = [];
+
+    /**
+     * Google's own props for a redirect link: `<a href="/url?…url=CAES…">…</a><!--TgQPHd|||[["<deep url>",…`.
+     * Read from the untouched page — the injected widget copy carries empty `[]` payloads. The
+     * CAES token is per request, so it only joins within this page, never across captures.
+     */
+    protected function indexRedirectTokenPayloads($pageHtml)
+    {
+        $index = [];
+        if (!is_string($pageHtml) || strpos($pageHtml, 'TgQPHd') === false) {
+            return $index;
+        }
+        $page = str_replace(['\\x3c', '\\x3e', '\\x22', '\\u003d', '\\u0026', '\\/', '\\"'], ['<', '>', '"', '=', '&', '/', '"'], $pageHtml);
+        if (!preg_match_all('~<!--TgQPHd[^|]{0,160}?\|\|\|\s*\[\s*\[\s*(?:&quot;|")(https?://[^"\s]+?)(?:&quot;|")~', $page, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE)) {
+            return $index;
+        }
+        foreach ($matches as $match) {
+            $offset = $match[0][1];
+            $window = substr($page, max(0, $offset - 1500), min($offset, 1500));
+            $open = strrpos($window, '<a ');
+            // The payload must follow THIS anchor's plain text, only closing tags between. </a> is
+            // optional: libxml drops it in the jsl.dh copy ("…>Brand\x3c!--TgQPHd…").
+            if ($open === false || !preg_match('~^<a\b[^>]*\bhref="[^"]*?url=(CAES[\w-]{40})[^>]*>[^<]*(?:</a>)?(?:\s*</[a-z]+>)*\s*$~', substr($window, $open), $a)) {
+                continue;
+            }
+            $url = str_replace('\\=', '=', html_entity_decode($match[1][0], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            if (!isset($index[$a[1]]) && filter_var($url, FILTER_VALIDATE_URL) && !self::isGoogleInternalUrl($url)) {
+                $index[$a[1]] = $url;
+            }
+        }
+
+        return $index;
+    }
+
+    protected function redirectTokenUrl($href)
+    {
+        if (!is_string($href) || !preg_match('~url=(CAES[\w-]{40})~', $href, $m)) {
+            return null;
+        }
+
+        return isset($this->redirectTokenUrls[$m[1]]) ? $this->redirectTokenUrls[$m[1]] : null;
+    }
 
     protected function indexHeadlines($pageContent)
     {
@@ -866,7 +965,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         return preg_replace('~^www\d*\.~', '', $host);
     }
 
-    private function processLinkElements($dom, $elements, &$urls, &$data) {
+    private function processLinkElements($dom, $elements, &$urls, &$data, $sourceCards = false) {
         foreach ($elements as $cage) {
             // Skip if node has been removed from DOM
             if (!$cage->parentNode) {
@@ -897,10 +996,16 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 $url = $this->cleanUrlHash($url);
 
                 $domainOnly = false;
-                if (self::isGotoRedirect($url)) {
+                $tokenUrl = $sourceCards ? $this->redirectTokenUrl($rawHref) : null;
+                if ($tokenUrl !== null) {
+                    $url = $this->cleanUrlHash($tokenUrl);
+                } elseif (self::isGotoRedirect($url)) {
                     $resolved = $this->resolveGotoVisibleUrl(function ($expr, $ctx) use ($dom) {
                         return $dom->xpathQuery($expr, $ctx);
                     }, $cage);
+                    if ($resolved === null && $sourceCards) {
+                        $resolved = $this->resolveGotoFaviconUrl($dom, $link);
+                    }
                     if ($resolved === null) {
                         // Storing the encrypted blob would create a phantom
                         // csn_site ('goto') row — an absent link loses less.
@@ -921,7 +1026,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                     continue;
                 }
 
-                if (in_array($url, $urls)) {
+                if (in_array($url, $urls) || ($sourceCards && $url === '')) {
                     continue;
                 }
 
