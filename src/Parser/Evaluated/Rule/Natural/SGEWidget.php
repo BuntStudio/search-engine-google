@@ -1026,7 +1026,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                     continue;
                 }
 
-                if (in_array($url, $urls) || ($sourceCards && $url === '')) {
+                // An empty href (the ZZh6Vb placeholder <li>) is no citation, and would keep the
+                // empty-only fallbacks above from running.
+                if (in_array($url, $urls) || $url === '') {
                     continue;
                 }
 
