@@ -879,7 +879,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
      */
     protected function processAimcSourceChips(\DOMDocument $originalDom, array &$urls, array &$data)
     {
-        $comments = (new \DOMXPath($originalDom))->query('//*[@data-subtree="aimc"]//comment()[starts-with(., "TgQPHd|||[[")]');
+        $comments = (new \DOMXPath($originalDom))->query('//*[@jsname="ZLxsqf" or @id="eKIzJc"]//*[@data-subtree="aimc"]//comment()[starts-with(., "TgQPHd|||[[")]');
         if (!$comments) {
             return;
         }
@@ -887,7 +887,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             $json = html_entity_decode(substr($comment->nodeValue, strlen('TgQPHd|||')), ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $tuple = json_decode($json, true);
             $tuple = isset($tuple[0]) && is_array($tuple[0]) ? $tuple[0] : null;
-            if ($tuple === null || !isset($tuple[4], $tuple[5], $tuple[7]) || !is_string($tuple[4]) || !is_string($tuple[7])
+            if ($tuple === null || !isset($tuple[4], $tuple[7]) || !is_string($tuple[4]) || !is_string($tuple[7])
                 || strpos($tuple[4], 'faviconV2') === false || !preg_match('~^https?://~', $tuple[7])) {
                 continue;
             }
@@ -898,7 +898,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             $urls[] = $url;
             $holder = $comment->parentNode;
             $data[NaturalResultType::SGE_WIDGET_LINKS][] = [
-                'title' => is_string($tuple[5]) ? $tuple[5] : '',
+                'title' => isset($tuple[5]) && is_string($tuple[5]) ? $tuple[5] : '',
                 'url' => $url,
                 'html' => $holder ? $originalDom->saveHTML($holder) : '',
                 'headline' => $this->headlineFor('', $url, ''),
