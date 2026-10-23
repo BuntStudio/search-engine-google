@@ -215,6 +215,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 'google_internal_links_dropped' => 0,
                 'source_card_fallback_links' => 0,
                 'chip_payload_fallback_links' => 0,
+                'aimc_source_chip_fallback_links' => 0,
             ],
         ];
 
@@ -319,6 +320,13 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
             }
             $this->processLinkElements($dom, $chips, $urls, $data, true);
             $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['chip_payload_fallback_links'] = count($data[NaturalResultType::SGE_WIDGET_LINKS]);
+        }
+
+        // AI Mode-rendered AIO with no sources panel: the link chips are <button>s whose only URL is the
+        // TgQPHd source tuple next to them (869fm6mgw). Same empty-only rule as above.
+        if (empty($data[NaturalResultType::SGE_WIDGET_LINKS])) {
+            $this->processAimcSourceChips($originalDom, $urls, $data);
+            $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['aimc_source_chip_fallback_links'] = count($data[NaturalResultType::SGE_WIDGET_LINKS]);
         }
 
 //        if (!empty($urls)) {
@@ -862,6 +870,41 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         }
 
         return $index;
+    }
+
+    /**
+     * `<!--TgQPHd|||[["<uuid>",null,null,0,"<faviconV2 url>","<site name>",<n>,"<deep url>",…]]-->` inside the
+     * aimc subtree of the untouched page. On pages that also have a sources panel every such URL is a parsed
+     * citation, so the tuple is read as one; anything not matching the shape is skipped.
+     */
+    protected function processAimcSourceChips(\DOMDocument $originalDom, array &$urls, array &$data)
+    {
+        $comments = (new \DOMXPath($originalDom))->query('//*[@jsname="ZLxsqf" or @id="eKIzJc"]//*[@data-subtree="aimc"]//comment()[starts-with(., "TgQPHd|||[[")]');
+        if (!$comments) {
+            return;
+        }
+        foreach ($comments as $comment) {
+            $json = html_entity_decode(substr($comment->nodeValue, strlen('TgQPHd|||')), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $tuple = json_decode($json, true);
+            $tuple = isset($tuple[0]) && is_array($tuple[0]) ? $tuple[0] : null;
+            if ($tuple === null || !isset($tuple[4], $tuple[7]) || !is_string($tuple[4]) || !is_string($tuple[7])
+                || strpos($tuple[4], 'faviconV2') === false || !preg_match('~^https?://~', $tuple[7])) {
+                continue;
+            }
+            $url = $this->cleanUrlHash($tuple[7]);
+            if (!filter_var($url, FILTER_VALIDATE_URL) || self::isGoogleInternalUrl($url) || in_array($url, $urls)) {
+                continue;
+            }
+            $urls[] = $url;
+            $holder = $comment->parentNode;
+            $data[NaturalResultType::SGE_WIDGET_LINKS][] = [
+                'title' => isset($tuple[5]) && is_string($tuple[5]) ? $tuple[5] : '',
+                'url' => $url,
+                'html' => $holder ? $originalDom->saveHTML($holder) : '',
+                'headline' => $this->headlineFor('', $url, ''),
+                'domain_only' => false,
+            ];
+        }
     }
 
     protected function redirectTokenUrl($href)
