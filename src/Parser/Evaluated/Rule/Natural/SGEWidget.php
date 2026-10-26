@@ -37,6 +37,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     protected $jslDhCallsCount = 0;
     protected $aioIdFound = false;
+    protected $loaderShell = false;
 
     // Per-widget counters for /goto citation hrefs (flushed to Logger in extractWidgetData)
     protected $gotoCitationLinksRecovered = 0;
@@ -113,6 +114,8 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
     protected function isWidgetLoaded(GoogleDom $dom, $node, $useDbRules = self::MODE_HARDCODED, $isMobile = false)
     {
+        $this->loaderShell = false;
+
         // Widget loaded checks remain hardcoded — they have complex positional semantics
         // (progressbar visibility → return false, folsrch presence → return true, bsmXxe fallback → return true)
         // that don't fit the "interchangeable rules" DB model. The rules are stored in DB for
@@ -134,6 +137,16 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $widgetContent = $dom->xpathQuery('//div[starts-with(@id, "folsrch-")]', $node);
 
         if ($widgetContent->length > 0) {
+            // 869fgpan3: a folsrch-response-* loader shell whose answer never rendered (no aimc
+            // subtree, no enriched bsmXxe) is not loaded; otherwise it is stored as the day's AIO.
+            // The widget node is checked too: jsl.dh enrichment fills a detached clone, not the page.
+            $responseShell = $dom->xpathQuery('//div[starts-with(@id, "folsrch-response-")]', $node);
+            $answer = $dom->xpathQuery('//*[@data-subtree="aimc"] | //*[contains(@class, "bsmXxe") and ./*]'
+                . ' | descendant::*[@data-subtree="aimc"] | descendant::*[contains(@class, "bsmXxe") and ./*]', $node);
+            if ($responseShell->length > 0 && $answer->length == 0) {
+                $this->loaderShell = true;
+                return false;
+            }
             return true;
         }
 
@@ -240,7 +253,9 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
 
         // If widget is not loaded (progressbar visible), don't extract content
         if (!$data[NaturalResultType::SGE_WIDGET_LOADED]) {
-            $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['widget_not_loaded_reason'] = 'progressbar_visible_or_no_folsrch';
+            $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['widget_not_loaded_reason'] = $this->loaderShell
+                ? 'folsrch_response_without_answer'
+                : 'progressbar_visible_or_no_folsrch';
             $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['jsl_dh_calls_count'] = $this->jslDhCallsCount;
             return $data;
         }
