@@ -1238,6 +1238,11 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                         $element->removeChild($element->firstChild);
                     }
                     $this->injectHtmlContent($dom, $element, $jslCalls[$elementId]);
+                    // The removed children may still be in $elementsWithIds (a snapshot); touching
+                    // them warns "Couldn't fetch DomElement". Stop here and let the recursive pass
+                    // re-query the tree.
+                    $newlyProcessedIds[] = $elementId;
+                    break;
                 }
                 $newlyProcessedIds[] = $elementId;
             }
