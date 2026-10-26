@@ -134,6 +134,13 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         $widgetContent = $dom->xpathQuery('//div[starts-with(@id, "folsrch-")]', $node);
 
         if ($widgetContent->length > 0) {
+            // 869fgpan3: a folsrch-response-* loader shell whose answer never rendered (no aimc
+            // subtree, no enriched bsmXxe) is not loaded; otherwise it is stored as the day's AIO.
+            $responseShell = $dom->xpathQuery('//div[starts-with(@id, "folsrch-response-")]', $node);
+            $answer = $dom->xpathQuery('//*[@data-subtree="aimc"] | //*[contains(@class, "bsmXxe") and ./*]', $node);
+            if ($responseShell->length > 0 && $answer->length == 0) {
+                return false;
+            }
             return true;
         }
 
