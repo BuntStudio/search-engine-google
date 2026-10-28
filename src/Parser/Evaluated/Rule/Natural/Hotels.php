@@ -17,9 +17,13 @@ use SM\Backend\Log\Logger;
 
 class Hotels implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
+    use HydratesDeferredBlocks;
 
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
+
+    /** Set when the node's cards came from deferred payloads: one list per booking provider repeats hotels. */
+    protected $dedupeNames = false;
 
     /**
      * Parser mode constants for self-healing parser integration
@@ -91,6 +95,9 @@ class Hotels implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
     {
+        // The collapsed block ships its property cards as deferred jsl.dh() payloads (#3512).
+        $this->dedupeNames = $this->hydrateDeferredBlocks($dom, $node) > 0;
+
         // DB rules path — the primary property-name extraction (descendant ' BTPx6e ' selector)
         // lives in the 'hotels' parent feature. Hotels has no parse children, so candidate rules
         // resolve by this feature only (§9.1 N/A).
@@ -117,9 +124,7 @@ class Hotels implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
         $item = [];
 
         if($hotels->length> 0) {
-            foreach ($hotels as $urlNode) {
-                $item['hotels_names'][] = ['name' => $urlNode->nodeValue];
-            }
+            $item['hotels_names'] = $this->hotelNames($hotels);
             $resultSet->addItem(new BaseResult(NaturalResultType::HOTELS, $item, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
         }
 
@@ -143,10 +148,7 @@ class Hotels implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
             return false;
         }
 
-        $item = [];
-        foreach ($hotels as $urlNode) {
-            $item['hotels_names'][] = ['name' => $urlNode->nodeValue];
-        }
+        $item = ['hotels_names' => $this->hotelNames($hotels)];
 
         if (!empty($item['hotels_names'])) {
             $resultSet->addItem(new BaseResult(NaturalResultType::HOTELS, $item, $node, $this->hasSerpFeaturePosition, $this->hasSideSerpFeaturePosition));
@@ -154,5 +156,31 @@ class Hotels implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
         }
 
         return false;
+    }
+
+    /**
+     * Property names in page order. A hydrated pack holds one shortlist per booking provider, so the
+     * same hotel repeats (#3512); there only its first occurrence is kept.
+     *
+     * @param \Traversable $nodes
+     * @return array
+     */
+    protected function hotelNames($nodes)
+    {
+        $names = [];
+        $seen = [];
+        foreach ($nodes as $node) {
+            $name = $node->nodeValue;
+            if ($this->dedupeNames) {
+                $key = trim($name);
+                if (isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
+            }
+            $names[] = ['name' => $name];
+        }
+
+        return $names;
     }
 }
