@@ -69,6 +69,10 @@ class ClassicalResultEngine
         // breadcrumb) is still a google.com/goto?url=<token> wrapper, never a
         // real competitor — drop it instead of storing google.com as the result.
         if (strpos($organicResultObject->getLink(), '/goto?url=') !== false) {
+            // Counted for the crawl consumer's goto funnel: this drop is
+            // invisible in the result set (see GotoParseStats).
+            \Serps\SearchEngine\Google\Parser\GotoParseStats::$organicDropped++;
+
             return null;
         }
         $imbricatorParent = $dom->xpathQuery("ancestor::*[@class='FxLDp']", $organicResult);
