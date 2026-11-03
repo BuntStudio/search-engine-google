@@ -312,8 +312,12 @@ class TranslateService
         }
 
         if ($item->is(NaturalResultType::HOTELS) || $item->is(NaturalResultType::HOTELS_MOBILE)) {
-            $this->response[NaturalResultType::HOTELS_NAMES] = $item->getData()['hotels_names'];
-            $this->response[NaturalResultType::HOTELS]       = $item->getData()['hotels_names'];
+            $names = $this->mergeHotelNames(
+                $this->response[NaturalResultType::HOTELS_NAMES] ?? [],
+                $item->getData()['hotels_names'] ?? []
+            );
+            $this->response[NaturalResultType::HOTELS_NAMES] = $names;
+            $this->response[NaturalResultType::HOTELS]       = $names;
         }
 
 
@@ -566,6 +570,43 @@ class TranslateService
         if ($item->is(NaturalResultType::THINGS_TO_KNOW)) {
             $this->response[NaturalResultType::THINGS_TO_KNOW] = $item->getData();
         }
+    }
+
+    /**
+     * A SERP can carry several hotel blocks (e.g. a classic pack and a "Hotels in popular areas"
+     * cluster). Keep every block's property names in page order instead of only the last block's.
+     * Names already collected are not added twice (compared trimmed).
+     *
+     * @param mixed $existing names collected so far ([] / false when none)
+     * @param mixed $incoming names of the hotel block being processed
+     * @return array
+     */
+    protected function mergeHotelNames($existing, $incoming)
+    {
+        $merged = is_array($existing) ? array_values($existing) : [];
+        if (!is_array($incoming)) {
+            return $merged;
+        }
+
+        $seen = [];
+        foreach ($merged as $entry) {
+            if (isset($entry['name'])) {
+                $seen[trim($entry['name'])] = true;
+            }
+        }
+
+        foreach ($incoming as $entry) {
+            $key = isset($entry['name']) ? trim($entry['name']) : null;
+            if ($key !== null && isset($seen[$key])) {
+                continue;
+            }
+            if ($key !== null) {
+                $seen[$key] = true;
+            }
+            $merged[] = $entry;
+        }
+
+        return $merged;
     }
 
     /**
