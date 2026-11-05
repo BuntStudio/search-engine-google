@@ -229,6 +229,7 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 'source_card_fallback_links' => 0,
                 'chip_payload_fallback_links' => 0,
                 'aimc_source_chip_fallback_links' => 0,
+                'aimc_chip_card_fallback_links' => 0,
             ],
         ];
 
@@ -342,6 +343,13 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
         if (empty($data[NaturalResultType::SGE_WIDGET_LINKS])) {
             $this->processAimcSourceChips($originalDom, $urls, $data);
             $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['aimc_source_chip_fallback_links'] = count($data[NaturalResultType::SGE_WIDGET_LINKS]);
+        }
+
+        // Link chip with an empty tuple: its sources are hidden result cards keyed by the chip's uuid
+        // (869fnuxtb). Same empty-only rule as above.
+        if (empty($data[NaturalResultType::SGE_WIDGET_LINKS])) {
+            $this->processAimcChipCards($originalDom, $urls, $data);
+            $data[NaturalResultType::SGE_WIDGET_DIAGNOSTICS]['aimc_chip_card_fallback_links'] = count($data[NaturalResultType::SGE_WIDGET_LINKS]);
         }
 
 //        if (!empty($urls)) {
@@ -918,6 +926,62 @@ class SGEWidget implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterfac
                 'html' => $holder ? $originalDom->saveHTML($holder) : '',
                 'headline' => $this->headlineFor('', $url, ''),
                 'domain_only' => false,
+            ];
+        }
+    }
+
+    /**
+     * Cards behind a link chip: TgQPHd tuple [chip uuid, [title, snippet, favicon, origin, ?, link, ...]].
+     * A /goto link cannot be decoded, so those cards are attributed to their origin (domain_only).
+     */
+    protected function processAimcChipCards(\DOMDocument $originalDom, array &$urls, array &$data)
+    {
+        $xpath = new \DOMXPath($originalDom);
+        $subtree = '//*[@jsname="ZLxsqf" or @id="eKIzJc"]//*[@data-subtree="aimc"]';
+        $chipUuids = [];
+        foreach ($xpath->query($subtree . '//button[@data-amic="true"]/@data-icl-uuid') as $attribute) {
+            $chipUuids[$attribute->nodeValue] = true;
+        }
+        if (empty($chipUuids)) {
+            return;
+        }
+
+        foreach ($xpath->query($subtree . '//comment()[starts-with(., "TgQPHd|||[[")]') as $comment) {
+            $json = html_entity_decode(substr($comment->nodeValue, strlen('TgQPHd|||')), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $tuple = json_decode($json, true);
+            $tuple = isset($tuple[0]) && is_array($tuple[0]) ? $tuple[0] : null;
+            if ($tuple === null || !isset($tuple[0], $tuple[1]) || !is_string($tuple[0]) || !isset($chipUuids[$tuple[0]]) || !is_array($tuple[1])) {
+                continue;
+            }
+
+            $card = $tuple[1];
+            $link = isset($card[5]) && is_string($card[5]) ? $card[5] : '';
+            $origin = isset($card[3]) && is_string($card[3]) ? $card[3] : '';
+            $domainOnly = false;
+            $url = self::googleProductViewerUrl($link);
+            if ($url === null) {
+                if (preg_match('~^https?://~', $link) && !self::isGoogleInternalUrl($link)) {
+                    $url = $this->cleanUrlHash($link);
+                } elseif (preg_match('~^https?://~', $origin) && !self::isGoogleInternalUrl($origin)) {
+                    $url = $this->cleanUrlHash($origin);
+                    $domainOnly = true;
+                } else {
+                    continue;
+                }
+            }
+            if (!filter_var($url, FILTER_VALIDATE_URL) || in_array($url, $urls)) {
+                continue;
+            }
+
+            $title = isset($card[0]) && is_string($card[0]) ? $card[0] : '';
+            $urls[] = $url;
+            $holder = $comment->parentNode;
+            $data[NaturalResultType::SGE_WIDGET_LINKS][] = [
+                'title' => $title,
+                'url' => $url,
+                'html' => $holder ? $originalDom->saveHTML($holder) : '',
+                'headline' => $this->headlineFor('', $url, $title),
+                'domain_only' => $domainOnly,
             ];
         }
     }
