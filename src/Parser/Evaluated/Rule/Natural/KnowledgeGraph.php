@@ -199,6 +199,18 @@ class KnowledgeGraph implements \Serps\SearchEngine\Google\Parser\ParsingRuleInt
             }
         }
 
+        // Tier 6 (2026-11-06, investigation #3841): Google can render the panel header in its own
+        // kp-wholepage-osrp block above #center_col, outside every parsable node and with no data-kpid,
+        // so tiers 1-5 all miss and getKnowledgeGraphPresenceBaseline() reports 0 for a visible panel.
+        if (empty($data['title']) && !$isMobile) {
+            $entityNode = $dom->getXpath()
+                ->query("//*[contains(concat(' ', normalize-space(@class), ' '), ' kp-wholepage-osrp ')]//*[@data-attrid='title']")
+                ->item(0);
+            if ($entityNode instanceof \DomElement && trim($entityNode->textContent) !== '') {
+                $data['title'] = $entityNode->textContent;
+            }
+        }
+
         // Has no definition -> take "general presentation" text
         if(empty($data)) {
             $data['title']= $this->detectGeneralPresentationText($dom, $node);
