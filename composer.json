@@ -32,8 +32,8 @@
   "require": {
     "php": ">=5.5",
     "ext-dom": "*",
-    "monolog/monolog": "^1.23||^2.0",
-    "serps/core": "dev-master"
+    "monolog/monolog": "^1.23||^2.0||^3.0",
+    "serps/core": "dev-master||dev-php85"
   },
   "config": {
     "preferred-install": {
