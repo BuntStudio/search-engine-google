@@ -22,7 +22,7 @@ trait Log
      * @param Logger|null $logger Monolog log channel dependency; If not provided, defaults to logging to stdout
      * @return void
      */
-    protected function initLogger(Logger $logger = null)
+    protected function initLogger(?Logger $logger = null)
     {
         if ($logger === null) {
             $logger = $this->buildDefaultLogger();

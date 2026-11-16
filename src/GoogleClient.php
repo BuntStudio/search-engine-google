@@ -36,7 +36,7 @@ class GoogleClient
      */
     protected $logger;
 
-    public function __construct(BrowserInterface $browser = null, Logger $logger)
+    public function __construct(?BrowserInterface $browser, Logger $logger)
     {
         $this->defaultBrowser = $browser;
         $this->logger = $logger;
@@ -52,7 +52,7 @@ class GoogleClient
      * @throws PageNotFoundException
      * @throws GoogleCaptchaException
      */
-    public function query(GoogleUrlInterface $googleUrl, BrowserInterface $browser = null)
+    public function query(GoogleUrlInterface $googleUrl, ?BrowserInterface $browser = null)
     {
 
         if ($googleUrl->getResultType() !== GoogleUrl::RESULT_TYPE_ALL) {

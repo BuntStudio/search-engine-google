@@ -44,7 +44,7 @@ class TranslateService
         string $siteHost,
         bool $crawlSubdomains = false,
         $urlAlias = null,
-        Logger $logger = null,
+        ?Logger $logger = null,
         $trackUrlFolderPath = null
     )
     {

@@ -22,7 +22,7 @@ abstract class AbstractAdwordsParser implements ParserInterface
      */
     protected $logger;
 
-    public function __construct(Logger $logger = null)
+    public function __construct(?Logger $logger = null)
     {
         $this->logger = $logger;
     }

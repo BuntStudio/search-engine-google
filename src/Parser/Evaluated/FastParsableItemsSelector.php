@@ -188,12 +188,12 @@ class FastParsableItemsSelector
                 continue;
             }
             // Per-tag index, consulted only by the branch that asked for that tag.
-            $childByTag[$node->tagName]->attach($node->parentNode);
+            $childByTag[$node->tagName]->offsetSet($node->parentNode);
             // $childParents is the STATIC chain's has-child test. It must see only
             // the tags the static chain names: a DB rule mentioning child::span
             // would otherwise make every element with a span child a static match.
             if (isset($baseChildSet[$node->tagName])) {
-                $childParents->attach($node->parentNode);
+                $childParents->offsetSet($node->parentNode);
             }
         }
 
@@ -208,7 +208,7 @@ class FastParsableItemsSelector
                 return null; // malformed rule text: let the legacy query be the judge
             }
             foreach ($residual as $node) {
-                $extra->attach($node);
+                $extra->offsetSet($node);
             }
         }
         // The walk memo must be SEPARATE from $extra. "Already marked" may only
@@ -225,13 +225,13 @@ class FastParsableItemsSelector
             }
             foreach ($targets as $node) {
                 for ($p = $node->parentNode; $p instanceof \DOMElement; $p = $p->parentNode) {
-                    if ($walked->contains($p)) {
+                    if ($walked->offsetExists($p)) {
                         break; // this whole ancestor chain has been walked already
                     }
-                    $walked->attach($p);
+                    $walked->offsetSet($p);
                     $tag = $p->tagName;
                     if ($tag !== 'script' && $tag !== 'style') {
-                        $extra->attach($p);
+                        $extra->offsetSet($p);
                     }
                 }
             }
@@ -316,13 +316,13 @@ class FastParsableItemsSelector
                         $hit = true;
                     }
                 }
-                if (!$hit && $childParents->count() > 0 && $childParents->contains($el)) {
+                if (!$hit && $childParents->count() > 0 && $childParents->offsetExists($el)) {
                     $hit = true;
                 }
             }
 
             // --- DB half ----------------------------------------------------
-            $inExtra = $extra->contains($el);
+            $inExtra = $extra->offsetExists($el);
             if ($inExtra) {
                 $extraSeen++;
             }
@@ -400,7 +400,7 @@ class FastParsableItemsSelector
             }
         }
         foreach ($db['childTags'] as $childTag => $_) {
-            if (isset($childByTag[$childTag]) && $childByTag[$childTag]->contains($el)) {
+            if (isset($childByTag[$childTag]) && $childByTag[$childTag]->offsetExists($el)) {
                 return true;
             }
         }
@@ -435,18 +435,18 @@ class FastParsableItemsSelector
                         $ok = $el->hasAttribute($attr);
                         break;
                     case 'child':
-                        $ok = isset($childByTag[$needle]) && $childByTag[$needle]->contains($el);
+                        $ok = isset($childByTag[$needle]) && $childByTag[$needle]->offsetExists($el);
                         break;
                     case 'desc':
                         $set = self::axisSet($xpath, 'desc', $attr, $axisSets, $queryCache);
-                        $ok = $set->contains($el);
+                        $ok = $set->offsetExists($el);
                         break;
                     case 'anc':
                         $ok = false;
                         $set = self::axisSet($xpath, 'anc', $attr, $axisSets, $queryCache);
                         if ($set->count() > 0) {
                             for ($a = $el->parentNode; $a instanceof \DOMElement; $a = $a->parentNode) {
-                                if ($set->contains($a)) {
+                                if ($set->offsetExists($a)) {
                                     $ok = true;
                                     break;
                                 }
@@ -494,14 +494,14 @@ class FastParsableItemsSelector
         }
         foreach ($nodes as $node) {
             if ($axis === 'anc') {
-                $set->attach($node);
+                $set->offsetSet($node);
                 continue;
             }
             for ($p = $node->parentNode; $p instanceof \DOMElement; $p = $p->parentNode) {
-                if ($set->contains($p)) {
+                if ($set->offsetExists($p)) {
                     break; // this whole ancestor chain is already marked
                 }
-                $set->attach($p);
+                $set->offsetSet($p);
             }
         }
         $axisSets[$key] = $set;
@@ -535,14 +535,14 @@ class FastParsableItemsSelector
     {
         $selected = new \SplObjectStorage();
         foreach ($hits as $el) {
-            $selected->attach($el);
+            $selected->offsetSet($el);
         }
         foreach ($extra as $el) {
-            $selected->attach($el);
+            $selected->offsetSet($el);
         }
         $out = array();
         foreach ($xpath->query('//*') as $el) {
-            if ($selected->contains($el)) {
+            if ($selected->offsetExists($el)) {
                 $out[] = $el;
             }
         }

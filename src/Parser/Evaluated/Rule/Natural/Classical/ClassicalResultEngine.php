@@ -18,7 +18,7 @@ class ClassicalResultEngine
     /**
      * @param Logger|null $logger Monolog log channel dependency
      */
-    public function __construct(Logger $logger = null)
+    public function __construct(?Logger $logger = null)
     {
         $this->initLogger($logger);
     }
