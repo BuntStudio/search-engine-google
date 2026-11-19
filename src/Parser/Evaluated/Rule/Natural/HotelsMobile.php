@@ -17,6 +17,7 @@ use SM\Backend\Log\Logger;
 
 class HotelsMobile implements \Serps\SearchEngine\Google\Parser\ParsingRuleInterface
 {
+    use HydratesDeferredBlocks;
 
     protected $hasSerpFeaturePosition = true;
     protected $hasSideSerpFeaturePosition = false;
@@ -97,6 +98,9 @@ class HotelsMobile implements \Serps\SearchEngine\Google\Parser\ParsingRuleInter
 
     public function parse(GoogleDom $dom, \DomElement $node, IndexedResultSet $resultSet, $isMobile = false, array $doNotRemoveSrsltidForDomains = [], $useDbRules = self::MODE_HARDCODED, $additionalRule = null)
     {
+        // The collapsed mobile block ships its property cards as deferred jsl.dh() payloads (#4292).
+        $this->hydrateDeferredBlocks($dom, $node);
+
         // DB rules path — the primary mobile property-name extraction (HjGrCb heading | BTPx6e
         // selector) lives in the 'hotels_mobile' parent feature. No parse children, so candidate
         // rules resolve by this feature only (§9.1 N/A).
